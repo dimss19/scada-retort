@@ -28,12 +28,12 @@ class TnModbusService
         $baseArgs = [
             $this->pythonPath,
             $this->scriptPath,
-            $command,
             '--port', $port,
             '--baud', (string)$baud,
             '--parity', $parity,
             '--stopbits', (string)$stopbits,
             '--timeout', (string)$timeout,
+            $command,
             '--slave', (string)$controller->slave_id
         ];
 
@@ -53,7 +53,7 @@ class TnModbusService
             }
             
             return $result;
-        } catch (ProcessFailedException $e) {
+        } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }

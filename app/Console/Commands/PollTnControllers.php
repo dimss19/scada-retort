@@ -50,6 +50,7 @@ class PollTnControllers extends Command
                         'event_bits' => $data[7],
                         'ct1_current' => $data[12],
                         'ct2_current' => $data[13],
+                        'created_at' => Carbon::now(),
                     ]);
 
                     $controller->update([
@@ -65,7 +66,7 @@ class PollTnControllers extends Command
                 } else {
                     $controller->update([
                         'is_online' => false,
-                        'last_error' => $result['error'],
+                        'last_error' => \Illuminate\Support\Str::limit($result['error'], 250),
                     ]);
                     $this->error("Failed to poll {$controller->name}: {$result['error']}");
                     

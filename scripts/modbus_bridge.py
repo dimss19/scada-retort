@@ -32,42 +32,42 @@ def handle_response(response, count=None):
 
 def read_input(client, args):
     try:
-        response = client.read_input_registers(address=args.addr, count=args.count, slave=args.slave)
+        response = client.read_input_registers(address=args.addr, count=args.count, device_id=args.slave)
         return handle_response(response, args.count)
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 def read_holding(client, args):
     try:
-        response = client.read_holding_registers(address=args.addr, count=args.count, slave=args.slave)
+        response = client.read_holding_registers(address=args.addr, count=args.count, device_id=args.slave)
         return handle_response(response, args.count)
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 def read_coil(client, args):
     try:
-        response = client.read_coils(address=args.addr, count=args.count, slave=args.slave)
+        response = client.read_coils(address=args.addr, count=args.count, device_id=args.slave)
         return handle_response(response, args.count)
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 def read_discrete(client, args):
     try:
-        response = client.read_discrete_inputs(address=args.addr, count=args.count, slave=args.slave)
+        response = client.read_discrete_inputs(address=args.addr, count=args.count, device_id=args.slave)
         return handle_response(response, args.count)
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 def write_register(client, args):
     try:
-        response = client.write_register(address=args.addr, value=args.value, slave=args.slave)
+        response = client.write_register(address=args.addr, value=args.value, device_id=args.slave)
         return handle_response(response)
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 def write_coil(client, args):
     try:
-        response = client.write_coil(address=args.addr, value=args.value, slave=args.slave)
+        response = client.write_coil(address=args.addr, value=args.value, device_id=args.slave)
         return handle_response(response)
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -75,7 +75,7 @@ def write_coil(client, args):
 def write_registers(client, args):
     try:
         values = [int(v) for v in args.values.split(',')]
-        response = client.write_registers(address=args.addr, values=values, slave=args.slave)
+        response = client.write_registers(address=args.addr, values=values, device_id=args.slave)
         return handle_response(response)
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -83,7 +83,7 @@ def write_registers(client, args):
 def test_connection(client, args):
     try:
         # PV is usually at input register 1000 (301001)
-        response = client.read_input_registers(address=1000, count=1, slave=args.slave)
+        response = client.read_input_registers(address=1000, count=1, device_id=args.slave)
         return handle_response(response, 1)
     except Exception as e:
         return {"success": False, "error": str(e)}
