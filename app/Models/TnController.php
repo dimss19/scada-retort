@@ -10,6 +10,8 @@ class TnController extends Model
     use HasFactory;
 
     protected $fillable = [
+        'machine_id',
+        'controller_code',
         'name',
         'slave_id',
         'model_type',
@@ -18,6 +20,8 @@ class TnController extends Model
         'baudrate',
         'parity',
         'stopbits',
+        'communication',
+        'polling_interval', 'firmware_version', 'status',
         'is_online',
         'last_seen_at',
         'last_error',
@@ -32,6 +36,9 @@ class TnController extends Model
     {
         return $this->hasMany(TnReading::class);
     }
+
+    public function machine() { return $this->belongsTo(Machine::class); }
+    public function devices() { return $this->hasMany(ControllerDevice::class, 'controller_id'); }
 
     public function configs()
     {

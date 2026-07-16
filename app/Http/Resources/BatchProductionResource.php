@@ -1,0 +1,3 @@
+<?php
+namespace App\Http\Resources;use Illuminate\Http\Request;use Illuminate\Http\Resources\Json\JsonResource;
+class BatchProductionResource extends JsonResource{public function toArray(Request $r):array{return ['id'=>$this->id,'batch_number'=>$this->batch_number,'machine'=>new MachineResource($this->whenLoaded('machine')),'recipe'=>new RecipeResource($this->whenLoaded('recipe')),'operator'=>$this->whenLoaded('operator'),'status'=>$this->status,'started_at'=>$this->started_at,'ended_at'=>$this->ended_at,'process_snapshot'=>$this->process_snapshot,'result_summary'=>$this->result_summary,'created_at'=>$this->created_at,'updated_at'=>$this->updated_at];}}

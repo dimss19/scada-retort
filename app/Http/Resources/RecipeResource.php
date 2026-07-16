@@ -1,0 +1,3 @@
+<?php
+namespace App\Http\Resources; use Illuminate\Http\Request; use Illuminate\Http\Resources\Json\JsonResource;
+class RecipeResource extends JsonResource {public function toArray(Request $r):array{return ['id'=>$this->id,'recipe_code'=>$this->recipe_code,'recipe_name'=>$this->name,'product_name'=>$this->product_name,'description'=>$this->description,'version'=>$this->version,'revision'=>$this->revision,'status'=>$this->status,'parameters'=>$this->process_parameters,'steps'=>$this->whenLoaded('steps'),'created_by'=>$this->created_by,'updated_by'=>$this->updated_by,'created_at'=>$this->created_at,'updated_at'=>$this->updated_at];}}

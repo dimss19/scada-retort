@@ -1,0 +1,3 @@
+<?php
+namespace App\Http\Requests\Api; use Illuminate\Foundation\Http\FormRequest; use Illuminate\Validation\Rule;
+class RecipeRequest extends FormRequest {public function authorize():bool{return true;}public function rules():array{$id=$this->route('recipe')?->id;return ['recipe_code'=>['required','string','max:80',Rule::unique('tn_recipe_templates')->ignore($id)],'name'=>'required|string|max:255','product_name'=>'required|string|max:255','description'=>'nullable|string','version'=>'required|string|max:30','status'=>['required',Rule::in(['Draft','Active','Inactive','Archived'])],'process_parameters'=>'required|array','steps'=>'sometimes|array|max:50'];}}

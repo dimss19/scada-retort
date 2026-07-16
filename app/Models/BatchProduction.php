@@ -1,0 +1,3 @@
+<?php
+namespace App\Models; use Illuminate\Database\Eloquent\Factories\HasFactory; use Illuminate\Database\Eloquent\Model;
+class BatchProduction extends Model {use HasFactory; protected $fillable=['batch_number','machine_id','recipe_id','operator_id','status','started_at','ended_at','process_snapshot','result_summary'];protected $casts=['started_at'=>'datetime','ended_at'=>'datetime','process_snapshot'=>'array','result_summary'=>'array'];public function machine(){return $this->belongsTo(Machine::class);}public function recipe(){return $this->belongsTo(TnRecipeTemplate::class,'recipe_id');}public function operator(){return $this->belongsTo(User::class,'operator_id');}}

@@ -1,0 +1,3 @@
+<?php
+namespace App\Http\Requests\Api;use Illuminate\Foundation\Http\FormRequest;use Illuminate\Validation\Rule;
+class BatchProductionRequest extends FormRequest{public function authorize():bool{return true;}public function rules():array{$id=$this->route('batch')?->id;return ['batch_number'=>['required','string','max:100',Rule::unique('batch_productions')->ignore($id)],'machine_id'=>'required|exists:machines,id','recipe_id'=>'required|exists:tn_recipe_templates,id','operator_id'=>'nullable|exists:users,id','status'=>['required',Rule::in(['Planned','Running','Holding','Cooling','Completed','Failed','Aborted'])],'started_at'=>'nullable|date','ended_at'=>'nullable|date|after_or_equal:started_at','process_snapshot'=>'nullable|array','result_summary'=>'nullable|array'];}}

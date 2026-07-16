@@ -13,6 +13,7 @@ describe('ScadaElement Component', () => {
         critical_color: '#ff0000',
         warning_threshold: 80,
         critical_threshold: 100,
+        module_dependency: null,
         created_at: '',
         updated_at: ''
     };
