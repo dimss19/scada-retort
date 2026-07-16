@@ -93,4 +93,35 @@ class TnMonitorController extends Controller
         $readings = $tn->readings()->latest()->limit($limit)->get()->reverse()->values();
         return response()->json($readings);
     }
+
+    public function saveHistory(TnController $tn, Request $request)
+    {
+        $request->validate([
+            'log_data' => 'required|array',
+        ]);
+
+        $logs = $request->log_data;
+        if (empty($logs)) {
+            return response()->json(['success' => false, 'message' => 'No logs to save']);
+        }
+
+        // Logs are stored newest first in frontend, reverse to get start and end time correctly
+        $startTime = $logs[count($logs) - 1]['created_at'];
+        $endTime = $logs[0]['created_at'];
+
+        \App\Models\TnProcessHistory::create([
+            'tn_controller_id' => $tn->id,
+            'start_time' => \Carbon\Carbon::parse($startTime),
+            'end_time' => \Carbon\Carbon::parse($endTime),
+            'log_data' => $logs,
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function destroyHistory(\App\Models\TnProcessHistory $history)
+    {
+        $history->delete();
+        return back()->with('success', 'Process history deleted.');
+    }
 }

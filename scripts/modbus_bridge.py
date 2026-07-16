@@ -3,7 +3,7 @@ import json
 import sys
 from pymodbus.client import ModbusSerialClient
 from pymodbus.exceptions import ModbusException
-
+import serial.tools.list_ports
 def setup_client(args):
     parity_map = {'N': 'N', 'E': 'E', 'O': 'O'}
     return ModbusSerialClient(
@@ -88,12 +88,28 @@ def test_connection(client, args):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+def scan_ports(client, args):
+    ports = serial.tools.list_ports.comports()
+    for port in ports:
+        args.port = port.device
+        test_client = setup_client(args)
+        if test_client.connect():
+            try:
+                response = test_client.read_input_registers(address=1000, count=1, device_id=args.slave)
+                if not response.isError():
+                    test_client.close()
+                    return {"success": True, "port": port.device}
+            except Exception:
+                pass
+            test_client.close()
+    return {"success": False, "error": "No working Modbus port found"}
+
 def main():
     parser = argparse.ArgumentParser(description="Modbus Bridge for Laravel")
     subparsers = parser.add_subparsers(dest="command", required=True)
     
     # Common arguments
-    parser.add_argument("--port", required=True, help="Serial port (e.g., COM3, /dev/ttyUSB0)")
+    parser.add_argument("--port", required=False, help="Serial port (e.g., COM3, /dev/ttyUSB0)")
     parser.add_argument("--baud", type=int, default=9600, help="Baudrate")
     parser.add_argument("--parity", default="N", help="Parity (N, E, O)")
     parser.add_argument("--stopbits", type=int, default=2, help="Stop bits")
@@ -144,12 +160,25 @@ def main():
     # test_connection
     p_tc = subparsers.add_parser("test_connection")
     p_tc.add_argument("--slave", type=int, required=True)
+    
+    # scan_ports
+    p_sp = subparsers.add_parser("scan_ports")
+    p_sp.add_argument("--slave", type=int, required=True)
 
     args = parser.parse_args()
     
     # pymodbus expects bool for write_coil value
     if args.command == 'write_coil':
         args.value = bool(args.value)
+
+    if args.command == 'scan_ports':
+        result = scan_ports(None, args)
+        print(json.dumps(result))
+        sys.exit(0)
+
+    if not args.port:
+        print(json.dumps({"success": False, "error": "--port is required for this command"}))
+        sys.exit(1)
 
     client = setup_client(args)
     if not client.connect():

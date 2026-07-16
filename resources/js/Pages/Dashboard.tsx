@@ -65,7 +65,6 @@ export default function Dashboard({ auth, tnCount, tnOnline }: DashboardProps) {
                         <h3 className="font-semibold text-slate-800">Quick Access</h3>
                         <div className="mt-4 space-y-2">
                             <Link href={route('tn.index')} className="block rounded-lg bg-cyan-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-cyan-700">Open Controller</Link>
-                            <Link href={route('alarm.index')} className="block rounded-lg bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-slate-200">View Active Alarms</Link>
                             <Link href={route('historian.index')} className="block rounded-lg bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-slate-200">Open History</Link>
                         </div>
                     </section>

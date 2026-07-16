@@ -24,9 +24,10 @@ Route::get('/dashboard', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/scada', fn () => Inertia::render('Operations', ['module' => 'scada']))->name('scada.index');
-    Route::get('/historian', fn () => Inertia::render('Operations', ['module' => 'historian']))->name('historian.index');
-    Route::get('/alarm', fn () => Inertia::render('Operations', ['module' => 'alarm']))->name('alarm.index');
-    Route::get('/notifications', fn () => Inertia::render('Operations', ['module' => 'notifications']))->name('notifications.index');
+    Route::get('/historian', function () {
+        $histories = \App\Models\TnProcessHistory::with('controller.machine')->latest()->get();
+        return Inertia::render('Operations', ['module' => 'historian', 'histories' => $histories]);
+    })->name('historian.index');
     Route::get('/database', fn () => Inertia::render('Operations', ['module' => 'database']))->name('database.index');
     Route::redirect('/trend', '/tn')->name('trend.index');
     Route::redirect('/communication', '/tn')->name('communication.index');
@@ -67,7 +68,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/{tn}/cmd/alarm-reset', [\App\Http\Controllers\TnMonitorController::class, 'resetAlarm'])->name('tn.cmd.alarmreset');
         Route::post('/{tn}/cmd/set-mode', [\App\Http\Controllers\TnMonitorController::class, 'setMode'])->name('tn.cmd.setmode');
         Route::get('/{tn}/readings', [\App\Http\Controllers\TnMonitorController::class, 'readings'])->name('tn.readings');
-
+        Route::post('/{tn}/history', [\App\Http\Controllers\TnMonitorController::class, 'saveHistory'])->name('tn.history.save');
+        Route::delete('/history/{history}', [\App\Http\Controllers\TnMonitorController::class, 'destroyHistory'])->name('tn.history.destroy');
         // Config
         Route::get('/{tn}/config', [\App\Http\Controllers\TnConfigController::class, 'edit'])->name('tn.config.edit');
         Route::post('/{tn}/config/sync', [\App\Http\Controllers\TnConfigController::class, 'syncFromDevice'])->name('tn.config.sync');

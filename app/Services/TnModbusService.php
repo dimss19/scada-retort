@@ -5,6 +5,7 @@ namespace App\Services;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use App\Models\TnController;
+use Illuminate\Support\Facades\Cache;
 
 class TnModbusService
 {
@@ -17,13 +18,49 @@ class TnModbusService
         $this->pythonPath = 'python'; // or 'python3' based on environment
     }
 
+    protected function resolvePort(TnController $controller, $baud, $parity, $stopbits, $timeout)
+    {
+        $cacheKey = 'tn_auto_port_' . $controller->id;
+        
+        return Cache::remember($cacheKey, 3600, function () use ($controller, $baud, $parity, $stopbits, $timeout) {
+            $process = new Process([
+                $this->pythonPath,
+                $this->scriptPath,
+                '--baud', (string)$baud,
+                '--parity', $parity,
+                '--stopbits', (string)$stopbits,
+                '--timeout', (string)$timeout,
+                'scan_ports',
+                '--slave', (string)$controller->slave_id
+            ]);
+            $process->setTimeout(30); // Scanning might take longer
+            
+            try {
+                $process->mustRun();
+                $output = $process->getOutput();
+                $result = json_decode($output, true);
+                if ($result && isset($result['success']) && $result['success']) {
+                    return $result['port'];
+                }
+            } catch (\Throwable $e) {
+                // Ignore, will fallback to 'AUTO' which fails cleanly
+            }
+            return 'AUTO';
+        });
+    }
+
     protected function executeCommand(string $command, TnController $controller, array $args = [])
     {
-        $port = $controller->serial_port ?? config('tn.serial_port');
+        $configuredPort = $controller->serial_port ?? config('tn.serial_port');
         $baud = $controller->baudrate ?? config('tn.baudrate');
         $parity = $controller->parity ?? config('tn.parity');
         $stopbits = $controller->stopbits ?? config('tn.stopbits');
         $timeout = config('tn.timeout');
+
+        $port = $configuredPort;
+        if (strtoupper($configuredPort) === 'AUTO') {
+            $port = $this->resolvePort($controller, $baud, $parity, $stopbits, $timeout);
+        }
 
         $baseArgs = [
             $this->pythonPath,
@@ -52,6 +89,12 @@ class TnModbusService
                 return ['success' => false, 'error' => 'Invalid JSON from Python script: ' . $output];
             }
             
+            if (!$result['success'] && strpos($result['error'] ?? '', 'Could not connect') !== false) {
+                if (strtoupper($configuredPort) === 'AUTO') {
+                    Cache::forget('tn_auto_port_' . $controller->id);
+                }
+            }
+
             return $result;
         } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];

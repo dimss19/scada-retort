@@ -13,15 +13,16 @@ class TnRegisterMap
     public static array $monitoringRegisters = [
         ['address' => 301001, 'offset' => 1000, 'name' => 'pv', 'label' => 'Present Value'],
         ['address' => 301002, 'offset' => 1001, 'name' => 'decimal_point', 'label' => 'Decimal Point'],
-        ['address' => 301003, 'offset' => 1002, 'name' => 'sv', 'label' => 'Set Value'],
-        ['address' => 301004, 'offset' => 1003, 'name' => 'heating_mv', 'label' => 'Heating MV'],
-        ['address' => 301005, 'offset' => 1004, 'name' => 'cooling_mv', 'label' => 'Cooling MV'],
-        // status flags are at 301006
-        ['address' => 301006, 'offset' => 1005, 'name' => 'status_flag', 'label' => 'Status Flag'],
-        // alarms are at 301007
-        ['address' => 301007, 'offset' => 1006, 'name' => 'alarm_status', 'label' => 'Alarm Status'],
-        // events at 301008
-        ['address' => 301008, 'offset' => 1007, 'name' => 'event_status', 'label' => 'Event Status'],
+        ['address' => 301003, 'offset' => 1002, 'name' => 'display_unit', 'label' => 'Display Unit'],
+        ['address' => 301004, 'offset' => 1003, 'name' => 'sv', 'label' => 'Set Value'],
+        ['address' => 301005, 'offset' => 1004, 'name' => 'heating_mv', 'label' => 'Heating MV'],
+        ['address' => 301006, 'offset' => 1005, 'name' => 'cooling_mv', 'label' => 'Cooling MV'],
+        // status flags are at 301008
+        ['address' => 301008, 'offset' => 1007, 'name' => 'status_flag', 'label' => 'Status Flag'],
+        // alarms are at 301012
+        ['address' => 301012, 'offset' => 1011, 'name' => 'alarm_status', 'label' => 'Alarm Status'],
+        // events at 301011
+        ['address' => 301011, 'offset' => 1010, 'name' => 'event_status', 'label' => 'Event Status'],
         // ct1 and ct2 at 301013 and 301014
         ['address' => 301013, 'offset' => 1012, 'name' => 'ct1_current', 'label' => 'CT1 Current'],
         ['address' => 301014, 'offset' => 1013, 'name' => 'ct2_current', 'label' => 'CT2 Current'],

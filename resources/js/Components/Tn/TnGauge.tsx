@@ -2,16 +2,16 @@ import React from 'react';
 
 interface Props {
     value?: number;
+    formattedValue?: string;
     label: string;
     unit: string;
     color: string;
     max: number;
 }
 
-export default function TnGauge({ value, label, unit, color, max }: Props) {
+export default function TnGauge({ value, formattedValue, label, unit, color, max }: Props) {
     const isError = value === 31000 || value === 30000 || value === -30000;
-    let displayValue = value;
-    let displayText = value?.toString();
+    let displayText = formattedValue ?? value?.toString();
 
     if (value === 31000) displayText = 'OPEN';
     else if (value === 30000) displayText = 'HHHH';

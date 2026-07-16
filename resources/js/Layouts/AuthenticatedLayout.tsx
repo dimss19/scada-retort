@@ -13,10 +13,9 @@ type NavItem = {
 
 const navigation: NavItem[] = [
     { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard', hideWhenControllerActive: true },
-    { label: 'Controller', routeName: 'tn.index', activePattern: 'tn.*', excludePattern: 'tn.recipes.*', requiresController: true },
+    { label: 'Monitoring', routeName: 'tn.index', activePattern: 'tn.*', excludePattern: 'tn.recipes.*', requiresController: true },
     { label: 'Recipe', routeName: 'tn.recipes.index', activePattern: 'tn.recipes.*', requiresController: true },
     { label: 'History', routeName: 'historian.index', activePattern: 'historian.*', requiresController: true },
-    { label: 'Alarm', routeName: 'alarm.index', activePattern: 'alarm.*', requiresController: true },
 ];
 
 export default function Authenticated({
@@ -69,10 +68,7 @@ export default function Authenticated({
                     </nav>
 
                     <div className="ml-3 flex shrink-0 items-center gap-1 border-l border-slate-800 pl-3">
-                        <Link href={route('notifications.index')} aria-label="Notifications" title="Notifications" className="relative rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
-                            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
-                            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
-                        </Link>
+
                         <Link href={route('profile.edit')} aria-label="Profile" title={user.name} className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/20 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/30">
                             {user.name.charAt(0).toUpperCase()}
                         </Link>

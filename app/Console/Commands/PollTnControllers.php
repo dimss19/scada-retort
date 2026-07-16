@@ -31,23 +31,23 @@ class PollTnControllers extends Command
                 if ($result['success']) {
                     $data = $result['data'];
                     
-                    // Decode status and alarms
-                    $statusFlags = TnRegisterMap::decodeStatusFlag($data[5]);
+                    // Decode status and alarms (status flag is at 301008 -> index 7)
+                    $statusFlags = TnRegisterMap::decodeStatusFlag($data[7]);
                     
                     $reading = TnReading::create([
                         'tn_controller_id' => $controller->id,
                         'pv' => $data[0],
                         'decimal_point' => $data[1],
-                        'sv' => $data[2],
-                        'heating_mv' => $data[3],
-                        'cooling_mv' => $data[4],
+                        'sv' => $data[3],
+                        'heating_mv' => $data[4],
+                        'cooling_mv' => $data[5],
                         'run_status' => $statusFlags['run_status'],
                         'auto_manual' => $statusFlags['auto_manual'],
                         'out1_active' => $statusFlags['out1_active'],
                         'out2_active' => $statusFlags['out2_active'],
                         'at_running' => $statusFlags['at_running'],
-                        'alarm_bits' => $data[6],
-                        'event_bits' => $data[7],
+                        'alarm_bits' => $data[11], // alarms at 301012 -> index 11
+                        'event_bits' => $data[10], // events at 301011 -> index 10
                         'ct1_current' => $data[12],
                         'ct2_current' => $data[13],
                         'created_at' => Carbon::now(),
