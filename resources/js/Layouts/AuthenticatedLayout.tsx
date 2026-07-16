@@ -15,14 +15,14 @@ export default function Authenticated({
         useState(false);
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="border-b border-gray-100 bg-white">
+        <div className="min-h-screen bg-slate-100">
+            <nav className="border-b border-slate-800 bg-slate-900">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
                                 <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
+                                    <ApplicationLogo className="block h-10 w-auto fill-current text-cyan-400 filter drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
                                 </Link>
                             </div>
 
@@ -30,30 +30,35 @@ export default function Authenticated({
                                 <NavLink
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
+                                    className="text-slate-300 hover:text-white"
                                 >
                                     Dashboard
                                 </NavLink>
                                 <NavLink
                                     href={route('devices.index')}
                                     active={route().current('devices.*')}
+                                    className="text-slate-300 hover:text-white"
                                 >
                                     Devices
                                 </NavLink>
                                 <NavLink
                                     href={route('ota.index')}
                                     active={route().current('ota.*')}
+                                    className="text-slate-300 hover:text-white"
                                 >
                                     OTA Firmware
                                 </NavLink>
                                 <NavLink
                                     href={route('tn.index')}
                                     active={route().current('tn.*') && !route().current('tn.recipes.*')}
+                                    className="text-slate-300 hover:text-white"
                                 >
                                     TN Controllers
                                 </NavLink>
                                 <NavLink
                                     href={route('tn.recipes.index')}
                                     active={route().current('tn.recipes.*')}
+                                    className="text-slate-300 hover:text-white"
                                 >
                                     Recipe Templates
                                 </NavLink>
@@ -67,7 +72,7 @@ export default function Authenticated({
                                         <span className="inline-flex rounded-md">
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
+                                                className="inline-flex items-center rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-medium leading-4 text-slate-300 transition duration-150 ease-in-out hover:bg-slate-700 hover:text-white focus:outline-none"
                                             >
                                                 {user.name}
 
@@ -112,7 +117,7 @@ export default function Authenticated({
                                         (previousState) => !previousState,
                                     )
                                 }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
+                                className="inline-flex items-center justify-center rounded-md p-2 text-slate-400 transition duration-150 ease-in-out hover:bg-slate-800 hover:text-slate-300 focus:bg-slate-800 focus:text-slate-300 focus:outline-none"
                             >
                                 <svg
                                     className="h-6 w-6"
@@ -151,7 +156,7 @@ export default function Authenticated({
                 <div
                     className={
                         (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
+                        ' sm:hidden bg-slate-900 border-t border-slate-800'
                     }
                 >
                     <div className="space-y-1 pb-3 pt-2">

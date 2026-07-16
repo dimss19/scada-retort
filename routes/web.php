@@ -15,7 +15,12 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    return Inertia::render('Dashboard', [
+        'tnCount' => \App\Models\TnController::count(),
+        'tnOnline' => \App\Models\TnController::where('is_online', true)->count(),
+        'deviceCount' => \App\Models\Device::count(),
+        'recipeCount' => \App\Models\TnRecipeTemplate::count(),
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -50,6 +55,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/{tn}/config', [\App\Http\Controllers\TnConfigController::class, 'edit'])->name('tn.config.edit');
         Route::post('/{tn}/config/sync', [\App\Http\Controllers\TnConfigController::class, 'syncFromDevice'])->name('tn.config.sync');
         Route::put('/{tn}/config/{group}', [\App\Http\Controllers\TnConfigController::class, 'updateGroup'])->name('tn.config.update');
+    });
+
+    // === TN Recipe Templates (Placeholders for Phase 2) ===
+    Route::prefix('tn/recipes')->group(function () {
+        Route::get('/', function() { return 'Recipe Index Phase 2'; })->name('tn.recipes.index');
+        Route::get('/create', function() { return 'Recipe Create Phase 2'; })->name('tn.recipes.create');
     });
 
     // Devices
