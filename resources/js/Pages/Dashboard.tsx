@@ -11,7 +11,6 @@ interface DashboardProps extends PageProps {
 export default function Dashboard({ auth, tnCount, tnOnline, recipeCount }: DashboardProps) {
     return (
         <AuthenticatedLayout
-            user={auth.user}
             header={
                 <h2 className="text-xl font-semibold leading-tight text-slate-800">
                     System Overview

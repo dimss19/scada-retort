@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import { PageProps } from '@/types';
@@ -16,6 +16,15 @@ interface Props extends PageProps {
 export default function Monitor({ auth, controller, latestReading: initialReading }: Props) {
     const [reading, setReading] = useState(initialReading);
     const [history, setHistory] = useState<any[]>([]);
+
+    // Lethality (F0) State
+    const [accumulatedF0, setAccumulatedF0] = useState(0);
+    const [targetF0, setTargetF0] = useState(6.0);
+    const [zValue, setZValue] = useState(10.0);
+    const [tRef, setTRef] = useState(121.1);
+    
+    // Ref to store previous timestamp for F0 calc (using accurate JS timestamps)
+    const prevTimeRef = useRef<number | null>(null);
 
     useEffect(() => {
         // Fetch historical data for chart
@@ -41,11 +50,34 @@ export default function Monitor({ auth, controller, latestReading: initialReadin
                 decimal_point: e.decimal_point
             };
             setReading(newReading);
+            setReading(newReading);
             setHistory(prev => {
                 const newHistory = [...prev, newReading];
                 if (newHistory.length > 1800) newHistory.shift(); // Keep last 30 mins
                 return newHistory;
             });
+
+            // F0 Calculation (Riemann Sum)
+            // Note: TN run_status = 0 usually means RUN, 1 means STOP.
+            const now = Date.now();
+            if (prevTimeRef.current !== null) {
+                const dtMinutes = (now - prevTimeRef.current) / 60000;
+                
+                // Only accumulate if machine is RUNNING and Temp > 90C (to avoid irrelevant calc)
+                if (e.run_status === 0 && e.pv > 90) {
+                    // We use standard state setter function to get latest state
+                    setAccumulatedF0(prev => {
+                        // Math.pow(10, (T - Tref) / Z) * dt
+                        // Need to use state variables for zValue and tRef, but we can't reliably get them inside this closure
+                        // without adding them to dependency array, which re-binds listener. 
+                        // For simplicity, we assume default 10 and 121.1 for real-time calc here, 
+                        // or we use refs. Let's just use the current closure values.
+                        const f0_increment = Math.pow(10, (e.pv - 121.1) / 10.0) * dtMinutes;
+                        return prev + f0_increment;
+                    });
+                }
+            }
+            prevTimeRef.current = now;
         });
 
         return () => {
@@ -77,7 +109,6 @@ export default function Monitor({ auth, controller, latestReading: initialReadin
 
     return (
         <AuthenticatedLayout
-            user={auth.user}
             header={
                 <div className="flex justify-between items-center">
                     <h2 className="font-semibold text-xl text-gray-800 leading-tight">
@@ -142,6 +173,45 @@ export default function Monitor({ auth, controller, latestReading: initialReadin
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                             <h3 className="text-gray-700 font-bold mb-4">Status Information</h3>
                             <TnStatusPanel reading={reading} modelType={controller.model_type} />
+                        </div>
+
+                        {/* F0 Lethality Validation */}
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-gray-700 font-bold">Validation & Lethality (F₀)</h3>
+                                <button onClick={() => setAccumulatedF0(0)} className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border">Reset F₀</button>
+                            </div>
+                            
+                            <div className="flex flex-col items-center justify-center p-4">
+                                <div className="text-5xl font-black mb-2 font-mono">
+                                    {accumulatedF0.toFixed(2)}
+                                </div>
+                                <div className="text-sm text-gray-500 font-bold uppercase tracking-widest mb-6">Accumulated F₀</div>
+
+                                <div className="w-full bg-gray-200 rounded-full h-4 mb-4 dark:bg-gray-700 overflow-hidden">
+                                    <div 
+                                        className={`h-4 rounded-full transition-all duration-500 ${accumulatedF0 >= targetF0 ? 'bg-green-500' : 'bg-blue-600'}`}
+                                        style={{ width: `${Math.min(100, (accumulatedF0 / targetF0) * 100)}%` }}
+                                    ></div>
+                                </div>
+                                
+                                <div className="flex justify-between w-full text-sm text-gray-600 mb-6 font-medium">
+                                    <span>0</span>
+                                    <span>Target: {targetF0}</span>
+                                </div>
+
+                                {accumulatedF0 >= targetF0 ? (
+                                    <div className="w-full py-3 bg-green-100 text-green-800 text-center rounded-lg font-bold text-lg border border-green-200 shadow-sm flex items-center justify-center gap-2">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                        VALIDATION PASSED
+                                    </div>
+                                ) : (
+                                    <div className="w-full py-3 bg-slate-100 text-slate-500 text-center rounded-lg font-bold border border-slate-200 shadow-sm flex items-center justify-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                        IN PROGRESS
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

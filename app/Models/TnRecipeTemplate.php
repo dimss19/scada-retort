@@ -20,6 +20,9 @@ class TnRecipeTemplate extends Model
         'wait_width',
         'wait_time',
         'step_count',
+        'target_f0',
+        'z_value',
+        't_ref',
         'created_by',
         'is_default',
     ];

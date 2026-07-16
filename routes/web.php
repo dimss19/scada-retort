@@ -27,6 +27,17 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // === TN Recipe Templates (Phase 2) ===
+    Route::prefix('tn/recipes')->group(function () {
+        Route::get('/', [\App\Http\Controllers\TnRecipeController::class, 'index'])->name('tn.recipes.index');
+        Route::get('/create', [\App\Http\Controllers\TnRecipeController::class, 'create'])->name('tn.recipes.create');
+        Route::post('/', [\App\Http\Controllers\TnRecipeController::class, 'store'])->name('tn.recipes.store');
+        Route::get('/{recipe}/edit', [\App\Http\Controllers\TnRecipeController::class, 'edit'])->name('tn.recipes.edit');
+        Route::put('/{recipe}', [\App\Http\Controllers\TnRecipeController::class, 'update'])->name('tn.recipes.update');
+        Route::delete('/{recipe}', [\App\Http\Controllers\TnRecipeController::class, 'destroy'])->name('tn.recipes.destroy');
+        Route::post('/{recipe}/apply/{tn}', [\App\Http\Controllers\TnRecipeController::class, 'apply'])->name('tn.recipes.apply');
+    });
+
     // === TN Controllers ===
     Route::prefix('tn')->group(function () {
         // CRUD
@@ -52,11 +63,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/{tn}/config/{group}', [\App\Http\Controllers\TnConfigController::class, 'updateGroup'])->name('tn.config.update');
     });
 
-    // === TN Recipe Templates (Placeholders for Phase 2) ===
-    Route::prefix('tn/recipes')->group(function () {
-        Route::get('/', function() { return 'Recipe Index Phase 2'; })->name('tn.recipes.index');
-        Route::get('/create', function() { return 'Recipe Create Phase 2'; })->name('tn.recipes.create');
-    });
+
 
 });
 

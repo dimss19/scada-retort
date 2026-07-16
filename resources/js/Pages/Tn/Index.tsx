@@ -20,8 +20,7 @@ interface Props extends PageProps {
 export default function Index({ auth, controllers }: Props) {
     return (
         <AuthenticatedLayout
-            user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">TN Controllers</h2>}
+            header={<h2 className="font-semibold text-xl text-slate-800 leading-tight">TN Controllers</h2>}
         >
             <Head title="TN Controllers" />
 
