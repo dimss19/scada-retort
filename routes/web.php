@@ -23,19 +23,29 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    foreach (['scada', 'historian', 'trend', 'alarm', 'notifications', 'communication', 'database'] as $module) {
+        Route::get('/'.$module, fn () => Inertia::render('Operations', ['module' => $module]))
+            ->name($module.'.index');
+    }
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // === TN Recipe Templates (Phase 2) ===
-    Route::prefix('tn/recipes')->group(function () {
-        Route::get('/', [\App\Http\Controllers\TnRecipeController::class, 'index'])->name('tn.recipes.index');
-        Route::get('/create', [\App\Http\Controllers\TnRecipeController::class, 'create'])->name('tn.recipes.create');
-        Route::post('/', [\App\Http\Controllers\TnRecipeController::class, 'store'])->name('tn.recipes.store');
-        Route::get('/{recipe}/edit', [\App\Http\Controllers\TnRecipeController::class, 'edit'])->name('tn.recipes.edit');
-        Route::put('/{recipe}', [\App\Http\Controllers\TnRecipeController::class, 'update'])->name('tn.recipes.update');
-        Route::delete('/{recipe}', [\App\Http\Controllers\TnRecipeController::class, 'destroy'])->name('tn.recipes.destroy');
-        Route::post('/{recipe}/apply/{tn}', [\App\Http\Controllers\TnRecipeController::class, 'apply'])->name('tn.recipes.apply');
+    Route::resource('machines', \App\Http\Controllers\MachineController::class)->except('show');
+    Route::resource('devices', \App\Http\Controllers\ControllerDeviceController::class)->except('show');
+
+    // === Temperature Recipe CRUD ===
+    Route::prefix('recipes')->name('tn.recipes.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\TnRecipeController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\TnRecipeController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\TnRecipeController::class, 'store'])->name('store');
+        Route::get('/{recipe}/edit', [\App\Http\Controllers\TnRecipeController::class, 'edit'])->name('edit');
+        Route::put('/{recipe}', [\App\Http\Controllers\TnRecipeController::class, 'update'])->name('update');
+        Route::post('/{recipe}/duplicate', [\App\Http\Controllers\TnRecipeController::class, 'duplicate'])->name('duplicate');
+        Route::patch('/{recipe}/archive', [\App\Http\Controllers\TnRecipeController::class, 'archive'])->name('archive');
+        Route::delete('/{recipe}', [\App\Http\Controllers\TnRecipeController::class, 'destroy'])->name('destroy');
+        Route::post('/{recipe}/apply/{tn}', [\App\Http\Controllers\TnRecipeController::class, 'apply'])->name('apply');
     });
 
     // === TN Controllers ===
@@ -62,8 +72,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/{tn}/config/sync', [\App\Http\Controllers\TnConfigController::class, 'syncFromDevice'])->name('tn.config.sync');
         Route::put('/{tn}/config/{group}', [\App\Http\Controllers\TnConfigController::class, 'updateGroup'])->name('tn.config.update');
     });
-
-
 
 });
 

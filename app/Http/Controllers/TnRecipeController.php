@@ -1,136 +1,42 @@
 <?php
-
 namespace App\Http\Controllers;
-
 use App\Models\TnRecipeTemplate;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
-class TnRecipeController extends Controller
-{
-    public function index()
-    {
-        $recipes = TnRecipeTemplate::with('creator')->get();
-        return Inertia::render('Tn/Recipes/Index', [
-            'recipes' => $recipes
-        ]);
+class TnRecipeController extends Controller {
+    public function index() { return Inertia::render('Recipe/Index', ['recipes'=>TnRecipeTemplate::with(['steps','creator:id,name','approver:id,name'])->latest()->get()]); }
+    public function create() { return Inertia::render('Recipe/Form', ['users'=>User::orderBy('name')->get(['id','name'])]); }
+    public function store(Request $request) {
+        $data=$this->validateRecipe($request);
+        DB::transaction(function() use($data,$request){$recipe=TnRecipeTemplate::create($this->template($data)+['created_by'=>$request->user()->id]);$recipe->steps()->createMany($this->steps($data['steps']));});
+        return redirect()->route('tn.recipes.index')->with('success','Recipe created.');
     }
-
-    public function create()
-    {
-        return Inertia::render('Tn/Recipes/CreateEdit');
+    public function edit(TnRecipeTemplate $recipe) { return Inertia::render('Recipe/Form',['recipe'=>$recipe->load('steps'),'users'=>User::orderBy('name')->get(['id','name'])]); }
+    public function update(Request $request,TnRecipeTemplate $recipe) {
+        $data=$this->validateRecipe($request,$recipe);
+        DB::transaction(function() use($data,$recipe){$recipe->update($this->template($data));$recipe->steps()->delete();$recipe->steps()->createMany($this->steps($data['steps']));});
+        return redirect()->route('tn.recipes.index')->with('success','Recipe updated.');
     }
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'time_unit' => 'required|in:MM.SS,HH.MM',
-            'start_condition' => 'required|in:SSV,SPV',
-            'pattern_end_state' => 'required|in:STOP,HOLD,NEXT,PRE',
-            'repetitions' => 'required|integer|min:0',
-            'target_f0' => 'required|numeric|min:0',
-            'z_value' => 'required|numeric|min:0.1',
-            't_ref' => 'required|numeric|min:0',
-            'steps' => 'required|array|min:1|max:20',
-            'steps.*.target_sv' => 'required|numeric',
-            'steps.*.time_minutes' => 'required|integer|min:0',
-            'steps.*.time_seconds' => 'required|integer|min:0|max:59',
-        ]);
-
-        DB::transaction(function () use ($validated, $request) {
-            $recipe = TnRecipeTemplate::create([
-                'name' => $validated['name'],
-                'description' => $validated['description'],
-                'time_unit' => $validated['time_unit'],
-                'start_condition' => $validated['start_condition'],
-                'pattern_end_state' => $validated['pattern_end_state'],
-                'repetitions' => $validated['repetitions'],
-                'target_f0' => $validated['target_f0'],
-                'z_value' => $validated['z_value'],
-                't_ref' => $validated['t_ref'],
-                'step_count' => count($validated['steps']),
-                'created_by' => $request->user()->id,
-            ]);
-
-            foreach ($validated['steps'] as $index => $step) {
-                $recipe->steps()->create([
-                    'step_number' => $index + 1,
-                    'target_sv' => $step['target_sv'],
-                    'time_minutes' => $step['time_minutes'],
-                    'time_seconds' => $step['time_seconds'],
-                ]);
-            }
-        });
-
-        return redirect()->route('tn.recipes.index')->with('success', 'Recipe created successfully.');
+    public function duplicate(Request $request,TnRecipeTemplate $recipe) {
+        $copy=DB::transaction(function() use($request,$recipe){$recipe->load('steps');$copy=$recipe->replicate(['recipe_code','status','approved_by','archived_at']);$copy->recipe_code=$this->copyCode($recipe->recipe_code);$copy->name=$recipe->name.' (Copy)';$copy->revision=1;$copy->version='1.0';$copy->status='Draft';$copy->created_by=$request->user()->id;$copy->save();foreach($recipe->steps as $step)$copy->steps()->create($step->only(['step_number','step_name','target_sv','target_pressure','duration','steam_enable','cooling_enable','drain_enable','alarm_enable','settings']));return $copy;});
+        return redirect()->route('tn.recipes.edit',$copy)->with('success','Recipe duplicated as draft.');
     }
-
-    public function edit(TnRecipeTemplate $recipe)
-    {
-        $recipe->load('steps');
-        return Inertia::render('Tn/Recipes/CreateEdit', [
-            'recipe' => $recipe
-        ]);
-    }
-
-    public function update(Request $request, TnRecipeTemplate $recipe)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'time_unit' => 'required|in:MM.SS,HH.MM',
-            'start_condition' => 'required|in:SSV,SPV',
-            'pattern_end_state' => 'required|in:STOP,HOLD,NEXT,PRE',
-            'repetitions' => 'required|integer|min:0',
-            'target_f0' => 'required|numeric|min:0',
-            'z_value' => 'required|numeric|min:0.1',
-            't_ref' => 'required|numeric|min:0',
-            'steps' => 'required|array|min:1|max:20',
-            'steps.*.target_sv' => 'required|numeric',
-            'steps.*.time_minutes' => 'required|integer|min:0',
-            'steps.*.time_seconds' => 'required|integer|min:0|max:59',
-        ]);
-
-        DB::transaction(function () use ($validated, $recipe) {
-            $recipe->update([
-                'name' => $validated['name'],
-                'description' => $validated['description'],
-                'time_unit' => $validated['time_unit'],
-                'start_condition' => $validated['start_condition'],
-                'pattern_end_state' => $validated['pattern_end_state'],
-                'repetitions' => $validated['repetitions'],
-                'target_f0' => $validated['target_f0'],
-                'z_value' => $validated['z_value'],
-                't_ref' => $validated['t_ref'],
-                'step_count' => count($validated['steps']),
-            ]);
-
-            $recipe->steps()->delete();
-            foreach ($validated['steps'] as $index => $step) {
-                $recipe->steps()->create([
-                    'step_number' => $index + 1,
-                    'target_sv' => $step['target_sv'],
-                    'time_minutes' => $step['time_minutes'],
-                    'time_seconds' => $step['time_seconds'],
-                ]);
-            }
-        });
-
-        return redirect()->route('tn.recipes.index')->with('success', 'Recipe updated successfully.');
-    }
-
-    public function destroy(TnRecipeTemplate $recipe)
-    {
-        $recipe->delete();
-        return redirect()->route('tn.recipes.index')->with('success', 'Recipe deleted successfully.');
-    }
-
+    public function archive(TnRecipeTemplate $recipe) { $recipe->update(['status'=>'Archived','archived_at'=>now()]);return back()->with('success','Recipe archived.'); }
+    public function destroy(TnRecipeTemplate $recipe) { $recipe->delete();return redirect()->route('tn.recipes.index'); }
+    
     public function apply(Request $request, $tnId, TnRecipeTemplate $recipe)
     {
         // TODO: In Phase 3, this will send the modbus writes to the bridge
         return back()->with('success', "Recipe '{$recipe->name}' applied to Controller ID: {$tnId} (Simulated).");
     }
+
+    private function validateRecipe(Request $r,?TnRecipeTemplate $recipe=null):array{return $r->validate([
+        'recipe_code'=>['required','string','max:80',Rule::unique('tn_recipe_templates')->ignore($recipe)],'name'=>['required','string','max:255'],'product_name'=>['required','string','max:255'],'product_category'=>['nullable','string','max:100'],'package_type'=>['nullable','string','max:100'],'package_size'=>['nullable','string','max:100'],'description'=>['nullable','string'],'revision'=>['required','integer','min:1'],'version'=>['required','string','max:30'],'status'=>['required',Rule::in(['Draft','Active','Inactive','Archived'])],'approved_by'=>['nullable','exists:users,id'],'process_parameters'=>['required','array'],'steps'=>['required','array','min:1','max:50'],'steps.*.step_name'=>['required','string','max:100'],'steps.*.target_sv'=>['required','integer','min:-199','max:999'],'steps.*.target_pressure'=>['nullable','numeric','min:0','max:99'],'steps.*.duration'=>['required','integer','min:0','max:9999'],'steps.*.steam_enable'=>['boolean'],'steps.*.cooling_enable'=>['boolean'],'steps.*.drain_enable'=>['boolean'],'steps.*.alarm_enable'=>['boolean']]);}
+    private function template(array $d):array{return collect($d)->only(['recipe_code','name','product_name','product_category','package_type','package_size','description','revision','version','status','approved_by','process_parameters'])->all()+['time_unit'=>'MM.SS','step_count'=>count($d['steps'])];}
+    private function steps(array $steps):array{return array_map(fn($s,$i)=>['step_number'=>$i+1]+$s,$steps,array_keys($steps));}
+    private function copyCode(string $code):string{$base=$code.'-COPY';$candidate=$base;$i=1;while(TnRecipeTemplate::where('recipe_code',$candidate)->exists())$candidate=$base.'-'.$i++;return $candidate;}
 }

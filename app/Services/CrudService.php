@@ -1,0 +1,3 @@
+<?php
+namespace App\Services; use App\Repositories\Contracts\CrudRepositoryInterface; use Illuminate\Database\Eloquent\Model; use Illuminate\Support\Facades\DB;
+class CrudService {public function __construct(protected CrudRepositoryInterface $repository){}public function all(array $with=[]){return $this->repository->all($with);}public function find(int $id,array $with=[]){return $this->repository->find($id,$with);}public function create(array $data):Model{return DB::transaction(fn()=>$this->repository->create($data));}public function update(Model $model,array $data):Model{return DB::transaction(fn()=>$this->repository->update($model,$data));}public function delete(Model $model):void{DB::transaction(fn()=>$this->repository->delete($model));}}

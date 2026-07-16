@@ -4,8 +4,10 @@ import { Head, useForm } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import axios from 'axios';
 
-export default function Create({ auth }: PageProps) {
+export default function Create({ auth, machines }: PageProps & { machines: { id: number; machine_code: string; machine_name: string }[] }) {
     const { data, setData, post, processing, errors } = useForm({
+        machine_id: '',
+        controller_code: '',
         name: '',
         slave_id: 1,
         model_type: 'TNH',
@@ -14,6 +16,9 @@ export default function Create({ auth }: PageProps) {
         baudrate: 9600,
         parity: 'N',
         stopbits: 2,
+        polling_interval: 1000,
+        firmware_version: '',
+        status: 'Active',
     });
 
     const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
@@ -40,6 +45,14 @@ export default function Create({ auth }: PageProps) {
                         <div className="p-6 bg-white border-b border-gray-200">
                             <form onSubmit={submit} className="space-y-6">
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700">Machine</label>
+                                    <select value={data.machine_id} onChange={e => setData('machine_id', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                        <option value="">Select machine</option>
+                                        {machines.map(machine => <option key={machine.id} value={machine.id}>{machine.machine_code} — {machine.machine_name}</option>)}
+                                    </select>
+                                    {errors.machine_id && <p className="mt-1 text-xs text-red-500">{errors.machine_id}</p>}
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700">Controller Name</label>
                                     <input
                                         type="text"
@@ -49,6 +62,11 @@ export default function Create({ auth }: PageProps) {
                                         required
                                     />
                                     {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                                </div>
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    <label className="text-sm font-medium text-gray-700">Controller Code<input value={data.controller_code} onChange={e=>setData('controller_code',e.target.value)} className="mt-1 block w-full rounded-md border-gray-300" required/></label>
+                                    <label className="text-sm font-medium text-gray-700">Polling Interval (ms)<input type="number" min="100" value={data.polling_interval} onChange={e=>setData('polling_interval',Number(e.target.value))} className="mt-1 block w-full rounded-md border-gray-300" required/></label>
+                                    <label className="text-sm font-medium text-gray-700">Firmware Version<input value={data.firmware_version} onChange={e=>setData('firmware_version',e.target.value)} className="mt-1 block w-full rounded-md border-gray-300"/></label>
                                 </div>
 
                                 <div>

@@ -1,0 +1,3 @@
+<?php
+namespace App\Http\Resources; use Illuminate\Http\Request; use Illuminate\Http\Resources\Json\JsonResource;
+class DeviceResource extends JsonResource {public function toArray(Request $r):array{return ['id'=>$this->id,'controller_id'=>$this->controller_id,'device_code'=>$this->device_code,'device_name'=>$this->device_name,'device_type'=>$this->device_type,'sensor_type'=>$this->sensor_type,'engineering_unit'=>$this->unit,'register_pv'=>$this->register_pv,'register_sv'=>$this->register_sv,'register_output'=>$this->register_output,'register_alarm'=>$this->register_alarm,'status'=>$this->status,'controller'=>new ControllerResource($this->whenLoaded('controller')),'created_at'=>$this->created_at,'updated_at'=>$this->updated_at];}}
