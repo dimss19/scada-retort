@@ -34,10 +34,6 @@ export default function Guest({ children }: PropsWithChildren) {
                         </div>
                         <div className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
                             <div className="w-2 h-2 rounded-full bg-blue-500 glow-cyan"></div>
-                            OTA Updates
-                        </div>
-                        <div className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                            <div className="w-2 h-2 rounded-full bg-indigo-500 glow-cyan"></div>
                             Recipe Management
                         </div>
                     </div>

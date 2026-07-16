@@ -63,7 +63,7 @@ export default function Welcome({
                             </span>
                         </h1>
                         <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-                            A centralized web-based SCADA platform for monitoring, configuring, and managing your retort processes. Monitor Autonics TN Series via Modbus RTU, update ESP32 firmwares Over-The-Air, and apply complex temperature profiles—all from your browser.
+                            A centralized web-based SCADA platform for monitoring, configuring, and managing your retort processes. Monitor Autonics TN Series via Modbus RTU directly, and apply complex temperature profiles—all from your browser.
                         </p>
                         <div className="flex flex-col sm:flex-row justify-center gap-4">
                             <Link
@@ -123,22 +123,18 @@ export default function Welcome({
                     
                     {/* Stats Bar */}
                     <div className="relative z-10 border-t border-slate-800 bg-slate-950 py-8">
-                        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center divide-x divide-slate-800">
+                        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-center divide-x divide-slate-800">
                             <div>
                                 <div className="text-3xl font-black text-white">Modbus RTU</div>
                                 <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Protocol</div>
                             </div>
                             <div>
-                                <div className="text-3xl font-black text-white">RS485</div>
+                                <div className="text-3xl font-black text-white">RS485 to USB</div>
                                 <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Interface</div>
                             </div>
                             <div>
                                 <div className="text-3xl font-black text-white">&lt; 1s</div>
                                 <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Latency</div>
-                            </div>
-                            <div>
-                                <div className="text-3xl font-black text-white">OTA</div>
-                                <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Firmware Updates</div>
                             </div>
                         </div>
                     </div>

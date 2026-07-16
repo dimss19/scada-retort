@@ -34,20 +34,7 @@ export default function Authenticated({
                                 >
                                     Dashboard
                                 </NavLink>
-                                <NavLink
-                                    href={route('devices.index')}
-                                    active={route().current('devices.*')}
-                                    className="text-slate-300 hover:text-white"
-                                >
-                                    Devices
-                                </NavLink>
-                                <NavLink
-                                    href={route('ota.index')}
-                                    active={route().current('ota.*')}
-                                    className="text-slate-300 hover:text-white"
-                                >
-                                    OTA Firmware
-                                </NavLink>
+
                                 <NavLink
                                     href={route('tn.index')}
                                     active={route().current('tn.*') && !route().current('tn.recipes.*')}
@@ -166,18 +153,7 @@ export default function Authenticated({
                         >
                             Dashboard
                         </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('devices.index')}
-                            active={route().current('devices.*')}
-                        >
-                            Devices
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('ota.index')}
-                            active={route().current('ota.*')}
-                        >
-                            OTA Firmware
-                        </ResponsiveNavLink>
+
                         <ResponsiveNavLink
                             href={route('tn.index')}
                             active={route().current('tn.*') && !route().current('tn.recipes.*')}
