@@ -45,6 +45,18 @@ export default function Authenticated({
                                 >
                                     OTA Firmware
                                 </NavLink>
+                                <NavLink
+                                    href={route('tn.index')}
+                                    active={route().current('tn.*') && !route().current('tn.recipes.*')}
+                                >
+                                    TN Controllers
+                                </NavLink>
+                                <NavLink
+                                    href={route('tn.recipes.index')}
+                                    active={route().current('tn.recipes.*')}
+                                >
+                                    Recipe Templates
+                                </NavLink>
                             </div>
                         </div>
 
@@ -160,6 +172,18 @@ export default function Authenticated({
                             active={route().current('ota.*')}
                         >
                             OTA Firmware
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('tn.index')}
+                            active={route().current('tn.*') && !route().current('tn.recipes.*')}
+                        >
+                            TN Controllers
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('tn.recipes.index')}
+                            active={route().current('tn.recipes.*')}
+                        >
+                            Recipe Templates
                         </ResponsiveNavLink>
                     </div>
 

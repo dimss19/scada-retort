@@ -23,6 +23,35 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::get('/firmware', [\App\Http\Controllers\FirmwareFileController::class, 'index'])->name('firmware.index');
+    Route::post('/firmware', [\App\Http\Controllers\FirmwareFileController::class, 'store'])->name('firmware.store');
+    Route::delete('/firmware/{firmwareFile}', [\App\Http\Controllers\FirmwareFileController::class, 'destroy'])->name('firmware.destroy');
+
+    // === TN Controllers ===
+    Route::prefix('tn')->group(function () {
+        // CRUD
+        Route::get('/', [\App\Http\Controllers\TnControllerController::class, 'index'])->name('tn.index');
+        Route::get('/create', [\App\Http\Controllers\TnControllerController::class, 'create'])->name('tn.create');
+        Route::post('/', [\App\Http\Controllers\TnControllerController::class, 'store'])->name('tn.store');
+        Route::get('/{tn}', [\App\Http\Controllers\TnControllerController::class, 'show'])->name('tn.show');
+        Route::delete('/{tn}', [\App\Http\Controllers\TnControllerController::class, 'destroy'])->name('tn.destroy');
+        Route::post('/{tn}/test', [\App\Http\Controllers\TnControllerController::class, 'testConnection'])->name('tn.test');
+
+        // Monitor & Control
+        Route::get('/{tn}/monitor', [\App\Http\Controllers\TnMonitorController::class, 'show'])->name('tn.monitor');
+        Route::post('/{tn}/cmd/run-stop', [\App\Http\Controllers\TnMonitorController::class, 'toggleRunStop'])->name('tn.cmd.runstop');
+        Route::post('/{tn}/cmd/set-sv', [\App\Http\Controllers\TnMonitorController::class, 'setSv'])->name('tn.cmd.setsv');
+        Route::post('/{tn}/cmd/auto-tune', [\App\Http\Controllers\TnMonitorController::class, 'startAutoTune'])->name('tn.cmd.autotune');
+        Route::post('/{tn}/cmd/alarm-reset', [\App\Http\Controllers\TnMonitorController::class, 'resetAlarm'])->name('tn.cmd.alarmreset');
+        Route::post('/{tn}/cmd/set-mode', [\App\Http\Controllers\TnMonitorController::class, 'setMode'])->name('tn.cmd.setmode');
+        Route::get('/{tn}/readings', [\App\Http\Controllers\TnMonitorController::class, 'readings'])->name('tn.readings');
+
+        // Config
+        Route::get('/{tn}/config', [\App\Http\Controllers\TnConfigController::class, 'edit'])->name('tn.config.edit');
+        Route::post('/{tn}/config/sync', [\App\Http\Controllers\TnConfigController::class, 'syncFromDevice'])->name('tn.config.sync');
+        Route::put('/{tn}/config/{group}', [\App\Http\Controllers\TnConfigController::class, 'updateGroup'])->name('tn.config.update');
+    });
+
     // Devices
     Route::get('/devices', [\App\Http\Controllers\DeviceController::class, 'index'])->name('devices.index');
     Route::get('/devices/create', [\App\Http\Controllers\DeviceController::class, 'create'])->name('devices.create');

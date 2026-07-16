@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\TnController;
+use App\Models\TnReading;
+use App\Services\TnModbusService;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class TnMonitorController extends Controller
+{
+    public function show(TnController $tn)
+    {
+        // Get the latest reading
+        $latestReading = $tn->readings()->latest()->first();
+
+        return Inertia::render('Tn/Monitor', [
+            'controller' => $tn,
+            'latestReading' => $latestReading,
+        ]);
+    }
+
+    public function toggleRunStop(TnController $tn, TnModbusService $modbus)
+    {
+        // Read current state to toggle, or expect it in request
+        // Coil 000001
+        $status = request('status'); // true to run (which sets coil to 0 or 1 depending on model). Actually from docs RUN=0, STOP=1. But wait, write single coil: 0xFF00 is ON, 0x0000 is OFF.
+        // The implementation plan says: RUN/STOP toggle FC05 -> Coil 000001
+        $value = $status ? false : true; // Assuming we want STOP if not status. Let's send raw bool.
+        // We will just pass the request value 
+        $result = $modbus->writeSingleCoil($tn, 0, request('run') ? false : true); // STOP is 1
+        
+        if ($result['success']) {
+            return back()->with('success', 'Command sent successfully.');
+        }
+        return back()->with('error', 'Command failed: ' . $result['error']);
+    }
+
+    public function setSv(TnController $tn, TnModbusService $modbus)
+    {
+        request()->validate(['sv' => 'required|integer']);
+        // SV is Holding Register 400006 -> offset 5
+        $result = $modbus->writeSingleRegister($tn, 5, request('sv'));
+
+        if ($result['success']) {
+            return back()->with('success', 'SV updated successfully.');
+        }
+        return back()->with('error', 'Command failed: ' . $result['error']);
+    }
+
+    public function startAutoTune(TnController $tn, TnModbusService $modbus)
+    {
+        // AT is Coil 000002 -> offset 1
+        $result = $modbus->writeSingleCoil($tn, 1, true); // true sets AT
+
+        if ($result['success']) {
+            return back()->with('success', 'Auto-Tune started.');
+        }
+        return back()->with('error', 'Command failed: ' . $result['error']);
+    }
+
+    public function resetAlarm(TnController $tn, TnModbusService $modbus)
+    {
+        // Alarm reset is Coil 000003 -> offset 2
+        $result = $modbus->writeSingleCoil($tn, 2, true);
+
+        if ($result['success']) {
+            return back()->with('success', 'Alarms reset.');
+        }
+        return back()->with('error', 'Command failed: ' . $result['error']);
+    }
+
+    public function setMode(TnController $tn, TnModbusService $modbus)
+    {
+        // Auto/Manual is Holding Register 400003 -> offset 2
+        $result = $modbus->writeSingleRegister($tn, 2, request('manual') ? 1 : 0);
+
+        if ($result['success']) {
+            return back()->with('success', 'Mode updated.');
+        }
+        return back()->with('error', 'Command failed: ' . $result['error']);
+    }
+
+    public function readings(TnController $tn)
+    {
+        $limit = request('limit', 1800); // 30 minutes of data at 1Hz
+        $readings = $tn->readings()->latest()->limit($limit)->get()->reverse()->values();
+        return response()->json($readings);
+    }
+}
