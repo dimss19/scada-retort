@@ -7,17 +7,16 @@ type NavItem = {
     routeName: string;
     activePattern: string;
     excludePattern?: string;
+    requiresController?: boolean;
+    hideWhenControllerActive?: boolean;
 };
 
 const navigation: NavItem[] = [
-    { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard' },
-    { label: 'Machine', routeName: 'machines.index', activePattern: 'machines.*' },
-    { label: 'Controller', routeName: 'tn.index', activePattern: 'tn.*', excludePattern: 'tn.recipes.*' },
-    { label: 'Device', routeName: 'devices.index', activePattern: 'devices.*' },
-    { label: 'Recipe', routeName: 'tn.recipes.index', activePattern: 'tn.recipes.*' },
-    { label: 'History', routeName: 'historian.index', activePattern: 'historian.*' },
-    { label: 'Trend', routeName: 'trend.index', activePattern: 'trend.*' },
-    { label: 'Alarm', routeName: 'alarm.index', activePattern: 'alarm.*' },
+    { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard', hideWhenControllerActive: true },
+    { label: 'Controller', routeName: 'tn.index', activePattern: 'tn.*', excludePattern: 'tn.recipes.*', requiresController: true },
+    { label: 'Recipe', routeName: 'tn.recipes.index', activePattern: 'tn.recipes.*', requiresController: true },
+    { label: 'History', routeName: 'historian.index', activePattern: 'historian.*', requiresController: true },
+    { label: 'Alarm', routeName: 'alarm.index', activePattern: 'alarm.*', requiresController: true },
 ];
 
 export default function Authenticated({
@@ -25,6 +24,18 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<{ header?: ReactNode; user?: unknown }>) {
     const user = usePage().props.auth.user;
+    const hasActiveController = Boolean((usePage().props as any).ui?.active_tn_id);
+    const visibleNavigation = navigation.filter((item) => {
+        if (hasActiveController && item.hideWhenControllerActive) {
+            return false;
+        }
+
+        if (!hasActiveController && item.requiresController) {
+            return false;
+        }
+
+        return true;
+    });
 
     return (
         <div className="min-h-screen bg-slate-100">
@@ -39,7 +50,7 @@ export default function Authenticated({
                     </Link>
 
                     <nav className="ml-4 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:ml-8">
-                        {navigation.map((item) => {
+                        {visibleNavigation.map((item) => {
                             const active = (route().current(item.activePattern) ?? false) && !(item.excludePattern && route().current(item.excludePattern));
                             return (
                                 <Link

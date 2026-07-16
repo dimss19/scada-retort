@@ -1,3 +1,64 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';import{Head,Link,router}from'@inertiajs/react';
-type Device={id:number;device_name:string;device_type:string;sensor_type?:string;unit:string;register_pv?:number;register_sv?:number;register_output?:number;status:string;controller:{id:number;name:string;machine?:{machine_name:string}}};
-export default function Index({devices}:{devices:Device[]}){return <AuthenticatedLayout header={<div><h2 className="text-xl font-semibold text-slate-800">Device</h2><p className="mt-1 text-sm text-slate-500">Thermocouple sensors connected to controllers</p></div>}><Head title="Device"/><div className="p-4 sm:p-6 lg:p-8"><div className="mb-5 flex justify-end"><Link href={route('devices.create')} className="rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white">+ Add Device</Link></div><div className="overflow-x-auto rounded-xl border bg-white shadow-sm"><table className="w-full text-left text-sm"><thead className="border-b bg-slate-50 text-xs uppercase text-slate-500"><tr>{['Device','Machine / Controller','Sensor','Registers','Status','Action'].map(x=><th key={x} className="px-4 py-3">{x}</th>)}</tr></thead><tbody>{devices.map(d=><tr key={d.id} className="border-b"><td className="px-4 py-4 font-semibold">{d.device_name}</td><td className="px-4 py-4 text-slate-600">{d.controller.machine?.machine_name||'—'} / {d.controller.name}</td><td className="px-4 py-4">{d.device_type} {d.sensor_type&&`(${d.sensor_type})`} · {d.unit}</td><td className="px-4 py-4 font-mono text-xs">PV {d.register_pv??'—'} · SV {d.register_sv??'—'} · OUT {d.register_output??'—'}</td><td className="px-4 py-4"><span className={`rounded-full px-2 py-1 text-xs ${d.status==='Active'?'bg-emerald-100 text-emerald-700':'bg-slate-100'}`}>{d.status}</span></td><td className="px-4 py-4"><div className="flex gap-2"><Link href={route('devices.edit',d.id)} className="rounded border px-3 py-1.5 text-xs">Edit</Link><button onClick={()=>confirm(`Delete ${d.device_name}?`)&&router.delete(route('devices.destroy',d.id))} className="rounded border border-red-200 px-3 py-1.5 text-xs text-red-600">Delete</button></div></td></tr>)}{!devices.length&&<tr><td colSpan={6} className="p-12 text-center text-slate-400">No devices registered.</td></tr>}</tbody></table></div></div></AuthenticatedLayout>}
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Head, Link, router } from '@inertiajs/react';
+
+type Device = {
+    id: number;
+    device_name: string;
+    device_type: string;
+    sensor_type?: string;
+    unit: string;
+    register_pv?: number;
+    register_sv?: number;
+    register_output?: number;
+    status: string;
+    controller: { id: number; name: string; machine?: { machine_name: string } };
+};
+
+export default function Index({ devices, controllerId }: { devices: Device[]; controllerId?: number | null }) {
+    return (
+        <AuthenticatedLayout
+            header={
+                <div>
+                    <h2 className="text-xl font-semibold text-slate-800">Device</h2>
+                    <p className="mt-1 text-sm text-slate-500">{controllerId ? 'Showing devices for the selected controller.' : 'Thermocouple sensors connected to controllers.'}</p>
+                </div>
+            }
+        >
+            <Head title="Device" />
+            <div className="p-4 sm:p-6 lg:p-8">
+                <div className="mb-5 flex flex-wrap justify-between gap-2">
+                    <Link href={route('tn.index')} className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Controllers</Link>
+                    <Link href={route('devices.create', controllerId ? { controller: controllerId } : {})} className="rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white">+ Add Device</Link>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">
+                    <table className="w-full text-left text-sm">
+                        <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500">
+                            <tr>{['Device', 'Machine / Controller', 'Sensor', 'Registers', 'Status', 'Action'].map((x) => <th key={x} className="px-4 py-3">{x}</th>)}</tr>
+                        </thead>
+                        <tbody>
+                            {devices.map((d) => (
+                                <tr key={d.id} className="border-b">
+                                    <td className="px-4 py-4 font-semibold">{d.device_name}</td>
+                                    <td className="px-4 py-4 text-slate-600">{d.controller.machine?.machine_name || '—'} / {d.controller.name}</td>
+                                    <td className="px-4 py-4">{d.device_type} {d.sensor_type && `(${d.sensor_type})`} · {d.unit}</td>
+                                    <td className="px-4 py-4 font-mono text-xs">PV {d.register_pv ?? '—'} · SV {d.register_sv ?? '—'} · OUT {d.register_output ?? '—'}</td>
+                                    <td className="px-4 py-4"><span className={`rounded-full px-2 py-1 text-xs ${d.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100'}`}>{d.status}</span></td>
+                                    <td className="px-4 py-4">
+                                        <div className="flex gap-2">
+                                            <Link href={route('devices.edit', d.id)} className="rounded border px-3 py-1.5 text-xs">Edit</Link>
+                                            <button onClick={() => confirm(`Delete ${d.device_name}?`) && router.delete(route('devices.destroy', d.id))} className="rounded border border-red-200 px-3 py-1.5 text-xs text-red-600">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {!devices.length && (
+                                <tr><td colSpan={6} className="p-12 text-center text-slate-400">No devices registered.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </AuthenticatedLayout>
+    );
+}

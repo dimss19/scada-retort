@@ -12,6 +12,11 @@ class TnMonitorController extends Controller
 {
     public function show(TnController $tn)
     {
+        request()->session()->put([
+            'active_tn_id' => $tn->id,
+            'active_tn_model' => $tn->model_type,
+        ]);
+
         // Get the latest reading
         $latestReading = $tn->readings()->latest()->first();
 

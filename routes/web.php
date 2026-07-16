@@ -23,16 +23,18 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    foreach (['scada', 'historian', 'trend', 'alarm', 'notifications', 'communication', 'database'] as $module) {
-        Route::get('/'.$module, fn () => Inertia::render('Operations', ['module' => $module]))
-            ->name($module.'.index');
-    }
+    Route::get('/scada', fn () => Inertia::render('Operations', ['module' => 'scada']))->name('scada.index');
+    Route::get('/historian', fn () => Inertia::render('Operations', ['module' => 'historian']))->name('historian.index');
+    Route::get('/alarm', fn () => Inertia::render('Operations', ['module' => 'alarm']))->name('alarm.index');
+    Route::get('/notifications', fn () => Inertia::render('Operations', ['module' => 'notifications']))->name('notifications.index');
+    Route::get('/database', fn () => Inertia::render('Operations', ['module' => 'database']))->name('database.index');
+    Route::redirect('/trend', '/tn')->name('trend.index');
+    Route::redirect('/communication', '/tn')->name('communication.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::resource('machines', \App\Http\Controllers\MachineController::class)->except('show');
     Route::resource('devices', \App\Http\Controllers\ControllerDeviceController::class)->except('show');
 
     // === Temperature Recipe CRUD ===
@@ -52,8 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('tn')->group(function () {
         // CRUD
         Route::get('/', [\App\Http\Controllers\TnControllerController::class, 'index'])->name('tn.index');
-        Route::get('/create', [\App\Http\Controllers\TnControllerController::class, 'create'])->name('tn.create');
-        Route::post('/', [\App\Http\Controllers\TnControllerController::class, 'store'])->name('tn.store');
+        Route::post('/quick-start/{model}', [\App\Http\Controllers\TnControllerController::class, 'quickStart'])->name('tn.quick-start');
         Route::get('/{tn}', [\App\Http\Controllers\TnControllerController::class, 'show'])->name('tn.show');
         Route::delete('/{tn}', [\App\Http\Controllers\TnControllerController::class, 'destroy'])->name('tn.destroy');
         Route::post('/{tn}/test', [\App\Http\Controllers\TnControllerController::class, 'testConnection'])->name('tn.test');

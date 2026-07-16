@@ -1,4 +1,61 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
-type Controller={id:number;name:string;slave_id:number;model_type:string;baudrate:number;parity:string;stopbits:number;communication?:string;is_online:boolean;machine?:{machine_name:string};devices?:unknown[]};
-export default function Index({controllers}:{controllers:Controller[]}){return <AuthenticatedLayout header={<div><h2 className="text-xl font-semibold text-slate-800">Controller</h2><p className="mt-1 text-sm text-slate-500">TNH, TNL, and TNS temperature controllers</p></div>}><Head title="Controller"/><div className="p-4 sm:p-6 lg:p-8"><div className="mb-5 flex justify-end"><Link href={route('tn.create')} className="rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white">+ Add Controller</Link></div><div className="overflow-x-auto rounded-xl border bg-white shadow-sm"><table className="w-full text-left text-sm"><thead className="border-b bg-slate-50 text-xs uppercase text-slate-500"><tr>{['Controller','Machine','Model','Communication','Devices','Status','Action'].map(x=><th key={x} className="px-4 py-3">{x}</th>)}</tr></thead><tbody>{controllers.map(c=><tr key={c.id} className="border-b border-slate-100"><td className="px-4 py-4"><p className="font-semibold text-slate-800">{c.name}</p><p className="text-xs text-slate-400">Slave ID {c.slave_id}</p></td><td className="px-4 py-4 text-slate-600">{c.machine?.machine_name||'Unassigned'}</td><td className="px-4 py-4"><span className="rounded bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">{c.model_type}</span></td><td className="px-4 py-4 text-xs text-slate-600">RS485 · {c.baudrate} · {c.parity}/{c.stopbits}</td><td className="px-4 py-4 text-slate-600">{c.devices?.length||0}</td><td className="px-4 py-4"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${c.is_online?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700'}`}>{c.is_online?'Online':'Offline'}</span></td><td className="px-4 py-4"><div className="flex gap-2"><Link href={route('tn.monitor',c.id)} title="Open HMI / SCADA" aria-label={`Open HMI ${c.name}`} className="rounded-lg bg-cyan-600 p-2 text-white"><svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></Link><Link href={route('tn.config.edit',c.id)} className="rounded border px-3 py-1.5 text-xs">Config</Link><button onClick={()=>confirm(`Delete ${c.name}?`)&&router.delete(route('tn.destroy',c.id))} className="rounded border border-red-200 px-3 py-1.5 text-xs text-red-600">Delete</button></div></td></tr>)}{!controllers.length&&<tr><td colSpan={7} className="p-12 text-center text-slate-400">No controllers registered.</td></tr>}</tbody></table></div></div></AuthenticatedLayout>}
+import { Head, Link } from '@inertiajs/react';
+
+const controllerTypes = [
+    {
+        model: 'TNS',
+        label: 'Compact',
+        description: 'Controller ringkas untuk sistem retort berkapasitas kecil.',
+        accent: 'from-cyan-500 to-blue-600',
+    },
+    {
+        model: 'TNH',
+        label: 'Standard',
+        description: 'Controller utama untuk proses produksi retort standar.',
+        accent: 'from-slate-800 to-slate-950',
+    },
+    {
+        model: 'TNL',
+        label: 'Extended',
+        description: 'Controller dengan dukungan I/O untuk sistem yang lebih besar.',
+        accent: 'from-amber-500 to-orange-600',
+    },
+] as const;
+
+export default function Index() {
+    return (
+        <AuthenticatedLayout>
+            <Head title="Pilih Controller" />
+
+            <main className="min-h-[calc(100vh-5rem)] bg-[radial-gradient(circle_at_top_left,_#dff7ff_0,_transparent_35%),linear-gradient(135deg,#f8fafc,#eef2f7)] p-4 sm:p-8 lg:p-12">
+                <div className="mx-auto max-w-6xl">
+                    <div className="mb-10 max-w-2xl">
+                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-600">Controller Selection</p>
+                        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Pilih tipe alat</h1>
+                        <p className="mt-3 text-slate-600">Pilih TNS, TNH, atau TNL untuk langsung membuka halaman monitoring. Port serial akan dideteksi secara otomatis.</p>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-3">
+                        {controllerTypes.map((controller) => (
+                            <Link
+                                key={controller.model}
+                                href={route('tn.quick-start', controller.model)}
+                                method="post"
+                                as="button"
+                                className={`group relative min-h-72 overflow-hidden rounded-3xl bg-gradient-to-br ${controller.accent} p-7 text-left text-white shadow-xl transition duration-300 hover:-translate-y-1 hover:shadow-2xl`}
+                            >
+                                <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full border border-white/20 bg-white/10 transition-transform duration-500 group-hover:scale-125" />
+                                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/65">{controller.label}</p>
+                                <h2 className="mt-5 text-5xl font-black tracking-tight">{controller.model}</h2>
+                                <p className="mt-4 max-w-xs text-sm leading-6 text-white/75">{controller.description}</p>
+                                <span className="absolute bottom-7 left-7 inline-flex items-center gap-3 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur-sm">
+                                    Buka monitoring <span aria-hidden="true">-&gt;</span>
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </main>
+        </AuthenticatedLayout>
+    );
+}

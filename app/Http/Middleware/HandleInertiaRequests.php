@@ -34,6 +34,10 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'ui' => [
+                'active_tn_id' => $request->session()->get('active_tn_id'),
+                'active_tn_model' => $request->session()->get('active_tn_model'),
+            ],
         ];
     }
 }

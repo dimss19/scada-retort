@@ -4,49 +4,46 @@ namespace App\Http\Controllers;
 
 use App\Models\TnController;
 use App\Services\TnModbusService;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Process;
 use Inertia\Inertia;
-use App\Models\Machine;
 
 class TnControllerController extends Controller
 {
     public function index()
     {
-        $controllers = TnController::with(['machine', 'devices', 'readings' => function ($query) {
-            $query->latest()->limit(1);
-        }])->get();
+        $controllerId = request()->session()->get('active_tn_id');
 
-        return Inertia::render('Tn/Index', [
-            'controllers' => $controllers
-        ]);
+        if ($controllerId && $controller = TnController::find($controllerId)) {
+            return redirect()->route('tn.monitor', $controller->id);
+        }
+
+        return redirect()->route('dashboard')->with('info', 'Pilih tipe controller terlebih dahulu.');
     }
 
-    public function create()
+    public function quickStart(string $model)
     {
-        return Inertia::render('Tn/Create', ['machines' => Machine::where('status', 'Active')->get(['id','machine_code','machine_name'])]);
-    }
+        $model = strtoupper($model);
+        abort_unless(in_array($model, ['TNS', 'TNH', 'TNL'], true), 404);
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'machine_id' => 'nullable|exists:machines,id',
-            'controller_code' => 'required|string|max:80|unique:tn_controllers,controller_code',
-            'name' => 'required|string|max:255',
-            'slave_id' => 'required|integer|min:1|max:99|unique:tn_controllers',
-            'model_type' => 'required|in:TNS,TNH,TNL',
-            'control_model' => 'required|in:fixed,program',
-            'serial_port' => 'nullable|string',
-            'baudrate' => 'required|integer',
-            'parity' => 'required|in:N,E,O',
-            'stopbits' => 'required|integer',
-            'polling_interval' => 'required|integer|min:100',
-            'firmware_version' => 'nullable|string|max:100',
-            'status' => 'required|in:Active,Inactive',
+        $controller = TnController::query()
+            ->where('model_type', $model)
+            ->orderBy('id')
+            ->first();
+
+        if (!$controller) {
+            return redirect()->route('tn.index')->with(
+                'error',
+                "Profil {$model} belum tersedia. Jalankan database seeder terlebih dahulu."
+            );
+        }
+
+        $controller->update(['serial_port' => $this->detectSerialPort()]);
+        request()->session()->put([
+            'active_tn_id' => $controller->id,
+            'active_tn_model' => $controller->model_type,
         ]);
 
-        $controller = TnController::create($validated);
-
-        return redirect()->route('tn.monitor', $controller->id)->with('success', 'TN Controller added successfully.');
+        return redirect()->route('tn.monitor', $controller->id);
     }
 
     public function show(TnController $tn)
@@ -58,6 +55,44 @@ class TnControllerController extends Controller
     {
         $tn->delete();
         return redirect()->route('tn.index')->with('success', 'TN Controller deleted successfully.');
+    }
+
+    private function detectSerialPort(): string
+    {
+        $fallback = config('tn.serial_port', 'COM3');
+
+        try {
+            if (PHP_OS_FAMILY === 'Windows') {
+                $result = Process::run([
+                    'powershell',
+                    '-NoProfile',
+                    '-Command',
+                    '(Get-CimInstance Win32_SerialPort | Select-Object -ExpandProperty DeviceID) -join ","',
+                ]);
+
+                if ($result->successful()) {
+                    $ports = array_values(array_filter(array_map('trim', explode(',', trim($result->output())))));
+
+                    if (!empty($ports)) {
+                        return $ports[0];
+                    }
+                }
+            } else {
+                foreach (glob('/dev/ttyUSB*') ?: [] as $port) {
+                    return $port;
+                }
+                foreach (glob('/dev/ttyACM*') ?: [] as $port) {
+                    return $port;
+                }
+                foreach (glob('/dev/ttyS*') ?: [] as $port) {
+                    return $port;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fall back to the configured default port.
+        }
+
+        return $fallback;
     }
 
     public function testConnection(TnController $tn, TnModbusService $modbus)

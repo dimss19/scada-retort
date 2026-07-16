@@ -1,3 +1,49 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';import{Head,Link,useForm}from'@inertiajs/react';
-type Controller={id:number;name:string;machine?:{machine_name:string}};type Device={id:number;controller_id:number;device_name:string;device_type:'Thermocouple';sensor_type?:'K'|'J'|'PT100';unit:string;register_pv?:number;register_sv?:number;register_output?:number;status:'Active'|'Inactive'};
-export default function Form({device,controllers}:{device?:Device;controllers:Controller[]}){const f=useForm({controller_id:device?.controller_id??'',device_name:device?.device_name??'',device_type:'Thermocouple',sensor_type:device?.sensor_type??'K',unit:device?.unit??'°C',register_pv:device?.register_pv??'',register_sv:device?.register_sv??'',register_output:device?.register_output??'',status:device?.status??'Active'});const submit=(e:React.FormEvent)=>{e.preventDefault();device?f.put(route('devices.update',device.id)):f.post(route('devices.store'))};return <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-slate-800">{device?'Edit':'Add'} Device</h2>}><Head title="Device Form"/><form onSubmit={submit} className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8"><section className="grid gap-4 rounded-xl border bg-white p-6 shadow-sm sm:grid-cols-2"><label className="text-sm font-medium text-slate-600 sm:col-span-2">Controller<select value={f.data.controller_id} onChange={e=>f.setData('controller_id',Number(e.target.value))} className="mt-1 block w-full rounded-lg border-slate-300" required><option value="">Select controller</option>{controllers.map(c=><option key={c.id} value={c.id}>{c.machine?.machine_name||'Unassigned'} — {c.name}</option>)}</select></label><label className="text-sm font-medium text-slate-600">Device Name<input value={f.data.device_name} onChange={e=>f.setData('device_name',e.target.value)} className="mt-1 block w-full rounded-lg border-slate-300" required/></label><label className="text-sm font-medium text-slate-600">Sensor Type<select value={f.data.sensor_type} onChange={e=>f.setData('sensor_type',e.target.value as 'K')} className="mt-1 block w-full rounded-lg border-slate-300"><option>K</option><option>J</option><option>PT100</option></select></label>{(['register_pv','register_sv','register_output'] as const).map(k=><label key={k} className="text-sm font-medium capitalize text-slate-600">{k.replace('_',' ')}<input type="number" min="0" value={f.data[k]} onChange={e=>f.setData(k,e.target.value)} className="mt-1 block w-full rounded-lg border-slate-300"/></label>)}<label className="text-sm font-medium text-slate-600">Status<select value={f.data.status} onChange={e=>f.setData('status',e.target.value as 'Active')} className="mt-1 block w-full rounded-lg border-slate-300"><option>Active</option><option>Inactive</option></select></label></section><div className="flex justify-end gap-3"><Link href={route('devices.index')} className="rounded-lg border px-4 py-2.5 text-sm">Cancel</Link><button className="rounded-lg bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white">Save Device</button></div></form></AuthenticatedLayout>}
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Head, Link, useForm } from '@inertiajs/react';
+
+type Controller = { id: number; name: string; machine?: { machine_name: string } };
+type Device = { id: number; controller_id: number; device_name: string; device_type: 'Thermocouple'; sensor_type?: 'K' | 'J' | 'PT100'; unit: string; register_pv?: number; register_sv?: number; register_output?: number; status: 'Active' | 'Inactive' };
+
+export default function Form({ device, controllers, selectedControllerId }: { device?: Device; controllers: Controller[]; selectedControllerId?: number | null }) {
+    const f = useForm({
+        controller_id: device?.controller_id ?? selectedControllerId ?? '',
+        device_name: device?.device_name ?? '',
+        device_type: 'Thermocouple',
+        sensor_type: device?.sensor_type ?? 'K',
+        unit: device?.unit ?? '°C',
+        register_pv: device?.register_pv ?? '',
+        register_sv: device?.register_sv ?? '',
+        register_output: device?.register_output ?? '',
+        status: device?.status ?? 'Active',
+    });
+
+    const submit = (e: React.FormEvent) => {
+        e.preventDefault();
+        device ? f.put(route('devices.update', device.id)) : f.post(route('devices.store'));
+    };
+
+    return (
+        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-slate-800">{device ? 'Edit' : 'Add'} Device</h2>}>
+            <Head title="Device Form" />
+            <form onSubmit={submit} className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+                <section className="grid gap-4 rounded-xl border bg-white p-6 shadow-sm sm:grid-cols-2">
+                    <label className="text-sm font-medium text-slate-600 sm:col-span-2">
+                        Controller
+                        <select value={f.data.controller_id} onChange={(e) => f.setData('controller_id', Number(e.target.value))} className="mt-1 block w-full rounded-lg border-slate-300" required>
+                            <option value="">Select controller</option>
+                            {controllers.map((c) => <option key={c.id} value={c.id}>{c.machine?.machine_name || 'Unassigned'} — {c.name}</option>)}
+                        </select>
+                    </label>
+                    <label className="text-sm font-medium text-slate-600">Device Name<input value={f.data.device_name} onChange={(e) => f.setData('device_name', e.target.value)} className="mt-1 block w-full rounded-lg border-slate-300" required /></label>
+                    <label className="text-sm font-medium text-slate-600">Sensor Type<select value={f.data.sensor_type} onChange={(e) => f.setData('sensor_type', e.target.value as 'K')} className="mt-1 block w-full rounded-lg border-slate-300"><option>K</option><option>J</option><option>PT100</option></select></label>
+                    {(['register_pv', 'register_sv', 'register_output'] as const).map((k) => <label key={k} className="text-sm font-medium capitalize text-slate-600">{k.replace('_', ' ')}<input type="number" min="0" value={f.data[k]} onChange={(e) => f.setData(k, e.target.value)} className="mt-1 block w-full rounded-lg border-slate-300" /></label>)}
+                    <label className="text-sm font-medium text-slate-600">Status<select value={f.data.status} onChange={(e) => f.setData('status', e.target.value as 'Active')} className="mt-1 block w-full rounded-lg border-slate-300"><option>Active</option><option>Inactive</option></select></label>
+                </section>
+                <div className="flex justify-end gap-3">
+                    <Link href={route('devices.index', f.data.controller_id ? { controller: f.data.controller_id } : {})} className="rounded-lg border px-4 py-2.5 text-sm">Cancel</Link>
+                    <button className="rounded-lg bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white">Save Device</button>
+                </div>
+            </form>
+        </AuthenticatedLayout>
+    );
+}

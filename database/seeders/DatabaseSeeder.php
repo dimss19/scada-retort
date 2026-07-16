@@ -28,24 +28,52 @@ class DatabaseSeeder extends Seeder
         );
 
         foreach ([
-            ['RT-01', 'Retort 01', 'TNH', 1],
-            ['RT-02', 'Retort 02', 'TNL', 2],
-            ['RT-03', 'Retort 03', 'TNS', 3],
-        ] as [$code, $name, $model, $slaveId]) {
-            $machine = Machine::firstOrCreate(
+            ['RT-01', 'Retort TNS', 'TNS', 1],
+            ['RT-02', 'Retort TNH', 'TNH', 2],
+            ['RT-03', 'Retort TNL', 'TNL', 3],
+        ] as [$code, $name, $model, $defaultSlaveId]) {
+            $machine = Machine::updateOrCreate(
                 ['machine_code' => $code],
                 ['machine_name' => $name, 'description' => 'Production retort machine', 'location' => 'Production Area', 'status' => 'Active']
             );
 
-            $controller = TnController::firstOrCreate(
-                ['slave_id' => $slaveId],
-                ['machine_id' => $machine->id, 'name' => $model.'-'.$code, 'model_type' => $model, 'control_model' => 'program', 'serial_port' => 'COM3', 'baudrate' => 9600, 'parity' => 'N', 'stopbits' => 2, 'communication' => 'RS485']
-            );
+            $controller = TnController::where('model_type', $model)->orderBy('id')->first();
+            $controller ??= new TnController([
+                'model_type' => $model,
+                'slave_id' => $this->availableSlaveId($defaultSlaveId),
+            ]);
+            $controller->fill([
+                'machine_id' => $machine->id,
+                'name' => $model.' Controller',
+                'control_model' => 'program',
+                'serial_port' => config('tn.serial_port', 'COM3'),
+                'baudrate' => config('tn.baudrate', 9600),
+                'parity' => config('tn.parity', 'N'),
+                'stopbits' => config('tn.stopbits', 2),
+                'communication' => 'RS485',
+            ])->save();
 
             ControllerDevice::firstOrCreate(
                 ['controller_id' => $controller->id, 'device_name' => 'Thermocouple-'.$code],
                 ['device_type' => 'Thermocouple', 'sensor_type' => 'K', 'unit' => '°C', 'register_pv' => 1000, 'register_sv' => 0, 'register_output' => 1, 'status' => 'Active']
             );
         }
+    }
+
+    private function availableSlaveId(int $preferred): int
+    {
+        for ($slaveId = $preferred; $slaveId <= 247; $slaveId++) {
+            if (!TnController::where('slave_id', $slaveId)->exists()) {
+                return $slaveId;
+            }
+        }
+
+        for ($slaveId = 1; $slaveId < $preferred; $slaveId++) {
+            if (!TnController::where('slave_id', $slaveId)->exists()) {
+                return $slaveId;
+            }
+        }
+
+        throw new \RuntimeException('Tidak ada Modbus slave ID yang tersedia.');
     }
 }
