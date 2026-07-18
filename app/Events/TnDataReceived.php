@@ -28,6 +28,11 @@ class TnDataReceived implements ShouldBroadcastNow
         return new Channel('tn.' . $this->controller->id);
     }
 
+    public function broadcastAs()
+    {
+        return 'tn.data';
+    }
+
     public function broadcastWith()
     {
         return [

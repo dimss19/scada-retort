@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'serial_port' => env('TN_SERIAL_PORT', 'COM3'),
+    'serial_port' => env('TN_SERIAL_PORT', 'AUTO'),
     'baudrate' => env('TN_BAUDRATE', 9600),
     'parity' => env('TN_PARITY', 'N'),
     'stopbits' => env('TN_STOPBITS', 2),

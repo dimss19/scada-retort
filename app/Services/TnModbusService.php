@@ -54,7 +54,10 @@ class TnModbusService
 
     protected function executeCommand(string $command, TnController $controller, array $args = [])
     {
-        $configuredPort = $controller->serial_port ?? config('tn.serial_port');
+        $configPort = config('tn.serial_port');
+        $configuredPort = strtoupper((string) $configPort) === 'AUTO'
+            ? 'AUTO'
+            : ($controller->serial_port ?: $configPort);
         $baud = $controller->baudrate ?? config('tn.baudrate');
         $parity = $controller->parity ?? config('tn.parity');
         $stopbits = $controller->stopbits ?? config('tn.stopbits');
@@ -83,10 +86,10 @@ class TnModbusService
         $attempt = 0;
         $lastError = '';
         
-        $lockFile = storage_path('app/modbus_port_' . md5($port) . '.lock');
-        $fp = fopen($lockFile, 'w+');
-
         while ($attempt < $retries) {
+            $lockFile = storage_path('app/modbus_port_' . md5($port) . '.lock');
+            $fp = fopen($lockFile, 'w+');
+
             try {
                 // Wait up to 3 seconds for the file lock
                 $lockAcquired = false;
@@ -115,10 +118,15 @@ class TnModbusService
                             return ['success' => false, 'error' => 'Invalid JSON from Python script: ' . $output];
                         }
                         
-                        if (!$result['success'] && strpos($result['error'] ?? '', 'Could not connect') !== false) {
-                            if (strtoupper($configuredPort) === 'AUTO') {
-                                Cache::forget('tn_auto_port_' . $controller->id);
+                        if (!$result['success'] && $this->isConnectionError($result['error'] ?? '')) {
+                            Cache::forget('tn_auto_port_' . $controller->id);
+
+                            if (strtoupper($configuredPort) !== 'AUTO') {
+                                $configuredPort = 'AUTO';
                             }
+
+                            $port = $this->resolvePort($controller, $baud, $parity, $stopbits, $timeout);
+                            $processArgs[3] = $port;
                             throw new \Exception($result['error']); // trigger retry
                         }
 
@@ -139,12 +147,20 @@ class TnModbusService
             } catch (\Throwable $e) {
                 $lastError = $e->getMessage();
                 $attempt++;
+            } finally {
+                fclose($fp);
             }
         }
-        
-        fclose($fp);
 
         return ['success' => false, 'error' => $lastError];
+    }
+
+    protected function isConnectionError(string $error): bool
+    {
+        return str_contains($error, 'Could not connect')
+            || str_contains($error, 'No working Modbus port found')
+            || str_contains($error, 'PermissionError')
+            || str_contains($error, 'FileNotFoundError');
     }
 
     public function testConnection(TnController $controller)

@@ -23,6 +23,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
     const [reading, setReading] = useState(initialReading);
     const [history, setHistory] = useState<any[]>([]);
     const [eventLogs, setEventLogs] = useState<any[]>([]);
+    const [isLiveOnline, setIsLiveOnline] = useState(Boolean(controller.is_online || initialReading));
 
     const formatValue = (val: number | undefined, dp: number = 0) => {
         if (val === undefined || val === 31000 || val === 30000 || val === -30000) return undefined;
@@ -37,13 +38,68 @@ export default function Monitor({ controller, latestReading: initialReading }: P
     }, [eventLogs]);
 
     useEffect(() => {
-        fetch(route('tn.readings', controller.id))
-            .then((res) => res.json())
-            .then((data) => setHistory(data));
+        let isMounted = true;
+        let lastReadingTimestamp = initialReading?.created_at ?? initialReading?.timestamp ?? null;
 
-        const channel = (window as any).Echo.channel(`tn.${controller.id}`);
-        channel.listen('TnDataReceived', (e: any) => {
-            const newReading = {
+        const applyReading = (newReading: any, appendHistory = true) => {
+            if (!isMounted || !newReading) return;
+
+            const timestamp = newReading.created_at ?? newReading.timestamp ?? null;
+            if (timestamp && timestamp === lastReadingTimestamp) return;
+
+            lastReadingTimestamp = timestamp;
+            setIsLiveOnline(true);
+            setReading(newReading);
+            if (appendHistory) {
+                setHistory((prev) => {
+                    const next = [...prev, newReading];
+                    if (next.length > 1800) next.shift();
+                    return next;
+                });
+            }
+
+            const mv = newReading.heating_mv ?? 0;
+            if (mv > 0) {
+                setEventLogs((prev) => {
+                    const next = [newReading, ...prev];
+                    if (next.length > 500) next.pop();
+                    return next;
+                });
+            } else if (mv === 0 && logsRef.current.length > 0) {
+                setEventLogs([]);
+            }
+        };
+
+        const loadReadings = async (replaceHistory = false) => {
+            try {
+                const res = await fetch(route('tn.readings', controller.id), {
+                    headers: { Accept: 'application/json' },
+                });
+                const data = await res.json();
+                if (!isMounted || !Array.isArray(data)) return;
+
+                setHistory(data);
+                setIsLiveOnline(data.length > 0);
+
+                const latest = data[data.length - 1];
+                if (replaceHistory && latest) {
+                    lastReadingTimestamp = latest.created_at ?? latest.timestamp ?? null;
+                    setReading(latest);
+                    return;
+                }
+
+                applyReading(latest, false);
+            } catch {
+                if (isMounted) setIsLiveOnline(false);
+            }
+        };
+
+        loadReadings(true);
+
+        const echo = (window as any).Echo;
+        const channel = echo?.channel(`tn.${controller.id}`);
+        channel?.listen('.tn.data', (e: any) => {
+            applyReading({
                 pv: e.pv,
                 sv: e.sv,
                 heating_mv: e.heating_mv,
@@ -60,35 +116,20 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 rest_time: e.rest_time,
                 created_at: e.timestamp,
                 decimal_point: e.decimal_point,
-            };
-
-            setReading(newReading);
-            setHistory((prev) => {
-                const next = [...prev, newReading];
-                if (next.length > 1800) next.shift();
-                return next;
             });
-
-            const mv = newReading.heating_mv ?? 0;
-            if (mv > 0) {
-                setEventLogs((prev) => {
-                    const next = [newReading, ...prev];
-                    if (next.length > 500) next.pop(); // Keep latest 500 logs in memory
-                    return next;
-                });
-            } else if (mv === 0 && eventLogs.length > 0) {
-                // Clear active logs from screen when heating stops (backend handles DB saving)
-                setEventLogs([]);
-            }
-
         });
 
-        return () => {
-            channel.stopListening('TnDataReceived');
-        };
-    }, [controller.id]);
+        const pollIntervalMs = Math.max(5000, controller.polling_interval ?? 5000);
+        const intervalId = window.setInterval(() => loadReadings(), pollIntervalMs);
 
-    const isOnline = controller.is_online;
+        return () => {
+            isMounted = false;
+            window.clearInterval(intervalId);
+            channel?.stopListening('.tn.data');
+        };
+    }, [controller.id, controller.polling_interval, initialReading]);
+
+    const isOnline = isLiveOnline;
     const pvValue = isOnline ? reading?.pv : 0;
     const svValue = isOnline ? reading?.sv : 0;
     const mvValue = isOnline ? reading?.heating_mv : 0;
@@ -118,8 +159,8 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <Link href={route('tn.config.edit', controller.id)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Config</Link>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${controller.is_online ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {controller.is_online ? (controller.serial_port || 'SERIAL') : 'OFFLINE'}
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {isOnline ? (controller.serial_port || 'SERIAL') : 'OFFLINE'}
                         </span>
                         {reading && (
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${!reading.run_status ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>

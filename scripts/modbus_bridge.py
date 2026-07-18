@@ -4,6 +4,8 @@ import sys
 from pymodbus.client import ModbusSerialClient
 from pymodbus.exceptions import ModbusException
 import serial.tools.list_ports
+import re
+
 def setup_client(args):
     parity_map = {'N': 'N', 'E': 'E', 'O': 'O'}
     return ModbusSerialClient(
@@ -91,7 +93,11 @@ def test_connection(client, args):
         return {"success": False, "error": str(e)}
 
 def scan_ports(client, args):
-    ports = serial.tools.list_ports.comports()
+    def port_sort_key(port):
+        match = re.search(r'(\d+)$', port.device)
+        return (port.device.rstrip('0123456789'), int(match.group(1)) if match else 0)
+
+    ports = sorted(serial.tools.list_ports.comports(), key=port_sort_key)
     for port in ports:
         args.port = port.device
         test_client = setup_client(args)
@@ -99,11 +105,11 @@ def scan_ports(client, args):
             try:
                 response = test_client.read_input_registers(address=1000, count=1, device_id=args.slave)
                 if not response.isError():
-                    test_client.close()
                     return {"success": True, "port": port.device}
             except Exception:
                 pass
-            test_client.close()
+            finally:
+                test_client.close()
     return {"success": False, "error": "No working Modbus port found"}
 
 def main():
