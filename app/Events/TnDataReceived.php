@@ -43,6 +43,10 @@ class TnDataReceived implements ShouldBroadcastNow
             'out1_active' => $this->reading->out1_active,
             'out2_active' => $this->reading->out2_active,
             'alarms' => $this->reading->alarms, // decoded via accessor
+            'pattern_current' => $this->reading->pattern_current,
+            'step_current' => $this->reading->step_current,
+            'process_time' => $this->reading->process_time,
+            'rest_time' => $this->reading->rest_time,
             'timestamp' => $this->reading->created_at->toIso8601String(),
         ];
     }

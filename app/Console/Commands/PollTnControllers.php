@@ -50,8 +50,42 @@ class PollTnControllers extends Command
                         'event_bits' => $data[10], // events at 301011 -> index 10
                         'ct1_current' => $data[12],
                         'ct2_current' => $data[13],
+                        'pattern_current' => $data[19],
+                        'step_current' => $data[20],
+                        'process_time' => $data[21],
+                        'rest_time' => $data[23],
                         'created_at' => Carbon::now(),
                     ]);
+
+                    // Backend History Tracking
+                    $mv = $data[4] ?? 0;
+                    $cacheKey = "tn_active_history_{$controller->id}";
+                    $activeHistoryId = \Illuminate\Support\Facades\Cache::get($cacheKey);
+
+                    if ($mv > 0 && !$activeHistoryId) {
+                        $history = \App\Models\TnProcessHistory::create([
+                            'tn_controller_id' => $controller->id,
+                            'start_time' => Carbon::now(),
+                        ]);
+                        \Illuminate\Support\Facades\Cache::forever($cacheKey, $history->id);
+                    } elseif ($mv == 0 && $activeHistoryId) {
+                        $history = \App\Models\TnProcessHistory::find($activeHistoryId);
+                        if ($history) {
+                            $endTime = Carbon::now();
+                            $readings = TnReading::where('tn_controller_id', $controller->id)
+                                ->where('created_at', '>=', $history->start_time)
+                                ->where('created_at', '<=', $endTime)
+                                ->orderBy('created_at', 'desc')
+                                ->get()
+                                ->toArray();
+
+                            $history->update([
+                                'end_time' => $endTime,
+                                'log_data' => $readings,
+                            ]);
+                        }
+                        \Illuminate\Support\Facades\Cache::forget($cacheKey);
+                    }
 
                     $controller->update([
                         'is_online' => true,

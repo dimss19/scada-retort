@@ -37,12 +37,14 @@ def read_input(client, args):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+import traceback
+
 def read_holding(client, args):
     try:
         response = client.read_holding_registers(address=args.addr, count=args.count, device_id=args.slave)
         return handle_response(response, args.count)
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": str(e) + " Traceback: " + traceback.format_exc()}
 
 def read_coil(client, args):
     try:

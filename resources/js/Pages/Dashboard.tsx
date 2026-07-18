@@ -45,7 +45,7 @@ export default function Dashboard({ auth, tnCount, tnOnline }: DashboardProps) {
                     ))}
                 </div>
 
-                <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+                <div className="grid gap-6">
                     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="mb-4 flex items-center justify-between">
                             <h3 className="font-semibold text-slate-800">Latest Activity</h3>
@@ -59,13 +59,6 @@ export default function Dashboard({ auth, tnCount, tnOnline }: DashboardProps) {
                                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{status}</span>
                                 </div>
                             ))}
-                        </div>
-                    </section>
-                    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <h3 className="font-semibold text-slate-800">Quick Access</h3>
-                        <div className="mt-4 space-y-2">
-                            <Link href={route('tn.index')} className="block rounded-lg bg-cyan-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-cyan-700">Open Controller</Link>
-                            <Link href={route('historian.index')} className="block rounded-lg bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-slate-200">Open History</Link>
                         </div>
                     </section>
                 </div>

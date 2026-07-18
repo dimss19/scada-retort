@@ -63,11 +63,13 @@ class TnControllerController extends Controller
 
         try {
             if (PHP_OS_FAMILY === 'Windows') {
+                // Use .NET SerialPort.GetPortNames() which detects USB-to-Serial adapters
+                // (CH340, FTDI, CP210x) that Win32_SerialPort misses
                 $result = Process::run([
                     'powershell',
                     '-NoProfile',
                     '-Command',
-                    '(Get-CimInstance Win32_SerialPort | Select-Object -ExpandProperty DeviceID) -join ","',
+                    '([System.IO.Ports.SerialPort]::GetPortNames()) -join ","',
                 ]);
 
                 if ($result->successful()) {

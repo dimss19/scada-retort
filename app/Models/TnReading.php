@@ -27,6 +27,10 @@ class TnReading extends Model
         'at_running',
         'ct1_current',
         'ct2_current',
+        'pattern_current',
+        'step_current',
+        'process_time',
+        'rest_time',
         'created_at',
     ];
 

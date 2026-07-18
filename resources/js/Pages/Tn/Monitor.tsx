@@ -54,6 +54,10 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 out1_active: e.out1_active,
                 out2_active: e.out2_active,
                 alarms: e.alarms,
+                pattern_current: e.pattern_current,
+                step_current: e.step_current,
+                process_time: e.process_time,
+                rest_time: e.rest_time,
                 created_at: e.timestamp,
                 decimal_point: e.decimal_point,
             };
@@ -67,22 +71,14 @@ export default function Monitor({ controller, latestReading: initialReading }: P
 
             const mv = newReading.heating_mv ?? 0;
             if (mv > 0) {
-                isHeatingRef.current = true;
                 setEventLogs((prev) => {
                     const next = [newReading, ...prev];
                     if (next.length > 500) next.pop(); // Keep latest 500 logs in memory
                     return next;
                 });
-            } else if (mv === 0 && isHeatingRef.current) {
-                // Heating stopped, process finished
-                isHeatingRef.current = false;
-                if (logsRef.current.length > 0) {
-                    (window as any).axios.post(route('tn.history.save', controller.id), {
-                        log_data: logsRef.current
-                    }).then(() => {
-                        setEventLogs([]); // Clear logs on screen after saving
-                    }).catch((err: any) => console.error("Failed to save history", err));
-                }
+            } else if (mv === 0 && eventLogs.length > 0) {
+                // Clear active logs from screen when heating stops (backend handles DB saving)
+                setEventLogs([]);
             }
 
         });
@@ -92,9 +88,20 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         };
     }, [controller.id]);
 
-    const pvFormatted = formatValue(reading?.pv, reading?.decimal_point);
-    const svFormatted = formatValue(reading?.sv, reading?.decimal_point);
-    const mvFormatted = formatValue(reading?.heating_mv, 1);
+    const isOnline = controller.is_online;
+    const pvValue = isOnline ? reading?.pv : 0;
+    const svValue = isOnline ? reading?.sv : 0;
+    const mvValue = isOnline ? reading?.heating_mv : 0;
+
+    const pvFormatted = formatValue(pvValue, reading?.decimal_point);
+    const svFormatted = formatValue(svValue, reading?.decimal_point);
+    const mvFormatted = formatValue(mvValue, 1);
+
+    const formatTime = (t: number | undefined) => {
+        if (t === undefined) return '--:--';
+        const s = String(t).padStart(4, '0');
+        return s.slice(0, s.length - 2) + ':' + s.slice(-2);
+    };
 
     return (
         <AuthenticatedLayout
@@ -126,25 +133,46 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             <Head title={`Monitor - ${controller.model_type}`} />
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                    {isOnline && reading?.pattern_current !== undefined && (
+                        <div className="rounded-lg bg-white p-6 shadow-sm flex items-center justify-between border-l-4 border-indigo-500">
+                            <div>
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">Operation Status</h3>
+                                <div className="text-2xl font-bold text-slate-800">
+                                    PTN.{reading.pattern_current} - Step {reading.step_current}
+                                </div>
+                            </div>
+                            <div className="flex gap-8 text-right">
+                                <div>
+                                    <div className="text-sm text-slate-500 font-bold uppercase">Process Time</div>
+                                    <div className="font-mono text-lg text-slate-700">{formatTime(reading.process_time)}</div>
+                                </div>
+                                <div>
+                                    <div className="text-sm text-slate-500 font-bold uppercase">Rest Time</div>
+                                    <div className="font-mono text-lg text-indigo-600">{formatTime(reading.rest_time)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                         <div className="flex flex-col items-center rounded-lg bg-white p-6 shadow-sm">
                             <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">Present Value (PV)</h3>
-                            <TnGauge value={reading?.pv} formattedValue={pvFormatted} label="PV" unit="C" color="#3b82f6" max={200} />
+                            <TnGauge value={pvValue} formattedValue={pvFormatted} label="PV" unit="C" color="#3b82f6" max={200} />
                         </div>
                         <div className="flex flex-col items-center rounded-lg bg-white p-6 shadow-sm">
                             <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">Set Value (SV)</h3>
-                            <TnGauge value={reading?.sv} formattedValue={svFormatted} label="SV" unit="C" color="#10b981" max={200} />
+                            <TnGauge value={svValue} formattedValue={svFormatted} label="SV" unit="C" color="#10b981" max={200} />
                         </div>
                         <div className="flex flex-col items-center rounded-lg bg-white p-6 shadow-sm">
                             <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">Heat MV</h3>
-                            <TnGauge value={reading?.heating_mv} formattedValue={mvFormatted} label="MV" unit="%" color="#f59e0b" max={100} />
+                            <TnGauge value={mvValue} formattedValue={mvFormatted} label="MV" unit="%" color="#f59e0b" max={100} />
                         </div>
                     </div>
 
                     <div className="rounded-lg bg-white p-6 shadow-sm">
                         <h3 className="mb-4 font-bold text-gray-700">Temperature Trend (Last 30 Min)</h3>
                         <div className="h-64 w-full">
-                            <TnTrendChart data={history} />
+                            <TnTrendChart data={isOnline ? history : []} />
                         </div>
                     </div>
 

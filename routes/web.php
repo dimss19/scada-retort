@@ -22,6 +22,13 @@ Route::get('/dashboard', function () {
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::get('/test-lock', function () {
+    $lock = \Illuminate\Support\Facades\Cache::lock('modbus_port_' . md5('COM6'), 5);
+    $acquired = $lock->block(3);
+    if ($acquired) $lock->release();
+    return response()->json(['acquired' => $acquired, 'driver' => config('cache.default')]);
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('/scada', fn () => Inertia::render('Operations', ['module' => 'scada']))->name('scada.index');
     Route::get('/historian', function () {
@@ -49,6 +56,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{recipe}/archive', [\App\Http\Controllers\TnRecipeController::class, 'archive'])->name('archive');
         Route::delete('/{recipe}', [\App\Http\Controllers\TnRecipeController::class, 'destroy'])->name('destroy');
         Route::post('/{recipe}/apply/{tn}', [\App\Http\Controllers\TnRecipeController::class, 'apply'])->name('apply');
+        Route::post('/scan-all', [\App\Http\Controllers\TnRecipeController::class, 'scanAllPatterns'])->name('scan-all');
+        Route::post('/scan/{tn}', [\App\Http\Controllers\TnRecipeController::class, 'scanFromDevice'])->name('scan');
     });
 
     // === TN Controllers ===
@@ -73,6 +82,8 @@ Route::middleware('auth')->group(function () {
         // Config
         Route::get('/{tn}/config', [\App\Http\Controllers\TnConfigController::class, 'edit'])->name('tn.config.edit');
         Route::post('/{tn}/config/sync', [\App\Http\Controllers\TnConfigController::class, 'syncFromDevice'])->name('tn.config.sync');
+        Route::get('/{tn}/config/pattern/scan', [\App\Http\Controllers\TnConfigController::class, 'scanPattern'])->name('tn.config.pattern.scan');
+        Route::post('/{tn}/config/pattern/write', [\App\Http\Controllers\TnConfigController::class, 'writePattern'])->name('tn.config.pattern.write');
         Route::put('/{tn}/config/{group}', [\App\Http\Controllers\TnConfigController::class, 'updateGroup'])->name('tn.config.update');
     });
 

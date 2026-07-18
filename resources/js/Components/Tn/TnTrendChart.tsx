@@ -85,7 +85,6 @@ export default function TnTrendChart({ data }: Props) {
         // Draw Data
         drawLine('sv', '#10b981'); // SV Green
         drawLine('pv', '#3b82f6'); // PV Blue
-        drawLine('heating_mv', '#f59e0b', true); // MV Orange (scaled)
 
         // Draw Legend
         ctx.fillStyle = '#3b82f6';

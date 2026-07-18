@@ -26,6 +26,10 @@ class TnRegisterMap
         // ct1 and ct2 at 301013 and 301014
         ['address' => 301013, 'offset' => 1012, 'name' => 'ct1_current', 'label' => 'CT1 Current'],
         ['address' => 301014, 'offset' => 1013, 'name' => 'ct2_current', 'label' => 'CT2 Current'],
+        ['address' => 301020, 'offset' => 1019, 'name' => 'pattern_current', 'label' => 'Current Pattern'],
+        ['address' => 301021, 'offset' => 1020, 'name' => 'step_current', 'label' => 'Current Step'],
+        ['address' => 301022, 'offset' => 1021, 'name' => 'process_time', 'label' => 'Process Time'],
+        ['address' => 301024, 'offset' => 1023, 'name' => 'rest_time', 'label' => 'Rest Time'],
     ];
 
     public static array $holdingGroups = [
@@ -38,6 +42,17 @@ class TnRegisterMap
             ['address' => 400006, 'offset' => 5, 'name' => 'set_value', 'label' => 'Target SV', 'min' => -1999, 'max' => 9999, 'default' => 0],
             ['address' => 400007, 'offset' => 6, 'name' => 'operation_mode', 'label' => 'Operation Mode', 'min' => 0, 'max' => 1, 'default' => 0, 'options' => [0 => 'FIX', 1 => 'PROG']],
             ['address' => 400008, 'offset' => 7, 'name' => 'control_mode', 'label' => '2-DOF Mode', 'min' => 0, 'max' => 2, 'default' => 0, 'options' => [0 => 'PID.S', 1 => 'PID.F', 2 => 'PID.M']],
+        ],
+        'pattern' => [
+            ['address' => 400201, 'offset' => 200, 'name' => 'time_unit', 'label' => 'Time Unit', 'options' => [0 => 'MM.SS', 1 => 'HH.MM']],
+            ['address' => 400202, 'offset' => 201, 'name' => 'start_condition', 'label' => 'Start Condition', 'options' => [0 => 'SSV', 1 => 'SPV']],
+            ['address' => 400203, 'offset' => 202, 'name' => 'wait_width', 'label' => 'Wait Width', 'min' => 0, 'max' => 999],
+            ['address' => 400204, 'offset' => 203, 'name' => 'wait_time', 'label' => 'Wait Time', 'min' => 0, 'max' => 9960],
+            ['address' => 400205, 'offset' => 204, 'name' => 'pattern_number', 'label' => 'Pattern Number', 'min' => 0, 'max' => 9],
+            ['address' => 400206, 'offset' => 205, 'name' => 'repetitions', 'label' => 'Repetitions', 'min' => 0, 'max' => 10000],
+            ['address' => 400207, 'offset' => 206, 'name' => 'end_state', 'label' => 'End State', 'options' => [0 => 'STOP', 1 => 'HOLD', 2 => 'NEXT', 3 => 'PRE']],
+            ['address' => 400208, 'offset' => 207, 'name' => 'pid_select', 'label' => 'PID Select', 'min' => 0, 'max' => 7],
+            ['address' => 400209, 'offset' => 208, 'name' => 'step_quantity', 'label' => 'Step Quantity', 'min' => 0, 'max' => 20],
         ],
         // Additional groups can be added here as needed for config sync
     ];

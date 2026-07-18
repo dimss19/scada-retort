@@ -14,7 +14,7 @@ type NavItem = {
 const navigation: NavItem[] = [
     { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard', hideWhenControllerActive: true },
     { label: 'Monitoring', routeName: 'tn.index', activePattern: 'tn.*', excludePattern: 'tn.recipes.*', requiresController: true },
-    { label: 'Recipe', routeName: 'tn.recipes.index', activePattern: 'tn.recipes.*', requiresController: true },
+    { label: 'Pattern', routeName: 'tn.recipes.index', activePattern: 'tn.recipes.*', requiresController: true },
     { label: 'History', routeName: 'historian.index', activePattern: 'historian.*', requiresController: true },
 ];
 

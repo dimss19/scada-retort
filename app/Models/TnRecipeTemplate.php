@@ -22,6 +22,7 @@ class TnRecipeTemplate extends Model
         'status',
         'time_unit',
         'start_condition',
+        'pattern_number',
         'pattern_end_state',
         'repetitions',
         'pid_group',
