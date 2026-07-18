@@ -3,8 +3,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "tsc && vite build",
-        "dev": "vite",
+        "build": "tsc && vite build --configLoader native",
+        "dev": "vite --configLoader native",
         "test": "vitest run"
     },
     "devDependencies": {

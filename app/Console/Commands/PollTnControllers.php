@@ -12,7 +12,7 @@ use Carbon\Carbon;
 
 class PollTnControllers extends Command
 {
-    protected $signature = 'tn:poll {--interval=1 : Polling interval in seconds}';
+    protected $signature = 'tn:poll {--interval=1 : Polling interval in seconds} {--once : Poll controllers once and exit} {--controller= : Poll one TN controller id only}';
     protected $description = 'Poll TN Controllers for monitoring data';
 
     public function handle(TnModbusService $modbus)
@@ -20,9 +20,11 @@ class PollTnControllers extends Command
         $interval = (int) $this->option('interval');
         $this->info("Starting TN Controller polling every {$interval} second(s)...");
 
-        while (true) {
+        do {
             $start = microtime(true);
-            $controllers = TnController::all();
+            $controllers = TnController::query()
+                ->when($this->option('controller'), fn ($query, $id) => $query->whereKey($id))
+                ->get();
 
             foreach ($controllers as $controller) {
                 // Read input registers 301001-301027 (address 1000, 27 count)
@@ -93,8 +95,11 @@ class PollTnControllers extends Command
                         'last_error' => null,
                     ]);
 
-                    // Broadcast Event
-                    event(new TnDataReceived($controller, $reading));
+                    try {
+                        event(new TnDataReceived($controller, $reading));
+                    } catch (\Throwable $e) {
+                        $this->warn("Realtime broadcast failed for {$controller->name}: {$e->getMessage()}");
+                    }
 
                     $this->info("Successfully polled {$controller->name}");
                 } else {
@@ -110,9 +115,9 @@ class PollTnControllers extends Command
 
             $elapsed = microtime(true) - $start;
             $sleep = max(0, $interval - $elapsed);
-            if ($sleep > 0) {
+            if (!$this->option('once') && $sleep > 0) {
                 usleep((int)($sleep * 1000000));
             }
-        }
+        } while (!$this->option('once'));
     }
 }

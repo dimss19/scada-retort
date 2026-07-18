@@ -42,13 +42,13 @@ class TnModbusService
                 $process->mustRun();
                 $output = $process->getOutput();
                 $result = json_decode($output, true);
-                if ($result && isset($result['success']) && $result['success']) {
+                if ($result && isset($result['success']) && $result['success'] && !empty($result['port'])) {
                     return $result['port'];
                 }
             } catch (\Throwable $e) {
-                // Ignore, will fallback to 'AUTO' which fails cleanly
+                // Ignore; caller will return a clear auto-detect error.
             }
-            return 'AUTO';
+            return null;
         });
     }
 
@@ -66,6 +66,15 @@ class TnModbusService
         $port = $configuredPort;
         if (strtoupper($configuredPort) === 'AUTO') {
             $port = $this->resolvePort($controller, $baud, $parity, $stopbits, $timeout);
+        }
+
+        if (!$port || strtoupper((string) $port) === 'AUTO') {
+            Cache::forget('tn_auto_port_' . $controller->id);
+
+            return [
+                'success' => false,
+                'error' => 'Auto-detect gagal: tidak ada port Modbus yang merespons. Cek USB RS485, kabel A/B, slave ID, baudrate, parity, stopbits.',
+            ];
         }
 
         $baseArgs = [
@@ -126,6 +135,14 @@ class TnModbusService
                             }
 
                             $port = $this->resolvePort($controller, $baud, $parity, $stopbits, $timeout);
+                            if (!$port || strtoupper((string) $port) === 'AUTO') {
+                                Cache::forget('tn_auto_port_' . $controller->id);
+
+                                return [
+                                    'success' => false,
+                                    'error' => 'Auto-detect gagal: tidak ada port Modbus yang merespons. Cek USB RS485, kabel A/B, slave ID, baudrate, parity, stopbits.',
+                                ];
+                            }
                             $processArgs[3] = $port;
                             throw new \Exception($result['error']); // trigger retry
                         }

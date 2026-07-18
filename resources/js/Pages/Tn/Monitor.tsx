@@ -20,10 +20,24 @@ interface Props extends PageProps {
 }
 
 export default function Monitor({ controller, latestReading: initialReading }: Props) {
+    const pollIntervalMs = Math.max(1000, controller.polling_interval ?? 1000);
+    const staleAfterMs = Math.max(15000, pollIntervalMs * 5);
+    const getReadingTimestamp = (value: any) => value?.created_at ?? value?.timestamp ?? null;
+    const timestampToMs = (timestamp: any) => {
+        if (!timestamp) return false;
+
+        const time = new Date(timestamp).getTime();
+        return Number.isFinite(time) ? time : false;
+    };
+    const isFreshTimestamp = (timestamp: any) => {
+        const time = timestampToMs(timestamp);
+        return time !== false && Date.now() - time <= staleAfterMs;
+    };
+
     const [reading, setReading] = useState(initialReading);
     const [history, setHistory] = useState<any[]>([]);
     const [eventLogs, setEventLogs] = useState<any[]>([]);
-    const [isLiveOnline, setIsLiveOnline] = useState(Boolean(controller.is_online || initialReading));
+    const [isLiveOnline, setIsLiveOnline] = useState(Boolean(controller.is_online && isFreshTimestamp(getReadingTimestamp(initialReading))));
 
     const formatValue = (val: number | undefined, dp: number = 0) => {
         if (val === undefined || val === 31000 || val === 30000 || val === -30000) return undefined;
@@ -32,6 +46,8 @@ export default function Monitor({ controller, latestReading: initialReading }: P
 
     const isHeatingRef = useRef(false);
     const logsRef = useRef<any[]>([]);
+    const lastReadingTimestampRef = useRef<any>(getReadingTimestamp(initialReading));
+    const lastSeenAtRef = useRef<number | false>(timestampToMs(getReadingTimestamp(initialReading)));
 
     useEffect(() => {
         logsRef.current = eventLogs;
@@ -39,16 +55,18 @@ export default function Monitor({ controller, latestReading: initialReading }: P
 
     useEffect(() => {
         let isMounted = true;
-        let lastReadingTimestamp = initialReading?.created_at ?? initialReading?.timestamp ?? null;
+        lastReadingTimestampRef.current = getReadingTimestamp(initialReading);
+        lastSeenAtRef.current = timestampToMs(getReadingTimestamp(initialReading));
 
         const applyReading = (newReading: any, appendHistory = true) => {
             if (!isMounted || !newReading) return;
 
-            const timestamp = newReading.created_at ?? newReading.timestamp ?? null;
-            if (timestamp && timestamp === lastReadingTimestamp) return;
+            const timestamp = getReadingTimestamp(newReading);
+            if (timestamp && timestamp === lastReadingTimestampRef.current) return;
 
-            lastReadingTimestamp = timestamp;
+            lastSeenAtRef.current = Date.now();
             setIsLiveOnline(true);
+            lastReadingTimestampRef.current = timestamp;
             setReading(newReading);
             if (appendHistory) {
                 setHistory((prev) => {
@@ -79,16 +97,27 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 if (!isMounted || !Array.isArray(data)) return;
 
                 setHistory(data);
-                setIsLiveOnline(data.length > 0);
 
                 const latest = data[data.length - 1];
                 if (replaceHistory && latest) {
-                    lastReadingTimestamp = latest.created_at ?? latest.timestamp ?? null;
+                    const timestamp = getReadingTimestamp(latest);
+                    const timestampMs = timestampToMs(timestamp);
+                    lastReadingTimestampRef.current = timestamp;
+                    lastSeenAtRef.current = timestampMs;
+                    setIsLiveOnline(timestampMs !== false && Date.now() - timestampMs <= staleAfterMs);
                     setReading(latest);
                     return;
                 }
 
-                applyReading(latest, false);
+                const lastTimestamp = lastReadingTimestampRef.current;
+                const newReadings = lastTimestamp
+                    ? data.filter((item: any) => {
+                        const timestamp = getReadingTimestamp(item);
+                        return timestamp && new Date(timestamp).getTime() > new Date(lastTimestamp).getTime();
+                    })
+                    : latest ? [latest] : [];
+
+                newReadings.forEach((item: any) => applyReading(item, false));
             } catch {
                 if (isMounted) setIsLiveOnline(false);
             }
@@ -119,12 +148,18 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             });
         });
 
-        const pollIntervalMs = Math.max(5000, controller.polling_interval ?? 5000);
-        const intervalId = window.setInterval(() => loadReadings(), pollIntervalMs);
+        const refreshIntervalId = window.setInterval(() => loadReadings(), pollIntervalMs);
+        const staleIntervalId = window.setInterval(() => {
+            if (!isMounted) return;
+
+            const lastSeenAt = lastSeenAtRef.current;
+            setIsLiveOnline(lastSeenAt !== false && Date.now() - lastSeenAt <= staleAfterMs);
+        }, 1000);
 
         return () => {
             isMounted = false;
-            window.clearInterval(intervalId);
+            window.clearInterval(refreshIntervalId);
+            window.clearInterval(staleIntervalId);
             channel?.stopListening('.tn.data');
         };
     }, [controller.id, controller.polling_interval, initialReading]);
