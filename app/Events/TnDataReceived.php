@@ -48,6 +48,8 @@ class TnDataReceived implements ShouldBroadcast
             'out1_active' => $this->reading->out1_active,
             'out2_active' => $this->reading->out2_active,
             'alarms' => $this->reading->alarms, // decoded via accessor
+            'alarm_bits' => $this->reading->alarm_bits,
+            'event_bits' => $this->reading->event_bits,
             'pattern_current' => $this->reading->pattern_current,
             'step_current' => $this->reading->step_current,
             'process_time' => $this->reading->process_time,

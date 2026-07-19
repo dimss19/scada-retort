@@ -1,8 +1,19 @@
+export type ScadaElementType = 'gauge' | 'valve' | 'pump' | 'tank' | 'pipe' | 'label' | 'display' | 'indicator';
+
 export interface ScadaMapping {
     id: number;
-    device_id: number;
+    tn_controller_id?: number;
+    device_id?: number;
     element_id: string;
+    element_type: ScadaElementType;
+    label: string | null;
     data_source: string;
+    position_x: number;
+    position_y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    z_index: number;
     normal_color: string;
     warning_color: string;
     critical_color: string;
@@ -15,6 +26,17 @@ export interface ScadaMapping {
 
 export interface ScadaMappingFormData {
     mappings: Partial<ScadaMapping>[];
+}
+
+export interface ScadaCanvas {
+    id: number;
+    tn_controller_id: number;
+    background_image_url: string | null;
+    width: number;
+    height: number;
+    grid_enabled: boolean;
+    grid_size: number;
+    snap_to_grid: boolean;
 }
 
 export interface SensorData {

@@ -45,6 +45,16 @@ class TnController extends Model
         return $this->hasMany(TnConfig::class);
     }
 
+    public function scadaCanvas()
+    {
+        return $this->hasOne(ScadaCanvas::class, 'tn_controller_id');
+    }
+
+    public function scadaMappings()
+    {
+        return $this->hasMany(ScadaMapping::class, 'tn_controller_id');
+    }
+
     public function scopeOnline($query)
     {
         return $query->where('is_online', true);

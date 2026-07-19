@@ -11,6 +11,8 @@ class TnReading extends Model
 
     public $timestamps = false; // We only use created_at
 
+    protected $appends = ['alarms'];
+
     protected $fillable = [
         'tn_controller_id',
         'pv',

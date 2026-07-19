@@ -17,8 +17,9 @@ class TnMonitorController extends Controller
             'active_tn_model' => $tn->model_type,
         ]);
 
-        // Get the latest reading
         $latestReading = $tn->readings()->latest()->first();
+
+        $tn->load(['machine', 'scadaCanvas', 'scadaMappings' => fn ($q) => $q->orderBy('z_index')->orderBy('id')]);
 
         return Inertia::render('Tn/Monitor', [
             'controller' => $tn,
@@ -28,13 +29,10 @@ class TnMonitorController extends Controller
 
     public function toggleRunStop(TnController $tn, TnModbusService $modbus)
     {
-        // Read current state to toggle, or expect it in request
-        // Coil 000001
-        $status = request('status'); // true to run (which sets coil to 0 or 1 depending on model). Actually from docs RUN=0, STOP=1. But wait, write single coil: 0xFF00 is ON, 0x0000 is OFF.
-        // The implementation plan says: RUN/STOP toggle FC05 -> Coil 000001
-        $value = $status ? false : true; // Assuming we want STOP if not status. Let's send raw bool.
-        // We will just pass the request value 
-        $result = $modbus->writeSingleCoil($tn, 0, request('run') ? false : true); // STOP is 1
+        $validated = request()->validate(['run' => 'required|boolean']);
+
+        // TN coil 000001 uses 0 for RUN and 1 for STOP.
+        $result = $modbus->writeSingleCoil($tn, 0, ! $validated['run']);
         
         if ($result['success']) {
             return back()->with('success', 'Command sent successfully.');

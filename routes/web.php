@@ -85,6 +85,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/{tn}/config/pattern/scan', [\App\Http\Controllers\TnConfigController::class, 'scanPattern'])->name('tn.config.pattern.scan');
         Route::post('/{tn}/config/pattern/write', [\App\Http\Controllers\TnConfigController::class, 'writePattern'])->name('tn.config.pattern.write');
         Route::put('/{tn}/config/{group}', [\App\Http\Controllers\TnConfigController::class, 'updateGroup'])->name('tn.config.update');
+
+        // SCADA POV
+        Route::get('/{tn}/scada/edit', [\App\Http\Controllers\ScadaController::class, 'edit'])->name('tn.scada.edit');
+        Route::post('/{tn}/scada/canvas', [\App\Http\Controllers\ScadaController::class, 'updateCanvas'])->name('tn.scada.canvas');
+        Route::post('/{tn}/scada/mappings', [\App\Http\Controllers\ScadaController::class, 'saveMappings'])->name('tn.scada.mappings');
+        Route::post('/{tn}/scada/upload-bg', [\App\Http\Controllers\ScadaController::class, 'uploadBackground'])->name('tn.scada.upload-bg');
     });
 
 });
