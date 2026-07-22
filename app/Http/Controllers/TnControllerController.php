@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\TnController;
 use App\Services\TnModbusService;
-use Illuminate\Support\Facades\Process;
 use Inertia\Inertia;
+use Symfony\Component\Process\Process;
 
 class TnControllerController extends Controller
 {
@@ -59,39 +59,34 @@ class TnControllerController extends Controller
 
     private function detectSerialPort(): string
     {
-        $fallback = config('tn.serial_port', 'COM3');
+        $fallback = config('tn.serial_port', 'AUTO');
+        $scriptPath = base_path('scripts/modbus_bridge.py');
+        $env = $_SERVER;
+        if (!isset($env['SystemRoot'])) $env['SystemRoot'] = getenv('SystemRoot') ?: 'C:\\Windows';
 
         try {
-            if (PHP_OS_FAMILY === 'Windows') {
-                // Use .NET SerialPort.GetPortNames() which detects USB-to-Serial adapters
-                // (CH340, FTDI, CP210x) that Win32_SerialPort misses
-                $result = Process::run([
-                    'powershell',
-                    '-NoProfile',
-                    '-Command',
-                    '([System.IO.Ports.SerialPort]::GetPortNames()) -join ","',
-                ]);
+            $process = new Process(['python', $scriptPath, 'list_ports'], null, $env);
+            $process->setTimeout(10);
+            $process->run();
 
-                if ($result->successful()) {
-                    $ports = array_values(array_filter(array_map('trim', explode(',', trim($result->output())))));
-
-                    if (!empty($ports)) {
-                        return $ports[0];
-                    }
-                }
-            } else {
-                foreach (glob('/dev/ttyUSB*') ?: [] as $port) {
-                    return $port;
-                }
-                foreach (glob('/dev/ttyACM*') ?: [] as $port) {
-                    return $port;
-                }
-                foreach (glob('/dev/ttyS*') ?: [] as $port) {
-                    return $port;
+            if ($process->isSuccessful()) {
+                $result = json_decode($process->getOutput(), true);
+                if ($result && isset($result['success']) && $result['success'] && !empty($result['ports'])) {
+                    return $result['ports'][0]['device'];
                 }
             }
         } catch (\Throwable $e) {
-            // Fall back to the configured default port.
+            // Fall back
+        }
+
+        if (PHP_OS_FAMILY !== 'Windows') {
+            foreach (['/dev/ttyUSB*', '/dev/ttyACM*', '/dev/ttyAMA*', '/dev/ttyS*'] as $pattern) {
+                $ports = glob($pattern);
+                if (!empty($ports)) return $ports[0];
+            }
+            foreach (glob('/dev/serial/by-id/*') ?: [] as $port) {
+                if (is_link($port)) return readlink($port);
+            }
         }
 
         return $fallback;

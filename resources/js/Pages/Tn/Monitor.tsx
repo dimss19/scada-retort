@@ -20,6 +20,8 @@ interface Props extends PageProps {
     latestReading: any;
 }
 
+type MonitorTab = 'monitor' | 'scada';
+
 export default function Monitor({ controller, latestReading: initialReading }: Props) {
     const pollIntervalMs = Math.max(1000, controller.polling_interval ?? 1000);
     const staleAfterMs = Math.max(15000, pollIntervalMs * 5);
@@ -36,6 +38,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
 
     const [reading, setReading] = useState(initialReading);
     const [history, setHistory] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<MonitorTab>('monitor');
     const [isLiveOnline, setIsLiveOnline] = useState(Boolean(
         controller.is_online && isFreshTimestamp(getReadingTimestamp(initialReading)),
     ));
@@ -212,6 +215,8 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             isOnline={isOnline}
             commandPending={commandPending}
             lastUpdate={lastUpdate}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
             onRun={() => sendCommand('run')}
             onStop={() => sendCommand('stop')}
             onResetAlarm={() => sendCommand('reset')}

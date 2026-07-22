@@ -92,12 +92,28 @@ def test_connection(client, args):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+def list_ports(args):
+    ports = []
+    for p in serial.tools.list_ports.comports():
+        ports.append({
+            "device": p.device,
+            "description": p.description,
+            "hwid": p.hwid,
+            "vid": p.vid,
+            "pid": p.pid,
+            "serial_number": p.serial_number,
+            "manufacturer": p.manufacturer,
+        })
+    ports.sort(key=lambda x: x["device"].lower())
+    return {"success": True, "ports": ports}
+
 def scan_ports(client, args):
     def port_sort_key(port):
         match = re.search(r'(\d+)$', port.device)
         return (port.device.rstrip('0123456789'), int(match.group(1)) if match else 0)
 
     ports = sorted(serial.tools.list_ports.comports(), key=port_sort_key)
+    found = []
     for port in ports:
         args.port = port.device
         test_client = setup_client(args)
@@ -110,7 +126,21 @@ def scan_ports(client, args):
                 pass
             finally:
                 test_client.close()
-    return {"success": False, "error": "No working Modbus port found"}
+    return {"success": False, "error": "No working Modbus port found", "ports_tried": [p.device for p in ports]}
+
+def read_all(client, args):
+    slaves = [int(s.strip()) for s in args.slaves.split(',') if s.strip()]
+    results = {}
+    for slave_id in slaves:
+        try:
+            response = client.read_input_registers(address=args.addr, count=args.count, device_id=slave_id)
+            if response.isError():
+                results[slave_id] = {"success": False, "error": f"Modbus Exception: {response}"}
+            else:
+                results[slave_id] = {"success": True, "data": response.registers}
+        except Exception as e:
+            results[slave_id] = {"success": False, "error": str(e)}
+    return {"success": True, "controllers": results}
 
 def main():
     parser = argparse.ArgumentParser(description="Modbus Bridge for Laravel")
@@ -169,9 +199,18 @@ def main():
     p_tc = subparsers.add_parser("test_connection")
     p_tc.add_argument("--slave", type=int, required=True)
     
+    # list_ports
+    subparsers.add_parser("list_ports")
+
     # scan_ports
     p_sp = subparsers.add_parser("scan_ports")
     p_sp.add_argument("--slave", type=int, required=True)
+
+    # read_all - batch read all controllers in one connection
+    p_ra = subparsers.add_parser("read_all")
+    p_ra.add_argument("--slaves", required=True, help="Comma-separated slave IDs")
+    p_ra.add_argument("--addr", type=int, default=1000, help="Start address")
+    p_ra.add_argument("--count", type=int, default=27, help="Register count")
 
     args = parser.parse_args()
     
@@ -179,19 +218,37 @@ def main():
     if args.command == 'write_coil':
         args.value = bool(args.value)
 
+    if args.command == 'list_ports':
+        result = list_ports(args)
+        print(json.dumps(result))
+        sys.exit(0)
+
     if args.command == 'scan_ports':
         result = scan_ports(None, args)
         print(json.dumps(result))
         sys.exit(0)
 
+    if args.command == 'read_all':
+        if not args.port:
+            print(json.dumps({"success": False, "error": "--port is required for read_all"}))
+            sys.exit(0)
+        client = setup_client(args)
+        if not client.connect():
+            print(json.dumps({"success": False, "error": f"Could not connect to {args.port}"}))
+            sys.exit(0)
+        result = read_all(client, args)
+        client.close()
+        print(json.dumps(result))
+        sys.exit(0)
+
     if not args.port:
         print(json.dumps({"success": False, "error": "--port is required for this command"}))
-        sys.exit(1)
+        sys.exit(0)
 
     client = setup_client(args)
     if not client.connect():
         print(json.dumps({"success": False, "error": f"Could not connect to {args.port}"}))
-        sys.exit(1)
+        sys.exit(0)
         
     handlers = {
         "read_input": read_input,
