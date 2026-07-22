@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScadaMapping, SensorData } from '@/types';
 
 interface ScadaElementProps {
@@ -91,12 +91,17 @@ function getGaugeDefinition(source: string): { min: number; max: number; unit: s
     return { min: 0, max: 100, unit: '' };
 }
 
+function getHeatScaleColor(pct: number): string {
+    const hue = Math.max(0, 120 - (pct / 100) * 120);
+    return `hsl(${hue} 95% 55%)`;
+}
+
 function GaugeElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorData?: SensorData }) {
     const value = getSensorValue(mapping, sensorData);
-    const color = getStatusColor(mapping, value);
     const { min, max, unit } = getGaugeDefinition(mapping.data_source);
     const numVal = typeof value === 'number' ? value : 0;
     const pct = Math.min(100, Math.max(0, ((numVal - min) / (max - min)) * 100));
+    const color = typeof value === 'number' && !isErrorValue(value) ? getHeatScaleColor(pct) : getStatusColor(mapping, value);
 
     return (
         <div className="flex h-full w-full flex-col items-center justify-center rounded-md bg-slate-900/90">
@@ -120,6 +125,10 @@ function DisplayElement({ mapping, sensorData }: { mapping: ScadaMapping; sensor
     const value = getSensorValue(mapping, sensorData);
     const color = getStatusColor(mapping, value);
 
+    if (mapping.data_source === 'pv') {
+        return <ControllerDisplayElement mapping={mapping} sensorData={sensorData} />;
+    }
+
     return (
         <div className="flex h-full w-full flex-col items-center justify-center rounded-md border bg-slate-900/95 shadow-inner" style={{
             borderColor: color,
@@ -136,19 +145,123 @@ function DisplayElement({ mapping, sensorData }: { mapping: ScadaMapping; sensor
     );
 }
 
+function ControllerDisplayElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorData?: SensorData }) {
+    const pv = getSensorValue(mapping, sensorData);
+    const sv = getSensorValue({ ...mapping, data_source: 'sv' }, sensorData);
+    const heating = getSensorValue({ ...mapping, data_source: 'heating_mv' }, sensorData);
+    const cooling = getSensorValue({ ...mapping, data_source: 'cooling_mv' }, sensorData);
+    const isHeating = isSourceActive({ ...mapping, data_source: 'heating_mv' }, heating);
+    const isCooling = isSourceActive({ ...mapping, data_source: 'cooling_mv' }, cooling);
+    const pvText = formatValue(mapping, pv);
+    const svText = sv === null ? '----' : formatValue({ ...mapping, data_source: 'sv' }, sv);
+    const mvText = heating === null ? '----' : formatValue({ ...mapping, data_source: 'heating_mv' }, heating);
+
+    return (
+        <div className="flex h-full w-full items-center justify-center rounded-md bg-transparent p-1">
+            <span className="sr-only">{mapping.label || mapping.element_id}</span>
+            <svg viewBox="0 0 260 230" className="h-full w-full" role="img" aria-label={`${mapping.label || mapping.element_id} PV ${pvText} SV ${svText} MV ${mvText}`}>
+                <defs>
+                    <linearGradient id={`tn-face-body-${mapping.id}`} x1="0" x2="1" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#3f4242" />
+                        <stop offset="100%" stopColor="#151717" />
+                    </linearGradient>
+                    <linearGradient id={`tn-face-panel-${mapping.id}`} x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#f2f4f4" />
+                        <stop offset="100%" stopColor="#bfc5c7" />
+                    </linearGradient>
+                </defs>
+                <path d="M34 28 H198 L232 48 V190 L204 208 H34 Q18 208 18 192 V44 Q18 28 34 28 Z" fill={`url(#tn-face-body-${mapping.id})`} stroke="#020617" strokeWidth="4" />
+                <path d="M198 28 L232 48 L232 190 L204 208 V48 Z" fill="#202323" stroke="#111827" strokeWidth="3" />
+                <path d="M210 58 H236 M210 82 H236 M210 106 H236 M210 130 H236 M210 154 H236" stroke="#343838" strokeWidth="5" strokeLinecap="round" />
+                <rect x="30" y="42" width="174" height="140" rx="6" fill="#101111" stroke="#2b2f30" strokeWidth="3" />
+                <rect x="42" y="58" width="148" height="112" rx="3" fill="#161717" />
+                <text x="48" y="58" dy="14" fill="#a9adaf" fontSize="14" fontWeight="800">TNS</text>
+                <text x="172" y="58" dy="14" fill="#a9adaf" fontSize="12" fontWeight="800" textAnchor="end">Autonics</text>
+                <text x="158" y="110" fill="#f8fafc" fontFamily="monospace" fontSize="38" fontWeight="900" textAnchor="end" textLength="104" lengthAdjust="spacingAndGlyphs">{pvText}</text>
+                <text x="166" y="107" fill="#8b9094" fontSize="13" fontWeight="900">PV</text>
+                <text x="158" y="139" fill="#7be44d" fontFamily="monospace" fontSize="30" fontWeight="900" textAnchor="end" textLength="86" lengthAdjust="spacingAndGlyphs">{svText}</text>
+                <text x="166" y="136" fill="#8b9094" fontSize="13" fontWeight="900">SV</text>
+                <text x="158" y="166" fill="#fb923c" fontFamily="monospace" fontSize="30" fontWeight="900" textAnchor="end" textLength="86" lengthAdjust="spacingAndGlyphs">{mvText}</text>
+                <text x="166" y="163" fill="#8b9094" fontSize="13" fontWeight="900">MV</text>
+                <rect x="41" y="123" width="22" height="10" rx="1" fill={isHeating ? '#facc15' : '#4b5563'} />
+                <rect x="41" y="135" width="22" height="10" rx="1" fill={isCooling ? '#facc15' : '#4b5563'} />
+                <text x="52" y="131" fill="#111827" fontSize="7" fontWeight="900" textAnchor="middle">OUT1</text>
+                <text x="52" y="143" fill="#111827" fontSize="7" fontWeight="900" textAnchor="middle">OUT2</text>
+                <path d="M30 182 H204 V202 Q204 212 194 212 H40 Q30 212 30 202 Z" fill={`url(#tn-face-panel-${mapping.id})`} stroke="#8d969b" strokeWidth="2" />
+                {[
+                    ['U', 58],
+                    ['M', 88],
+                    ['<', 118],
+                    ['v', 148],
+                    ['^', 178],
+                ].map(([key, x]) => (
+                    <g key={key}>
+                        <text x={x} y="195" fill="#596268" fontSize="10" fontWeight="800" textAnchor="middle">{key}</text>
+                        <rect x={Number(x) - 12} y="200" width="24" height="10" rx="5" fill="#dfe4e5" stroke="#5f676b" strokeWidth="1.5" />
+                    </g>
+                ))}
+            </svg>
+        </div>
+    );
+}
+
 function ValveElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorData?: SensorData }) {
+    const [wheelTurned, setWheelTurned] = useState(false);
     const value = getSensorValue(mapping, sensorData);
     const isAvailable = value !== null;
     const isOpen = isSourceActive(mapping, value);
     const color = !isAvailable ? '#64748b' : isOpen ? mapping.normal_color : mapping.critical_color;
+    const bodyColor = isAvailable ? '#1456b8' : '#475569';
+    const darkBodyColor = isAvailable ? '#0b3b8f' : '#334155';
+    const highlightColor = isAvailable ? '#4fa3ff' : '#94a3b8';
 
     return (
-        <div className="flex h-full w-full flex-col items-center justify-center rounded-md bg-slate-900/80">
-            <svg viewBox="0 0 60 80" className="w-3/4 h-3/4">
-                <rect x="25" y="0" width="10" height="20" fill="#94a3b8" stroke="#334155" rx="2" />
-                <polygon points="30,25 10,65 50,65" fill={color} opacity={isOpen ? 0.9 : 0.3} stroke={color} strokeWidth="2" />
-                {isOpen && <line x1="15" y1="45" x2="45" y2="45" stroke="white" strokeWidth="3" />}
-                <rect x="25" y="65" width="10" height="15" fill="#94a3b8" stroke="#334155" rx="2" />
+        <div
+            className="flex h-full w-full flex-col items-center justify-center rounded-md bg-slate-900/80"
+            data-testid="scada-valve"
+            data-state={!isAvailable ? 'unavailable' : isOpen ? 'open' : 'closed'}
+            onClick={() => setWheelTurned((current) => !current)}
+        >
+            <svg viewBox="0 0 120 140" className="h-[78%] w-[86%]" role="img" aria-label={`${mapping.label || mapping.element_id} valve`}>
+                <g>
+                    <ellipse cx="60" cy="116" rx="42" ry="8" fill="#020617" opacity="0.35" />
+
+                    <rect x="14" y="69" width="92" height="34" rx="14" fill={bodyColor} stroke={darkBodyColor} strokeWidth="3" />
+                    <path d="M18 75 H102 V84 H18 Z" fill={highlightColor} opacity="0.28" />
+                    <path d="M18 88 H102 V98 H18 Z" fill={darkBodyColor} opacity="0.35" />
+                    <ellipse cx="18" cy="86" rx="7" ry="15" fill={bodyColor} stroke={darkBodyColor} strokeWidth="3" />
+                    <ellipse cx="102" cy="86" rx="7" ry="15" fill={bodyColor} stroke={darkBodyColor} strokeWidth="3" />
+                    <ellipse cx="106" cy="86" rx="5" ry="11" fill="#061126" opacity="0.75" />
+
+                    <path d="M38 52 H82 Q92 54 95 69 H25 Q28 54 38 52 Z" fill={bodyColor} stroke={darkBodyColor} strokeWidth="3" />
+                    <path d="M45 58 H75 Q81 60 83 69 H37 Q39 60 45 58 Z" fill={highlightColor} opacity="0.24" />
+                    <path d="M49 61 H71 Q76 63 77 70 H43 Q44 63 49 61 Z" fill={color} opacity={isOpen ? 0.38 : 0.14} />
+
+                    <rect x="35" y="44" width="50" height="13" rx="4" fill={bodyColor} stroke={darkBodyColor} strokeWidth="3" />
+                    {[32, 46, 74, 88].map((boltX) => (
+                        <circle key={boltX} cx={boltX} cy="50" r="3.5" fill="#cbd5e1" stroke={darkBodyColor} strokeWidth="2" />
+                    ))}
+
+                    <rect x="55" y="39" width="10" height="12" rx="3" fill="#a16207" stroke="#451a03" strokeWidth="2" />
+                    <rect x="51" y="48" width="18" height="9" rx="3" fill={darkBodyColor} stroke="#082f6b" strokeWidth="2" />
+
+                    <g
+                        style={{
+                            transform: `rotate(${wheelTurned ? 90 : 0}deg)`,
+                            transformOrigin: '60px 35px',
+                            transition: 'transform 450ms ease-in-out',
+                        }}
+                    >
+                        <circle cx="60" cy="35" r="28" fill="#0b1a34" opacity="0.36" />
+                        <circle cx="60" cy="35" r="28" fill="none" stroke={bodyColor} strokeWidth="8" />
+                        <line x1="36" y1="35" x2="84" y2="35" stroke={bodyColor} strokeWidth="7" strokeLinecap="round" />
+                        <line x1="60" y1="11" x2="60" y2="59" stroke={bodyColor} strokeWidth="7" strokeLinecap="round" />
+                        <line x1="43" y1="18" x2="77" y2="52" stroke={bodyColor} strokeWidth="5" strokeLinecap="round" opacity="0.85" />
+                        <line x1="43" y1="52" x2="77" y2="18" stroke={bodyColor} strokeWidth="5" strokeLinecap="round" opacity="0.85" />
+                        <circle cx="60" cy="35" r="28" fill="none" stroke={highlightColor} strokeWidth="2" opacity="0.55" />
+                        <rect x="53" y="29" width="14" height="12" rx="2" fill="#d6b05d" stroke="#713f12" strokeWidth="2" />
+                    </g>
+                </g>
             </svg>
             <span className="max-w-full truncate px-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color }}>
                 {mapping.label || mapping.element_id}: {!isAvailable ? 'N/A' : isOpen ? 'OPEN' : 'CLOSED'}
@@ -162,17 +275,33 @@ function PumpElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorDat
     const isAvailable = value !== null;
     const isOn = isSourceActive(mapping, value);
     const color = isOn ? mapping.normal_color : '#64748b';
+    const bodyColor = isOn ? '#1456b8' : '#334155';
+    const highlightColor = isOn ? '#38bdf8' : '#94a3b8';
+    const impellerColor = isOn ? '#d6b05d' : '#64748b';
 
     return (
         <div className="flex h-full w-full flex-col items-center justify-center rounded-md bg-slate-900/80">
-            <svg viewBox="0 0 60 60" className={`w-3/4 h-3/4 ${isOn ? 'animate-spin' : ''}`}
-                style={{ animationDuration: '2s' }}>
-                <circle cx="30" cy="30" r="25" fill="#0f172a" stroke={color} strokeWidth="2" />
-                <circle cx="30" cy="30" r="8" fill={color} />
-                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
-                    <line key={angle} x1="30" y1="30" x2={30 + 17 * Math.cos((angle * Math.PI) / 180)}
-                        y2={30 + 17 * Math.sin((angle * Math.PI) / 180)} stroke={color} strokeWidth="2" />
-                ))}
+            <svg viewBox="0 0 120 120" className="h-[78%] w-[84%]" role="img" aria-label={`${mapping.label || mapping.element_id} pump`}>
+                <ellipse cx="61" cy="102" rx="38" ry="7" fill="#020617" opacity="0.35" />
+                <path d="M28 70 H92 Q101 70 105 79 V92 Q105 101 94 101 H26 Q16 101 16 91 V81 Q18 70 28 70 Z" fill={bodyColor} stroke="#0f172a" strokeWidth="3" />
+                <path d="M24 75 H97 V83 H22 Q23 78 24 75 Z" fill={highlightColor} opacity="0.28" />
+                <ellipse cx="23" cy="85" rx="8" ry="14" fill={bodyColor} stroke="#0f172a" strokeWidth="3" />
+                <ellipse cx="97" cy="85" rx="8" ry="14" fill={bodyColor} stroke="#0f172a" strokeWidth="3" />
+                <circle cx="60" cy="52" r="32" fill="#111827" stroke={bodyColor} strokeWidth="6" />
+                <circle cx="60" cy="52" r="25" fill="#0f172a" stroke={highlightColor} strokeWidth="2" opacity="0.85" />
+                <g className={isOn ? 'animate-spin' : ''} style={{ transformOrigin: '60px 52px', animationDuration: '1.2s' }}>
+                    <circle cx="60" cy="52" r="7" fill={impellerColor} stroke="#713f12" strokeWidth="1.5" />
+                    {[0, 60, 120, 180, 240, 300].map((angle) => (
+                        <path
+                            key={angle}
+                            d="M60 52 C67 43 73 42 79 45 C74 49 70 54 69 62 C66 57 63 54 60 52 Z"
+                            fill={impellerColor}
+                            opacity={isOn ? 0.95 : 0.45}
+                            transform={`rotate(${angle} 60 52)`}
+                        />
+                    ))}
+                </g>
+                <path d="M38 101 H49 V109 H38 Z M72 101 H83 V109 H72 Z" fill="#0f172a" />
             </svg>
             <span className="max-w-full truncate px-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color }}>
                 {mapping.label || mapping.element_id}: {!isAvailable ? 'N/A' : isOn ? 'RUN' : 'STOP'}
@@ -188,14 +317,48 @@ function TankElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorDat
     const numVal = typeof value === 'number' ? value : min;
     const pct = Math.min(100, Math.max(0, ((numVal - min) / (max - min)) * 100));
     const displayValue = value === null ? '--' : `${formatValue(mapping, value)}${unit}`;
+    const fillHue = Math.max(0, 48 - (pct / 100) * 48);
+    const fillColor = value === null ? '#475569' : `hsl(${fillHue} 95% 55%)`;
+    const fillTop = 126 - (pct / 100) * 86;
 
     return (
         <div className="flex h-full w-full flex-col items-center justify-center rounded-md bg-slate-900/80">
-            <svg viewBox="0 0 80 100" className="w-3/4 h-3/4">
-                <rect x="10" y="15" width="60" height="70" rx="5" fill="#0f172a" stroke="#94a3b8" strokeWidth="2" />
-                <rect x="10" y={85 - (pct / 100) * 70} width="60" height={(pct / 100) * 70} rx="3" fill={color} opacity="0.4" />
-                <rect x="10" y={85 - (pct / 100) * 70} width="60" height="4" fill={color} />
-                <text x="40" y="55" textAnchor="middle" fill={color} fontSize="12" fontWeight="bold">{displayValue}</text>
+            <svg viewBox="0 0 120 150" className="h-[82%] w-[82%]" role="img" aria-label={`${mapping.label || mapping.element_id} tank`}>
+                <ellipse cx="60" cy="132" rx="42" ry="8" fill="#020617" opacity="0.35" />
+                <path d="M23 38 C23 22 39 14 60 14 C81 14 97 22 97 38 V112 C97 129 81 138 60 138 C39 138 23 129 23 112 Z" fill="#101827" stroke="#9fb0c6" strokeWidth="6" />
+                <path d="M30 39 C30 29 43 23 60 23 C77 23 90 29 90 39 V111 C90 123 77 129 60 129 C43 129 30 123 30 111 Z" fill="#0f172a" />
+                <ellipse cx="60" cy="39" rx="30" ry="14" fill="#182235" stroke="#9fb0c6" strokeWidth="4" />
+                <ellipse cx="60" cy="39" rx="22" ry="8" fill="#050b16" opacity="0.9" />
+                <clipPath id={`tank-fill-${mapping.id}`}>
+                    <path d="M30 39 C30 29 43 23 60 23 C77 23 90 29 90 39 V111 C90 123 77 129 60 129 C43 129 30 123 30 111 Z" />
+                </clipPath>
+                <g clipPath={`url(#tank-fill-${mapping.id})`}>
+                    <rect x="30" y="39" width="60" height="88" fill="#0f172a" />
+                    <rect
+                        x="30"
+                        y={fillTop}
+                        width="60"
+                        height={126 - fillTop}
+                        fill={fillColor}
+                        opacity="0.72"
+                        style={{ transition: 'y 600ms ease, height 600ms ease' }}
+                    />
+                    <ellipse
+                        cx="60"
+                        cy={fillTop}
+                        rx="30"
+                        ry="9"
+                        fill={fillColor}
+                        opacity="0.9"
+                        style={{ transition: 'cy 600ms ease' }}
+                    />
+                    <ellipse cx="60" cy="126" rx="30" ry="10" fill={fillColor} opacity="0.55" />
+                </g>
+                <path d="M29 39 C35 52 85 52 91 39" fill="none" stroke="#64748b" strokeWidth="2" opacity="0.45" />
+                <ellipse cx="60" cy="112" rx="30" ry="13" fill="none" stroke="#9fb0c6" strokeWidth="4" opacity="0.85" />
+                <path d="M30 48 V111 C30 123 43 129 60 129 C77 129 90 123 90 111 V48" fill="none" stroke="#cbd5e1" strokeWidth="2" opacity="0.28" />
+                <text x="60" y="87" textAnchor="middle" fill="#020617" stroke="#020617" strokeWidth="4" fontSize="18" fontWeight="900">{displayValue}</text>
+                <text x="60" y="87" textAnchor="middle" fill="#f8fafc" fontSize="18" fontWeight="900">{displayValue}</text>
             </svg>
             {mapping.label && <span className="max-w-full truncate px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-300">{mapping.label}</span>}
         </div>
@@ -220,12 +383,22 @@ function IndicatorElement({ mapping, sensorData }: { mapping: ScadaMapping; sens
 
     return (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-md border border-slate-700 bg-slate-900/85">
-            <div
-                className={`h-4 w-4 rounded-full border border-white/20 ${isActive ? 'animate-pulse' : ''}`}
-                style={{ backgroundColor: color, boxShadow: isActive ? `0 0 12px ${color}` : 'none' }}
-                data-testid="scada-indicator-light"
-                data-state={isActive ? 'active' : 'idle'}
-            />
+            <svg viewBox="0 0 90 70" className="h-[56%] w-[70%]" role="img" aria-label={`${mapping.label || mapping.element_id} indicator`}>
+                <rect x="16" y="8" width="58" height="48" rx="10" fill="#111827" stroke="#334155" strokeWidth="2" />
+                <circle
+                    cx="45"
+                    cy="32"
+                    r="15"
+                    fill={color}
+                    className={isActive ? 'animate-pulse' : ''}
+                    style={{
+                        filter: isActive ? `drop-shadow(0 0 10px ${color})` : undefined,
+                    }}
+                    data-testid="scada-indicator-light"
+                    data-state={isActive ? 'active' : 'idle'}
+                />
+                <circle cx="40" cy="26" r="5" fill="#ffffff" opacity={isActive ? 0.28 : 0.12} />
+            </svg>
             <span className="max-w-full truncate px-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color }}>
                 {mapping.label || mapping.element_id}: {status}
             </span>
@@ -238,6 +411,9 @@ function PipeElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorDat
     const isAvailable = value !== null;
     const isActive = isSourceActive(mapping, value);
     const activeColor = mapping.normal_color || '#22d3ee';
+    const flowColor = '#f97316';
+    const flowCoreColor = '#facc15';
+    const flowHotColor = '#ef4444';
 
     return (
         <div
@@ -246,17 +422,73 @@ function PipeElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorDat
             data-state={!isAvailable ? 'unavailable' : isActive ? 'active' : 'idle'}
             aria-label={`${mapping.label || mapping.element_id}: ${!isAvailable ? 'UNAVAILABLE' : isActive ? 'FLOW' : 'NO FLOW'}`}
         >
-            <div className="relative h-3 w-full overflow-hidden rounded-full border border-slate-400 bg-slate-700 shadow-[inset_0_1px_2px_rgba(255,255,255,0.2)]">
-                <div className="absolute inset-[2px] rounded-full bg-slate-900" />
+            <div className="relative h-7 w-full overflow-hidden rounded-full border border-slate-400 bg-slate-800 shadow-[inset_0_2px_4px_rgba(255,255,255,0.28),inset_0_-3px_5px_rgba(0,0,0,0.45)]">
+                <style>
+                    {`
+                        @keyframes scada-pipe-flow-slide {
+                            from { transform: translateX(-110%); }
+                            to { transform: translateX(210%); }
+                        }
+                        @keyframes scada-pipe-wind {
+                            from { transform: translateX(-48px) rotate(0deg); }
+                            to { transform: translateX(calc(100% + 48px)) rotate(360deg); }
+                        }
+                    `}
+                </style>
+                <div
+                    className="absolute inset-y-[4px] left-3 right-3 rounded-full"
+                    style={{
+                        background: `linear-gradient(180deg, ${activeColor}aa, ${activeColor}55 48%, #0f172a 52%, ${activeColor}33)`,
+                    }}
+                />
+                <div
+                    className="absolute left-0 top-1/2 h-7 w-5 -translate-y-1/2 rounded-[50%] border-2 shadow-[inset_2px_0_3px_rgba(255,255,255,0.25)]"
+                    style={{ backgroundColor: activeColor, borderColor: '#0b3b8f' }}
+                />
+                <div className="absolute left-2 top-1/2 h-5 w-3 -translate-y-1/2 rounded-[50%] bg-slate-950 shadow-[inset_2px_0_3px_rgba(0,0,0,0.75)]" />
+                <div
+                    className="absolute right-0 top-1/2 h-7 w-5 -translate-y-1/2 rounded-[50%] border-2 shadow-[inset_-2px_0_3px_rgba(255,255,255,0.22)]"
+                    style={{ backgroundColor: activeColor, borderColor: '#0b3b8f' }}
+                />
+                <div className="absolute right-2 top-1/2 h-5 w-3 -translate-y-1/2 rounded-[50%] bg-slate-950 shadow-[inset_-2px_0_3px_rgba(0,0,0,0.75)]" />
+                <div className="absolute left-7 right-7 top-1.5 h-1.5 rounded-full bg-white/20" />
                 {isActive && (
                     <div
-                        className="absolute inset-[2px] animate-pulse rounded-full"
+                        className="absolute inset-y-[5px] left-7 right-7 animate-pulse rounded-full"
                         style={{
-                            backgroundColor: `${activeColor}80`,
-                            boxShadow: `0 0 10px ${activeColor}`,
+                            background: `linear-gradient(90deg, ${flowCoreColor}66, ${flowColor}88, ${flowHotColor}66)`,
+                            boxShadow: `0 0 12px ${flowColor}`,
                         }}
                         data-testid="scada-pipe-flow"
                     />
+                )}
+                {isActive && (
+                    <div className="absolute inset-y-[4px] left-7 right-7 overflow-hidden rounded-full">
+                        <svg
+                            viewBox="0 0 180 18"
+                            preserveAspectRatio="none"
+                            className="absolute inset-y-0 left-0 h-full w-[180px]"
+                            style={{
+                                animation: 'scada-pipe-flow-slide 1.2s linear infinite',
+                                filter: `drop-shadow(0 0 5px ${activeColor})`,
+                            }}
+                        >
+                            <path
+                                d="M0 9 C8 1 16 1 24 9 S40 17 48 9 S64 1 72 9 S88 17 96 9 S112 1 120 9 S136 17 144 9 S160 1 168 9 S184 17 192 9"
+                                fill="none"
+                                stroke={flowColor}
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                            />
+                            <path
+                                d="M0 9 C8 17 16 17 24 9 S40 1 48 9 S64 17 72 9 S88 1 96 9 S112 17 120 9 S136 1 144 9 S160 17 168 9 S184 1 192 9"
+                                fill="none"
+                                stroke={flowCoreColor}
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                            />
+                        </svg>
+                    </div>
                 )}
             </div>
         </div>

@@ -46,7 +46,6 @@ export default function RetortMonitorShell(props: Props) {
                     <Link href={route('dashboard')} className="mt-2 inline-flex text-sm font-semibold text-cyan-700 hover:text-cyan-800">← Kembali ke Dashboard</Link>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    <Link href={route('historian.index')} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">History</Link>
                     <PortSettings
                         controllerId={controller.id}
                         currentPort={controller.serial_port}
@@ -54,7 +53,6 @@ export default function RetortMonitorShell(props: Props) {
                         lastError={controller.last_error}
                     />
                     <Link href={route('tn.config.edit', controller.id)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Konfigurasi TN</Link>
-                    <Link href={route('tn.scada.edit', controller.id)} className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">SCADA Editor</Link>
                 </div>
             </div>
         }>
