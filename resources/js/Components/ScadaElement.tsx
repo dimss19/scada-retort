@@ -4,12 +4,18 @@ import { ScadaMapping, SensorData } from '@/types';
 interface ScadaElementProps {
     mapping: ScadaMapping;
     sensorData?: SensorData;
+    controllerModel?: string;
     className?: string;
     selected?: boolean;
     onSelect?: (id: number) => void;
 }
 
 type ScadaValue = number | string | boolean | null;
+type ScadaRendererProps = {
+    mapping: ScadaMapping;
+    sensorData?: SensorData;
+    controllerModel?: string;
+};
 
 const ERROR_VALUES: Record<number, string> = {
     31000: 'OPEN',
@@ -121,12 +127,12 @@ function GaugeElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorDa
     );
 }
 
-function DisplayElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorData?: SensorData }) {
+function DisplayElement({ mapping, sensorData, controllerModel }: { mapping: ScadaMapping; sensorData?: SensorData; controllerModel?: string }) {
     const value = getSensorValue(mapping, sensorData);
     const color = getStatusColor(mapping, value);
 
     if (mapping.data_source === 'pv') {
-        return <ControllerDisplayElement mapping={mapping} sensorData={sensorData} />;
+        return <ControllerDisplayElement mapping={mapping} sensorData={sensorData} controllerModel={controllerModel} />;
     }
 
     return (
@@ -145,7 +151,7 @@ function DisplayElement({ mapping, sensorData }: { mapping: ScadaMapping; sensor
     );
 }
 
-function ControllerDisplayElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorData?: SensorData }) {
+function ControllerDisplayElement({ mapping, sensorData, controllerModel = 'TNS' }: { mapping: ScadaMapping; sensorData?: SensorData; controllerModel?: string }) {
     const pv = getSensorValue(mapping, sensorData);
     const sv = getSensorValue({ ...mapping, data_source: 'sv' }, sensorData);
     const heating = getSensorValue({ ...mapping, data_source: 'heating_mv' }, sensorData);
@@ -175,7 +181,7 @@ function ControllerDisplayElement({ mapping, sensorData }: { mapping: ScadaMappi
                 <path d="M210 58 H236 M210 82 H236 M210 106 H236 M210 130 H236 M210 154 H236" stroke="#343838" strokeWidth="5" strokeLinecap="round" />
                 <rect x="30" y="42" width="174" height="140" rx="6" fill="#101111" stroke="#2b2f30" strokeWidth="3" />
                 <rect x="42" y="58" width="148" height="112" rx="3" fill="#161717" />
-                <text x="48" y="58" dy="14" fill="#a9adaf" fontSize="14" fontWeight="800">TNS</text>
+                <text x="48" y="58" dy="14" fill="#a9adaf" fontSize="14" fontWeight="800">{controllerModel}</text>
                 <text x="172" y="58" dy="14" fill="#a9adaf" fontSize="12" fontWeight="800" textAnchor="end">Autonics</text>
                 <text x="158" y="110" fill="#f8fafc" fontFamily="monospace" fontSize="38" fontWeight="900" textAnchor="end" textLength="104" lengthAdjust="spacingAndGlyphs">{pvText}</text>
                 <text x="166" y="107" fill="#8b9094" fontSize="13" fontWeight="900">PV</text>
@@ -378,7 +384,7 @@ function LabelElement({ mapping }: { mapping: ScadaMapping }) {
 function IndicatorElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorData?: SensorData }) {
     const value = getSensorValue(mapping, sensorData);
     const isActive = isSourceActive(mapping, value);
-    const color = isActive ? mapping.normal_color : '#475569';
+    const color = isActive ? '#22c55e' : '#ef4444';
     const status = value === null ? 'N/A' : typeof value === 'boolean' ? formatBoolean(mapping.data_source, value) : (isActive ? 'ON' : 'OFF');
 
     return (
@@ -495,7 +501,7 @@ function PipeElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorDat
     );
 }
 
-const elementRenderers: Record<string, React.FC<{ mapping: ScadaMapping; sensorData?: SensorData }>> = {
+const elementRenderers: Record<string, React.FC<ScadaRendererProps>> = {
     gauge: GaugeElement,
     display: DisplayElement,
     valve: ValveElement,
@@ -506,7 +512,7 @@ const elementRenderers: Record<string, React.FC<{ mapping: ScadaMapping; sensorD
     pipe: PipeElement,
 };
 
-export default function ScadaElement({ mapping, sensorData, className = '', selected, onSelect }: ScadaElementProps) {
+export default function ScadaElement({ mapping, sensorData, controllerModel, className = '', selected, onSelect }: ScadaElementProps) {
     const Renderer = elementRenderers[mapping.element_type] || DisplayElement;
 
     return (
@@ -523,7 +529,7 @@ export default function ScadaElement({ mapping, sensorData, className = '', sele
             onClick={() => onSelect?.(mapping.id)}
             data-testid={`scada-element-${mapping.element_id}`}
         >
-            <Renderer mapping={mapping} sensorData={sensorData} />
+            <Renderer mapping={mapping} sensorData={sensorData} controllerModel={controllerModel} />
         </div>
     );
 }

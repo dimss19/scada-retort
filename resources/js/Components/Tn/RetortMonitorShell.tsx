@@ -95,6 +95,7 @@ export default function RetortMonitorShell(props: Props) {
                                     mappings={props.mappings}
                                     canvas={props.canvas}
                                     sensorData={props.sensorData}
+                                    controllerModel={controller.model_type}
                                     readonly
                                     className="min-h-[600px]"
                                 />

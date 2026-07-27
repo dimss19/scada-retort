@@ -92,7 +92,7 @@ class PollTnControllers extends Command
                                 $readings = TnReading::where('tn_controller_id', $controller->id)
                                     ->where('created_at', '>=', $history->start_time)
                                     ->where('created_at', '<=', $endTime)
-                                    ->orderBy('created_at', 'desc')
+                                    ->orderBy('created_at')
                                     ->get()
                                     ->toArray();
                                 $history->update([

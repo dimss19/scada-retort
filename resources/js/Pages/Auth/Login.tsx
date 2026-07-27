@@ -106,7 +106,7 @@ export default function Login({
                 </div>
 
                 <div className="pt-2">
-                    <PrimaryButton className="w-full justify-center bg-cyan-600 hover:bg-cyan-500 focus:bg-cyan-700 active:bg-cyan-800 focus:ring-cyan-500 py-3" disabled={processing}>
+                    <PrimaryButton className="w-full justify-center py-3" disabled={processing}>
                         Log in
                     </PrimaryButton>
                 </div>

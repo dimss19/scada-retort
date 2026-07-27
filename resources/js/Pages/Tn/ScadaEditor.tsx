@@ -307,6 +307,7 @@ return (
                                 mappings={mappings}
                                 canvas={canvas}
                                 sensorData={PREVIEW_SENSOR_DATA}
+                                controllerModel={controller.model_type}
                                 selectedId={selectedId}
                                 onSelectElement={setSelectedId}
                                 onDeleteElement={deleteMapping}

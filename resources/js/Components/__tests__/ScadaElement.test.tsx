@@ -46,6 +46,12 @@ describe('ScadaElement Component', () => {
         expect(screen.getByText('--')).toBeInTheDocument();
     });
 
+    it('shows the selected TN model on the controller display', () => {
+        render(<ScadaElement mapping={mockMapping} sensorData={{ pv: 1085, decimal_point: 1 }} controllerModel="TNH" />);
+
+        expect(screen.getByText('TNH')).toBeInTheDocument();
+    });
+
     it('formats boolean values as equipment states', () => {
         const booleanMapping = {
             ...mockMapping,
@@ -138,7 +144,22 @@ describe('ScadaElement Component', () => {
         render(<ScadaElement mapping={indicatorMapping} sensorData={{ out1_active: false }} />);
 
         expect(screen.getByTestId('scada-indicator-light')).toHaveAttribute('data-state', 'idle');
+        expect(screen.getByTestId('scada-indicator-light')).toHaveAttribute('fill', '#ef4444');
         expect(screen.getByTestId('scada-indicator-light')).not.toHaveClass('animate-pulse');
+    });
+
+    it('renders an active indicator in green', () => {
+        const indicatorMapping = {
+            ...mockMapping,
+            element_id: 'STEAM_LAMP',
+            element_type: 'indicator' as const,
+            data_source: 'out1_active',
+        };
+
+        render(<ScadaElement mapping={indicatorMapping} sensorData={{ out1_active: true }} />);
+
+        expect(screen.getByTestId('scada-indicator-light')).toHaveAttribute('data-state', 'active');
+        expect(screen.getByTestId('scada-indicator-light')).toHaveAttribute('fill', '#22c55e');
     });
 
     it('applies decimal_point to raw PV values and formats TN process time', () => {

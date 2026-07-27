@@ -67,8 +67,14 @@ function Historian({ histories = [] }: { histories?: any[] }) {
         return (val / Math.pow(10, dp)).toFixed(dp).replace('.', ',');
     };
 
+    const getChronologicalLogs = (batch: any) => {
+        return [...(batch.log_data || [])].sort((a: any, b: any) => {
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        });
+    };
+
     const handleDownload = (batch: any, format: 'csv' | 'excel' | 'pdf') => {
-        const logs = batch.log_data || [];
+        const logs = getChronologicalLogs(batch);
         if (!logs.length) {
             alert('No data points in this batch.');
             return;
@@ -253,7 +259,7 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {selectedBatch.log_data?.map((log: any, idx: number) => (
+                                    {getChronologicalLogs(selectedBatch).map((log: any, idx: number) => (
                                         <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
                                             <td className="py-2 font-mono text-slate-500">{new Date(log.created_at).toLocaleTimeString()}</td>
                                             <td className="py-2 font-semibold text-blue-600">{log.decimal_point ? (log.pv / Math.pow(10, log.decimal_point)).toFixed(log.decimal_point) : log.pv}</td>

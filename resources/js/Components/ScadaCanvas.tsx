@@ -17,6 +17,7 @@ interface ScadaCanvasProps {
     mappings: ScadaMapping[];
     canvas?: ScadaCanvasType | null;
     sensorData?: SensorData;
+    controllerModel?: string;
     className?: string;
     selectedId?: number | null;
     onSelectElement?: (id: number) => void;
@@ -25,7 +26,7 @@ interface ScadaCanvasProps {
     readonly?: boolean;
 }
 
-export default function ScadaCanvas({ mappings, canvas, sensorData, className = '', selectedId, onSelectElement, onDeleteElement, onUpdateMapping, readonly = true }: ScadaCanvasProps) {
+export default function ScadaCanvas({ mappings, canvas, sensorData, controllerModel, className = '', selectedId, onSelectElement, onDeleteElement, onUpdateMapping, readonly = true }: ScadaCanvasProps) {
     const canvasW = canvas?.width ?? 1200;
     const canvasH = canvas?.height ?? 800;
     const gridPatternId = `scada-grid-${useId().replace(/:/g, '')}`;
@@ -115,6 +116,7 @@ export default function ScadaCanvas({ mappings, canvas, sensorData, className = 
                         key={mapping.id}
                         mapping={mapping}
                         sensorData={sensorData}
+                        controllerModel={controllerModel}
                         selected={selectedId === mapping.id}
                         onSelect={readonly ? undefined : onSelectElement}
                     />

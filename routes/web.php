@@ -32,7 +32,7 @@ Route::get('/test-lock', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/scada', fn () => Inertia::render('Operations', ['module' => 'scada']))->name('scada.index');
     Route::get('/historian', function () {
-        $histories = \App\Models\TnProcessHistory::with('controller.machine')->latest()->get();
+        $histories = \App\Models\TnProcessHistory::with('controller.machine')->orderBy('start_time')->get();
         return Inertia::render('Operations', ['module' => 'historian', 'histories' => $histories]);
     })->name('historian.index');
     Route::get('/database', fn () => Inertia::render('Operations', ['module' => 'database']))->name('database.index');
