@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
     Gauge,
@@ -93,9 +93,37 @@ const Scada = () => {
 };
 
 function Historian({ histories = [] }: { histories?: any[] }) {
-    const [period, setPeriod] = useState('Hari');
+    const [period, setPeriod] = useState<'Semua' | 'Hari' | 'Minggu' | 'Bulan'>('Semua');
+    const [customDate, setCustomDate] = useState<string>('');
     const [selectedBatch, setSelectedBatch] = useState<any>(null);
     const [activeMenu, setActiveMenu] = useState<number | null>(null);
+
+    const filteredHistories = useMemo(() => {
+        return histories.filter((h) => {
+            const startTime = new Date(h.start_time).getTime();
+            if (isNaN(startTime)) return true;
+
+            if (customDate) {
+                const targetDateStr = new Date(customDate).toDateString();
+                const itemDateStr = new Date(h.start_time).toDateString();
+                return targetDateStr === itemDateStr;
+            }
+
+            const now = Date.now();
+            if (period === 'Hari') {
+                const oneDayAgo = now - 24 * 60 * 60 * 1000;
+                return startTime >= oneDayAgo;
+            } else if (period === 'Minggu') {
+                const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+                return startTime >= oneWeekAgo;
+            } else if (period === 'Bulan') {
+                const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
+                return startTime >= oneMonthAgo;
+            }
+
+            return true;
+        });
+    }, [histories, period, customDate]);
 
     const formatValue = (val: number | undefined, dp: number = 0) => {
         if (val === undefined || val === 31000 || val === 30000 || val === -30000) return '-';
@@ -111,7 +139,7 @@ function Historian({ histories = [] }: { histories?: any[] }) {
     const handleDownload = (batch: any, format: 'csv' | 'excel' | 'pdf') => {
         const logs = getChronologicalLogs(batch);
         if (!logs.length) {
-            alert('No data points in this batch.');
+            alert('Tidak ada data point pada batch ini.');
             return;
         }
 
@@ -128,7 +156,8 @@ function Historian({ histories = [] }: { histories?: any[] }) {
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `batch_${batch.id}_${format === 'csv' ? 'log.csv' : 'log.csv'}`); // Excel opens CSV natively
+            const ext = format === 'excel' ? 'csv' : 'csv';
+            link.setAttribute("download", `batch_${batch.id}_log.${ext}`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -171,17 +200,17 @@ function Historian({ histories = [] }: { histories?: any[] }) {
     };
 
     const handleDelete = (id: number) => {
-        if (confirm('Are you sure you want to delete this process history?')) {
+        if (confirm('Apakah Anda yakin ingin menghapus riwayat proses ini?')) {
             router.delete(route('tn.history.destroy', id));
         }
     };
 
-    // Close active menu when clicking anywhere on screen
     useEffect(() => {
         const closeMenu = () => setActiveMenu(null);
         window.addEventListener('click', closeMenu);
         return () => window.removeEventListener('click', closeMenu);
     }, []);
+
     return (
         <div className="space-y-6">
             <Panel>
@@ -189,16 +218,40 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                     <div>
                         <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-700">Filter Periode</label>
                         <div className="flex gap-1.5 rounded-2xl bg-slate-100 p-1.5 border border-slate-200">
-                            {['Hari', 'Minggu', 'Bulan'].map((x) => (
-                                <button key={x} onClick={() => setPeriod(x)} className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${period === x ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+                            {['Semua', 'Hari', 'Minggu', 'Bulan'].map((x) => (
+                                <button
+                                    key={x}
+                                    onClick={() => { setPeriod(x as any); setCustomDate(''); }}
+                                    className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${
+                                        period === x && !customDate
+                                            ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-sm'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
                                     {x}
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <div>
-                        <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-700">Tanggal Kustom</label>
-                        <input type="date" className="rounded-xl border-slate-300 bg-slate-50 text-xs font-bold text-slate-800 shadow-sm focus:border-blue-600 focus:ring-blue-600 py-2 px-3" />
+                    <div className="flex items-center gap-2">
+                        <div>
+                            <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-700">Tanggal Kustom</label>
+                            <input
+                                type="date"
+                                value={customDate}
+                                onChange={(e) => setCustomDate(e.target.value)}
+                                className="rounded-xl border-slate-300 bg-slate-50 text-xs font-bold text-slate-800 shadow-sm focus:border-blue-600 focus:ring-blue-600 py-2 px-3"
+                            />
+                        </div>
+                        {customDate && (
+                            <button
+                                type="button"
+                                onClick={() => setCustomDate('')}
+                                className="mt-6 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                            >
+                                Reset
+                            </button>
+                        )}
                     </div>
                 </div>
             </Panel>
@@ -217,12 +270,14 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white">
-                            {histories.length === 0 ? (
+                            {filteredHistories.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-4 py-12 text-center text-xs font-bold text-slate-400">Belum ada riwayat proses tercatat.</td>
+                                    <td colSpan={6} className="px-4 py-12 text-center text-xs font-bold text-slate-400">
+                                        Tidak ada riwayat proses yang cocok dengan filter.
+                                    </td>
                                 </tr>
                             ) : (
-                                histories.map((h) => {
+                                filteredHistories.map((h: any) => {
                                     const start = new Date(h.start_time);
                                     const end = new Date(h.end_time);
                                     const durationMins = ((end.getTime() - start.getTime()) / 60000).toFixed(1);
