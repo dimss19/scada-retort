@@ -30,18 +30,18 @@ type BadgeTone = 'green' | 'amber' | 'red' | 'blue';
 
 const Badge = ({ children, tone = 'green' }: { children: ReactNode; tone?: BadgeTone }) => {
     const colors: Record<BadgeTone, string> = {
-        green: 'bg-emerald-100 text-emerald-700',
-        amber: 'bg-amber-100 text-amber-700',
-        red: 'bg-red-100 text-red-700',
-        blue: 'bg-blue-100 text-blue-700',
+        green: 'bg-amber-500/20 text-yellow-300 border border-amber-400/40',
+        amber: 'bg-amber-500/25 text-yellow-300 border border-amber-400/50',
+        red: 'bg-rose-500/20 text-rose-300 border border-rose-500/40',
+        blue: 'bg-blue-600/30 text-blue-200 border border-blue-400/40',
     };
 
-    return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${colors[tone]}`}>{children}</span>;
+    return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${colors[tone]}`}>{children}</span>;
 };
 
 const Panel = ({ title, children, className = '' }: { title?: string; children: ReactNode; className?: string }) => (
-    <section className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
-        {title && <h3 className="mb-4 font-semibold text-slate-800">{title}</h3>}
+    <section className={`rounded-3xl border border-blue-800/60 bg-[#0d1b3e]/70 p-6 shadow-xl backdrop-blur-xl ${className}`}>
+        {title && <h3 className="mb-4 text-lg font-bold text-white">{title}</h3>}
         {children}
     </section>
 );

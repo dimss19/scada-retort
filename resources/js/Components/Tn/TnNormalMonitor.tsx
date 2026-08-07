@@ -21,76 +21,87 @@ export default function TnNormalMonitor({ telemetry, history, isOnline }: Props)
 
     return (
         <div className="space-y-6">
-            <div className="rounded-xl border-l-4 border-indigo-500 bg-white p-5 shadow-sm">
+            {/* Status Banner */}
+            <div className="rounded-3xl border border-amber-400/40 bg-gradient-to-r from-[#0d1b3e]/80 via-blue-950/70 to-[#070e24]/90 p-6 shadow-2xl backdrop-blur-xl">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Operation Status</p>
-                        <p className="mt-1 text-2xl font-black text-slate-800">
+                        <p className="text-xs font-bold uppercase tracking-wider text-yellow-400">Operation Status</p>
+                        <p className="mt-1 text-2xl font-black text-white">
                             {telemetry.pattern !== null ? `PTN.${telemetry.pattern}` : 'NO PATTERN'}
-                            <span className="ml-2 text-indigo-600">Step {telemetry.step ?? '--'}</span>
+                            <span className="ml-3 text-yellow-300 font-bold bg-amber-500/20 border border-amber-400/40 px-3 py-0.5 rounded-lg text-lg">Step {telemetry.step ?? '--'}</span>
                         </p>
                     </div>
                     <div className="flex gap-8">
                         <div>
-                            <p className="text-xs font-bold uppercase text-slate-500">Process Time</p>
-                            <p className="font-mono text-lg font-bold text-slate-700">{formatControllerTime(telemetry.processTime)}</p>
+                            <p className="text-xs font-bold uppercase text-slate-300">Process Time</p>
+                            <p className="font-mono text-xl font-black text-blue-300">{formatControllerTime(telemetry.processTime)}</p>
                         </div>
                         <div>
-                            <p className="text-xs font-bold uppercase text-slate-500">Rest Time</p>
-                            <p className="font-mono text-lg font-bold text-indigo-600">{formatControllerTime(telemetry.remainingTime)}</p>
+                            <p className="text-xs font-bold uppercase text-amber-400">Rest Time</p>
+                            <p className="font-mono text-xl font-black text-yellow-300">{formatControllerTime(telemetry.remainingTime)}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* Gauges Grid */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div className="flex flex-col items-center rounded-xl bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500">Present Value (PV)</h2>
-                    <TnGauge value={telemetry.actualTemperature ?? undefined} formattedValue={formatValue(telemetry.actualTemperature)} label="PV" unit="°C" color="#3b82f6" max={200} />
+                <div className="flex flex-col items-center rounded-3xl border border-blue-800/60 bg-[#0d1b3e]/70 p-6 shadow-xl backdrop-blur-xl">
+                    <h2 className="mb-4 text-xs font-black uppercase tracking-wider text-blue-300">Present Value (PV)</h2>
+                    <TnGauge value={telemetry.actualTemperature ?? undefined} formattedValue={formatValue(telemetry.actualTemperature)} label="PV" unit="°C" color="#60a5fa" max={200} />
                 </div>
-                <div className="flex flex-col items-center rounded-xl bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500">Set Value (SV)</h2>
-                    <TnGauge value={telemetry.targetTemperature ?? undefined} formattedValue={formatValue(telemetry.targetTemperature)} label="SV" unit="°C" color="#10b981" max={200} />
+                <div className="flex flex-col items-center rounded-3xl border border-blue-800/60 bg-[#0d1b3e]/70 p-6 shadow-xl backdrop-blur-xl">
+                    <h2 className="mb-4 text-xs font-black uppercase tracking-wider text-yellow-400">Set Value (SV)</h2>
+                    <TnGauge value={telemetry.targetTemperature ?? undefined} formattedValue={formatValue(telemetry.targetTemperature)} label="SV" unit="°C" color="#facc15" max={200} />
                 </div>
-                <div className="flex flex-col items-center rounded-xl bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500">Heat MV</h2>
+                <div className="flex flex-col items-center rounded-3xl border border-blue-800/60 bg-[#0d1b3e]/70 p-6 shadow-xl backdrop-blur-xl">
+                    <h2 className="mb-4 text-xs font-black uppercase tracking-wider text-amber-400">Heat MV</h2>
                     <TnGauge value={telemetry.heatingPercent ?? undefined} formattedValue={formatValue(telemetry.heatingPercent)} label="MV" unit="%" color="#f59e0b" max={100} />
                 </div>
             </div>
 
-            <section className="rounded-xl bg-white p-6 shadow-sm">
+            {/* Temperature Trend Section */}
+            <section className="rounded-3xl border border-blue-800/60 bg-[#0d1b3e]/70 p-6 shadow-xl backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                        <h2 className="font-bold text-slate-800">Temperature Trend</h2>
-                        <p className="text-xs text-slate-500">Data 30 menit terakhir dalam engineering unit.</p>
+                        <h2 className="font-bold text-white text-lg">Temperature Trend</h2>
+                        <p className="text-xs text-slate-300">Data 30 menit terakhir dalam engineering unit.</p>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{isOnline ? 'LIVE' : 'OFFLINE'}</span>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
+                        isOnline
+                            ? 'bg-amber-500/20 text-yellow-300 border-amber-400/40'
+                            : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                    }`}>
+                        <span className={`h-2 w-2 rounded-full ${isOnline ? 'bg-yellow-400 animate-pulse' : 'bg-rose-500'}`}></span>
+                        {isOnline ? 'LIVE' : 'OFFLINE'}
+                    </span>
                 </div>
                 <div className="h-72 w-full"><TnTrendChart data={isOnline ? history : []} /></div>
             </section>
 
-            <section className="rounded-xl bg-white p-6 shadow-sm">
+            {/* Process Logs Table */}
+            <section className="rounded-3xl border border-blue-800/60 bg-[#0d1b3e]/70 p-6 shadow-xl backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between">
                     <div>
-                        <h2 className="font-bold text-slate-800">Process Logs (Active Heating)</h2>
-                        <p className="text-xs text-slate-500">Reading ketika heating output lebih dari 0%.</p>
+                        <h2 className="font-bold text-white text-lg">Process Logs (Active Heating)</h2>
+                        <p className="text-xs text-slate-300">Reading ketika heating output lebih dari 0%.</p>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{heatingLogs.length} records</span>
+                    <span className="rounded-full bg-blue-950 border border-blue-800 px-3 py-1 text-xs font-bold text-yellow-300">{heatingLogs.length} records</span>
                 </div>
-                <div className="max-h-80 overflow-auto rounded-lg border border-slate-200">
-                    <table className="min-w-full divide-y divide-slate-200 text-sm">
-                        <thead className="sticky top-0 bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
-                            <tr><th className="px-5 py-3">Time</th><th className="px-5 py-3">PV (°C)</th><th className="px-5 py-3">SV (°C)</th><th className="px-5 py-3">Heat MV</th></tr>
+                <div className="max-h-80 overflow-auto rounded-2xl border border-blue-800/60">
+                    <table className="min-w-full divide-y divide-blue-900/60 text-sm">
+                        <thead className="sticky top-0 bg-[#09132e] text-left text-xs font-bold uppercase tracking-wider text-yellow-300">
+                            <tr><th className="px-5 py-3.5">Time</th><th className="px-5 py-3.5">PV (°C)</th><th className="px-5 py-3.5">SV (°C)</th><th className="px-5 py-3.5">Heat MV</th></tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white font-mono">
+                        <tbody className="divide-y divide-blue-950/60 bg-blue-950/40 font-mono">
                             {heatingLogs.length === 0 ? (
                                 <tr><td colSpan={4} className="px-5 py-10 text-center font-sans text-slate-400">Belum ada reading dengan heating aktif.</td></tr>
                             ) : heatingLogs.map((log, index) => (
-                                <tr key={`${log.created_at ?? index}-${index}`} className="hover:bg-slate-50">
-                                    <td className="whitespace-nowrap px-5 py-2 text-slate-500">{log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID') : '--'}</td>
-                                    <td className="px-5 py-2 font-bold text-blue-600">{Number(log.pv).toLocaleString('id-ID')}</td>
-                                    <td className="px-5 py-2 text-emerald-600">{Number(log.sv).toLocaleString('id-ID')}</td>
-                                    <td className="px-5 py-2 text-amber-600">{(Number(log.heating_mv) / 10).toLocaleString('id-ID')}%</td>
+                                <tr key={`${log.created_at ?? index}-${index}`} className="hover:bg-blue-900/30 transition-colors">
+                                    <td className="whitespace-nowrap px-5 py-2.5 text-slate-300">{log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID') : '--'}</td>
+                                    <td className="px-5 py-2.5 font-bold text-blue-400">{Number(log.pv).toLocaleString('id-ID')}</td>
+                                    <td className="px-5 py-2.5 font-bold text-yellow-300">{Number(log.sv).toLocaleString('id-ID')}</td>
+                                    <td className="px-5 py-2.5 font-bold text-amber-400">{(Number(log.heating_mv) / 10).toLocaleString('id-ID')}%</td>
                                 </tr>
                             ))}
                         </tbody>
