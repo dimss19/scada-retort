@@ -143,104 +143,107 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
     return (
         <>
             <button onClick={() => setOpen(true)}
-                className={`rounded-lg border px-3 py-2 text-sm font-semibold ${isOnline
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                    : 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+                className={`rounded-xl border px-4 py-2 text-xs font-black shadow-sm transition-all ${isOnline
+                    ? 'border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200'
+                    : 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100'
                 }`}
                 title={`Port: ${portLabel}`}>
                 Port: {portLabel}
             </button>
 
             {open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4"
                     onClick={() => setOpen(false)}>
-                    <div className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+                    <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-7 shadow-2xl border border-slate-200"
                         onClick={e => e.stopPropagation()}>
-                        <div className="mb-5 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-800">Port Settings</h2>
-                            <button onClick={() => setOpen(false)} className="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
+                        <div className="mb-6 flex items-center justify-between pb-4 border-b border-slate-100">
+                            <div>
+                                <h2 className="text-xl font-black text-slate-900">Serial Port Settings</h2>
+                                <p className="text-xs font-semibold text-slate-500 mt-0.5">Konfigurasi koneksi Modbus RS485 controller Retort</p>
+                            </div>
+                            <button onClick={() => setOpen(false)} className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors">&times;</button>
                         </div>
 
                         {statusMsg && (
-                            <div className={`mb-4 rounded-lg px-4 py-3 text-sm font-medium ${
-                                statusMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                statusMsg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                'bg-blue-50 text-blue-700 border border-blue-200'
+                            <div className={`mb-5 rounded-2xl px-4 py-3 text-xs font-extrabold border ${
+                                statusMsg.type === 'success' ? 'bg-amber-100 text-amber-900 border-amber-300' :
+                                statusMsg.type === 'error' ? 'bg-rose-100 text-rose-800 border-rose-200' :
+                                'bg-blue-100 text-blue-800 border-blue-200'
                             }`}>
                                 {statusMsg.text}
                             </div>
                         )}
 
-                        <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <h3 className="mb-3 text-sm font-bold text-slate-700">Current Status</h3>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                            <h3 className="mb-3 text-xs font-black text-slate-700 uppercase tracking-wider">Status Koneksi</h3>
+                            <div className="grid grid-cols-2 gap-3 text-xs font-semibold">
                                 <div>
                                     <span className="text-slate-500">Status:</span>{' '}
-                                    <span className={`font-semibold ${isOnline ? 'text-emerald-600' : 'text-red-600'}`}>
+                                    <span className={`font-black ${isOnline ? 'text-amber-700' : 'text-rose-700'}`}>
                                         {isOnline ? 'Connected' : 'Disconnected'}
                                     </span>
                                 </div>
                                 <div>
-                                    <span className="text-slate-500">Port:</span>{' '}
-                                    <span className="font-mono font-semibold text-slate-700">{portLabel}</span>
+                                    <span className="text-slate-500">Port Aktif:</span>{' '}
+                                    <span className="font-mono font-black text-blue-700">{portLabel}</span>
                                 </div>
                                 <div>
                                     <span className="text-slate-500">Mode:</span>{' '}
-                                    <span className="font-semibold text-slate-700">{mode === 'auto' ? 'Auto Detect' : 'Manual'}</span>
+                                    <span className="font-black text-slate-800">{mode === 'auto' ? 'Auto Detect' : 'Manual'}</span>
                                 </div>
                                 {lastError && (
-                                    <div className="col-span-2">
-                                        <span className="text-slate-500">Last Error:</span>{' '}
-                                        <span className="text-red-600 text-xs">{lastError}</span>
+                                    <div className="col-span-2 mt-1 pt-2 border-t border-slate-200/80">
+                                        <span className="text-rose-700 font-bold block mb-1">Pesan Error Terakhir:</span>
+                                        <span className="text-rose-800 font-mono text-[11px] bg-rose-50 border border-rose-200 p-2.5 rounded-xl block leading-relaxed">{lastError}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="mb-5 flex gap-2">
+                        <div className="mb-6 flex gap-3">
                             <button onClick={handleScan} disabled={scanning}
-                                className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700 disabled:opacity-50">
+                                className="rounded-xl bg-blue-700 px-5 py-2.5 text-xs font-black text-white hover:bg-blue-800 disabled:opacity-50 shadow-sm transition-all">
                                 {scanning ? 'Scanning...' : 'Scan Ports'}
                             </button>
                             <button onClick={handleAutoMode}
-                                className={`rounded-lg border px-4 py-2 text-sm font-semibold ${mode === 'auto' ? 'bg-cyan-50 border-cyan-300 text-cyan-700' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'}`}>
+                                className={`rounded-xl border px-5 py-2.5 text-xs font-black transition-all ${mode === 'auto' ? 'bg-amber-400 border-amber-500 text-slate-950 shadow-sm' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'}`}>
                                 Auto Mode
                             </button>
                         </div>
 
-                        <div className="space-y-2">
-                            <h3 className="text-sm font-bold text-slate-700">Available Ports</h3>
+                        <div className="space-y-3">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Daftar Port Tersedia</h3>
                             {scanning && ports.length === 0 ? (
-                                <div className="py-8 text-center text-sm text-slate-400">Scanning ports...</div>
+                                <div className="py-8 text-center text-xs font-bold text-slate-400">Scanning serial ports...</div>
                             ) : ports.length === 0 ? (
-                                <div className="py-8 text-center text-sm text-slate-400">
-                                    No ports detected. Click "Scan Ports" to search for Modbus devices.
+                                <div className="py-8 text-center text-xs font-bold text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-6">
+                                    Tidak ada port terdeteksi. Klik "Scan Ports" untuk mencari perangkat Modbus RS485.
                                 </div>
                             ) : (
                                 ports.map(p => (
                                     <div key={p.device}
-                                        className={`flex items-center justify-between rounded-xl border p-3 transition-colors ${
-                                            selectedPort === p.device ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 hover:border-slate-300'
+                                        className={`flex items-center justify-between rounded-2xl border p-4 transition-all ${
+                                            selectedPort === p.device ? 'border-amber-400 bg-amber-50/70 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'
                                         }`}>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-mono font-bold text-slate-800">{p.device}</span>
+                                                <span className="font-mono font-black text-slate-900 text-sm">{p.device}</span>
                                                 {selectedPort === p.device && (
-                                                    <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[10px] font-bold text-cyan-700">ACTIVE</span>
+                                                    <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-[10px] font-black text-slate-950">AKTIF</span>
                                                 )}
                                             </div>
-                                            <p className="truncate text-xs text-slate-500">{p.description || p.hwid || 'No description'}</p>
+                                            <p className="truncate text-xs font-medium text-slate-600 mt-0.5">{p.description || p.hwid || 'No description'}</p>
                                             {p.manufacturer && (
-                                                <p className="text-[10px] text-slate-400">{p.manufacturer}{p.serial_number ? ` - SN: ${p.serial_number}` : ''}</p>
+                                                <p className="text-[10px] font-mono text-slate-400 mt-0.5">{p.manufacturer}{p.serial_number ? ` - SN: ${p.serial_number}` : ''}</p>
                                             )}
                                         </div>
-                                        <div className="ml-3 flex gap-2 shrink-0">
+                                        <div className="ml-4 flex gap-2 shrink-0">
                                             <button onClick={() => handleTest(p.device)} disabled={testing === p.device}
-                                                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50">
+                                                className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 shadow-sm">
                                                 {testing === p.device ? 'Testing...' : 'Test'}
                                             </button>
                                             <button onClick={() => handleSelect(p.device)}
-                                                className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700">
+                                                className="rounded-xl bg-blue-700 px-3.5 py-2 text-xs font-extrabold text-white hover:bg-blue-800 shadow-sm">
                                                 Select
                                             </button>
                                         </div>
