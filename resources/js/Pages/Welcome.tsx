@@ -1,6 +1,7 @@
 import { PageProps } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import { Gauge, Settings, ClipboardList } from 'lucide-react';
 
 export default function Welcome({
     auth,
@@ -10,14 +11,14 @@ export default function Welcome({
     return (
         <>
             <Head title="Welcome" />
-            <div className="bg-slate-900 text-slate-300 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
-                
+            <div className="bg-slate-900 text-slate-300 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+
                 {/* Navbar */}
                 <nav className="w-full border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
                     <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <ApplicationLogo className="h-8 w-8 filter drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]" />
-                            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
+                            <ApplicationLogo className="h-9 w-9 drop-shadow-[0_0_5px_rgba(5,150,105,0.8)]" />
+                            <span className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-500">
                                 SCADA Retort
                             </span>
                         </div>
@@ -39,7 +40,7 @@ export default function Welcome({
                                     </Link>
                                     <Link
                                         href={route('register')}
-                                        className="text-sm font-medium px-4 py-2 bg-cyan-600/20 text-cyan-400 border border-cyan-500/50 rounded hover:bg-cyan-600/40 transition-colors"
+                                        className="text-sm font-medium px-4 py-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/50 rounded-lg hover:bg-emerald-600/40 transition-colors"
                                     >
                                         Register
                                     </Link>
@@ -53,12 +54,12 @@ export default function Welcome({
                 <main className="flex-grow flex flex-col relative overflow-hidden">
                     {/* Background decorations */}
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-900"></div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
                     <div className="relative max-w-7xl mx-auto px-6 pt-24 pb-16 text-center z-10 flex-grow flex flex-col justify-center">
                         <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 tracking-tight">
                             Industrial Temperature <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
                                 Control System
                             </span>
                         </h1>
@@ -68,7 +69,7 @@ export default function Welcome({
                         <div className="flex flex-col sm:flex-row justify-center gap-4">
                             <Link
                                 href={auth.user ? route('dashboard') : route('login')}
-                                className="px-8 py-3 rounded-lg bg-cyan-600 text-white font-semibold shadow-[0_0_15px_rgba(6,182,212,0.5)] hover:bg-cyan-500 transition-all"
+                                className="px-8 py-3 rounded-lg bg-emerald-600 text-white font-semibold shadow-[0_0_15px_rgba(5,150,105,0.5)] hover:bg-emerald-500 transition-all"
                             >
                                 Launch Dashboard
                             </Link>
@@ -82,13 +83,13 @@ export default function Welcome({
                     </div>
 
                     {/* Features Section */}
-                    <div id="features" className="relative z-10 bg-slate-900/50 border-t border-slate-800 pt-16 pb-24">
+                    <div id="features" className="relative z-10 bg-slate-900/30 border-t border-slate-800 pt-16 pb-24">
                         <div className="max-w-7xl mx-auto px-6">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                 {/* Feature 1 */}
-                                <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 p-8 rounded-2xl hover:border-cyan-500/50 transition-colors group">
-                                    <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(6,182,212,0.3)] text-cyan-400">
-                                        📊
+                                <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 p-8 rounded-2xl hover:border-emerald-500/50 transition-all duration-300 group">
+                                    <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center mb-6 text-2xl text-emerald-400 group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(5,150,105,0.3)]">
+                                        <Gauge size={24} />
                                     </div>
                                     <h3 className="text-xl font-bold text-white mb-3">Real-Time Telemetry</h3>
                                     <p className="text-slate-400 leading-relaxed">
@@ -97,9 +98,9 @@ export default function Welcome({
                                 </div>
 
                                 {/* Feature 2 */}
-                                <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 p-8 rounded-2xl hover:border-blue-500/50 transition-colors group">
-                                    <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(59,130,246,0.3)] text-blue-400">
-                                        ⚙️
+                                <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 p-8 rounded-2xl hover:border-cyan-500/50 transition-all duration-300 group">
+                                    <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center mb-6 text-2xl text-cyan-400 group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                                        <Settings size={24} />
                                     </div>
                                     <h3 className="text-xl font-bold text-white mb-3">Remote Configuration</h3>
                                     <p className="text-slate-400 leading-relaxed">
@@ -108,9 +109,9 @@ export default function Welcome({
                                 </div>
 
                                 {/* Feature 3 */}
-                                <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 p-8 rounded-2xl hover:border-indigo-500/50 transition-colors group">
-                                    <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(99,102,241,0.3)] text-indigo-400">
-                                        📋
+                                <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 p-8 rounded-2xl hover:border-indigo-500/50 transition-all duration-300 group">
+                                    <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center mb-6 text-2xl text-indigo-400 group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(99,102,241,0.3)]">
+                                        <ClipboardList size={24} />
                                     </div>
                                     <h3 className="text-xl font-bold text-white mb-3">Recipe Management</h3>
                                     <p className="text-slate-400 leading-relaxed">
@@ -120,21 +121,23 @@ export default function Welcome({
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Stats Bar */}
                     <div className="relative z-10 border-t border-slate-800 bg-slate-950 py-8">
-                        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-center divide-x divide-slate-800">
-                            <div>
-                                <div className="text-3xl font-black text-white">Modbus RTU</div>
-                                <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Protocol</div>
-                            </div>
-                            <div>
-                                <div className="text-3xl font-black text-white">RS485 to USB</div>
-                                <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Interface</div>
-                            </div>
-                            <div>
-                                <div className="text-3xl font-black text-white">&lt; 1s</div>
-                                <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Latency</div>
+                        <div className="max-w-7xl mx-auto px-6 text-center">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <div className="text-3xl font-black text-white">Modbus RTU</div>
+                                    <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Protocol</div>
+                                </div>
+                                <div>
+                                    <div className="text-3xl font-black text-white">RS485 to USB</div>
+                                    <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Interface</div>
+                                </div>
+                                <div>
+                                    <div className="text-3xl font-black text-emerald-400">&lt; 1s</div>
+                                    <div className="text-sm text-slate-500 uppercase tracking-wider mt-1">Latency</div>
+                                </div>
                             </div>
                         </div>
                     </div>

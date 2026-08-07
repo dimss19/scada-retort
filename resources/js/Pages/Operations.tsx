@@ -1,12 +1,35 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ReactNode, useState, useEffect } from 'react';
+import {
+    Gauge,
+    Settings,
+    ThermometerSun,
+    Wind,
+    Wrench,
+    Factory,
+    Snowflake,
+    ArrowDown,
+    Database as DatabaseIcon,
+    CheckCircle,
+    AlertTriangle,
+    XCircle,
+} from 'lucide-react';
+import React from 'react';
 
 type Module = 'scada' | 'historian' | 'alarm' | 'notifications' | 'database';
 type Props = { module: Module; histories?: any[] };
 
-const Badge = ({ children, tone = 'green' }: { children: ReactNode; tone?: 'green' | 'amber' | 'red' | 'blue' }) => {
-    const colors = {
+type FlowItem = {
+    icon: ReactNode;
+    label: string;
+    value: string;
+};
+
+type BadgeTone = 'green' | 'amber' | 'red' | 'blue';
+
+const Badge = ({ children, tone = 'green' }: { children: ReactNode; tone?: BadgeTone }) => {
+    const colors: Record<BadgeTone, string> = {
         green: 'bg-emerald-100 text-emerald-700',
         amber: 'bg-amber-100 text-amber-700',
         red: 'bg-red-100 text-red-700',
@@ -23,8 +46,17 @@ const Panel = ({ title, children, className = '' }: { title?: string; children: 
     </section>
 );
 
-function Scada() {
-    const flow = [['Water Tank', '82%', '💧'], ['Pump', 'Running', '⚙️'], ['Boiler', '121.4 °C', '🔥'], ['Steam Pipe', '1.8 bar', '〰️'], ['Steam Valve', 'Open', '🔧'], ['Retort', '120.8 °C', '🏭'], ['Cooling', 'Standby', '❄️'], ['Drain', 'Closed', '⬇️']];
+const Scada = () => {
+    const flow: FlowItem[] = [
+        { icon: <Gauge size={20} className="text-cyan-600" />, label: 'Water Tank', value: '82%' },
+        { icon: <Settings size={20} className="text-blue-600" />, label: 'Pump', value: 'Running' },
+        { icon: <ThermometerSun size={20} className="text-red-500" />, label: 'Boiler', value: '121.4 °C' },
+        { icon: <Wind size={20} className="text-slate-500" />, label: 'Steam Pipe', value: '1.8 bar' },
+        { icon: <Wrench size={20} className="text-amber-600" />, label: 'Steam Valve', value: 'Open' },
+        { icon: <Factory size={20} className="text-emerald-600" />, label: 'Retort', value: '120.8 °C' },
+        { icon: <Snowflake size={20} className="text-blue-400" />, label: 'Cooling', value: 'Standby' },
+        { icon: <ArrowDown size={20} className="text-slate-600" />, label: 'Drain', value: 'Closed' },
+    ];
 
     return (
         <>
@@ -34,28 +66,30 @@ function Scada() {
                         <h3 className="font-semibold text-slate-800">Realtime Mimic Diagram</h3>
                         <p className="text-sm text-slate-500">Live process overview · updated just now</p>
                     </div>
-                    <Badge>System Online</Badge>
+                    <Badge tone="green">System Online</Badge>
                 </div>
                 <div className="flex flex-col items-center">
-                    {flow.map(([name, value, icon], index) => (
-                        <div key={name} className="contents">
+                    {flow.map((item, index) => (
+                        <div key={item.label} className="contents">
                             <div className="flex w-full max-w-xl items-center gap-4 rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-4 shadow-sm">
-                                <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-100 text-xl">{icon}</span>
+                                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-cyan-100">
+                                    {item.icon}
+                                </span>
                                 <div className="flex-1">
-                                    <p className="font-semibold text-slate-800">{name}</p>
+                                    <p className="font-semibold text-slate-800">{item.label}</p>
                                     <p className="text-xs text-slate-500">Realtime object</p>
                                 </div>
-                                <span className="font-mono text-sm font-semibold text-cyan-700">{value}</span>
+                                <span className="font-mono text-sm font-semibold text-cyan-700">{item.value}</span>
                                 <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
                             </div>
-                            {index < flow.length - 1 && <div className="h-7 border-l-2 border-dashed border-cyan-400"><span className="relative left-[-7px] top-3 text-xs text-cyan-500">▼</span></div>}
+                            {index < flow.length - 1 && <div className="relative h-7"><ArrowDown size={16} className="absolute left-[-8px] top-3 text-cyan-500 rotate-90" /></div>}
                         </div>
                     ))}
                 </div>
             </Panel>
         </>
     );
-}
+};
 
 function Historian({ histories = [] }: { histories?: any[] }) {
     const [period, setPeriod] = useState('Hari');
@@ -88,7 +122,7 @@ function Historian({ histories = [] }: { histories?: any[] }) {
         ]);
 
         if (format === 'csv' || format === 'excel') {
-            const csvContent = "data:text/csv;charset=utf-8," 
+            const csvContent = "data:text/csv;charset=utf-8,"
                 + [headers.join(','), ...rows.map((e: any) => e.join(','))].join('\n');
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
@@ -158,7 +192,7 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                         <label className="mb-1 block text-xs font-medium text-slate-500">Filter periode</label>
                         <div className="flex rounded-lg bg-slate-100 p-1">
                             {['Hari', 'Minggu', 'Bulan'].map((x) => (
-                                <button key={x} onClick={() => setPeriod(x)} className={`rounded-md px-4 py-2 text-sm ${period === x ? 'bg-white font-semibold text-cyan-700 shadow-sm' : 'text-slate-500'}`}>
+                                <button key={x} onClick={() => setPeriod(x)} className={`rounded-md px-4 py-2 text-sm ${period === x ? 'bg-white font-semibold text-emerald-700 shadow-sm' : 'text-slate-500'}`}>
                                     {x}
                                 </button>
                             ))}
@@ -169,7 +203,7 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                         <input type="date" className="rounded-lg border-slate-300 text-sm" />
                     </div>
                 </div>            </Panel>
-            
+
             <Panel title="Process Batches (Heating Logs)">
                 <div className="overflow-x-auto min-h-[280px]">
                     <table className="w-full text-left text-sm">
@@ -193,10 +227,10 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                                     const start = new Date(h.start_time);
                                     const end = new Date(h.end_time);
                                     const durationMins = ((end.getTime() - start.getTime()) / 60000).toFixed(1);
-                                    
+
                                     return (
-                                        <tr 
-                                            key={h.id} 
+                                        <tr
+                                            key={h.id}
                                             className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
                                             onClick={() => setSelectedBatch(h)}
                                         >
@@ -208,9 +242,9 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                                             <td className="px-3 py-4 font-mono text-slate-600">{durationMins} min</td>
                                             <td className="px-3 py-4 text-emerald-600 font-semibold">{h.log_data?.length || 0} rows <span className="text-slate-400 font-normal ml-2 text-xs">(Click to view)</span></td>
                                             <td className="px-3 py-4 text-right relative">
-                                                <button 
+                                                <button
                                                     onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === h.id ? null : h.id); }}
-                                                    className="text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-100 text-lg font-bold"
+                                                    className="text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-100"
                                                 >
                                                     &#8942;
                                                 </button>
@@ -237,7 +271,7 @@ function Historian({ histories = [] }: { histories?: any[] }) {
 
             {/* Modal Detail Popup */}
             {selectedBatch && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setSelectedBatch(null)}>
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedBatch(null)}>
                     <div className="bg-white rounded-xl max-w-3xl w-full max-h-[80vh] flex flex-col shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                             <div>
@@ -248,7 +282,7 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                             </div>
                             <button onClick={() => setSelectedBatch(null)} className="text-slate-400 hover:text-slate-600 text-xl font-semibold px-2">&times;</button>
                         </div>
-                        
+
                         <div className="p-6 overflow-y-auto flex-1">
                             <table className="w-full text-left text-sm">
                                 <thead className="border-b text-xs uppercase text-slate-400 bg-white sticky top-0">
@@ -269,7 +303,7 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
                             <button onClick={() => setSelectedBatch(null)} className="rounded-lg border px-4 py-2 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">Close</button>
                         </div>
@@ -281,7 +315,11 @@ function Historian({ histories = [] }: { histories?: any[] }) {
 }
 
 function Alarm() {
-    const rows = [['10:31:04', 'High temperature detected', 'Retort-01', 'Critical'], ['09:48:22', 'Pressure approaching limit', 'Boiler-01', 'Warning'], ['08:12:10', 'Cycle completed', 'Retort-02', 'Normal']];
+    const rows = [
+        { time: '10:31:04', msg: 'High temperature detected', machine: 'Retort-01', status: 'Critical', icon: <XCircle className="text-red-500" />, tone: 'red' as const },
+        { time: '09:48:22', msg: 'Pressure approaching limit', machine: 'Boiler-01', status: 'Warning', icon: <AlertTriangle className="text-amber-500" />, tone: 'amber' as const },
+        { time: '08:12:10', msg: 'Cycle completed', machine: 'Retort-02', status: 'Normal', icon: <CheckCircle className="text-emerald-500" />, tone: 'green' as const },
+    ];
 
     return (
         <>
@@ -298,11 +336,11 @@ function Alarm() {
                         </thead>
                         <tbody>
                             {rows.map((r) => (
-                                <tr key={r[0]} className="border-b border-slate-100">
-                                    <td className="px-3 py-4 font-mono text-slate-500">{r[0]}</td>
-                                    <td className="px-3 py-4 font-medium text-slate-700">{r[1]}</td>
-                                    <td className="px-3 py-4 text-slate-500">{r[2]}</td>
-                                    <td className="px-3 py-4"><Badge tone={r[3] === 'Critical' ? 'red' : r[3] === 'Warning' ? 'amber' : 'green'}>{r[3]}</Badge></td>
+                                <tr key={r.time} className="border-b border-slate-100">
+                                    <td className="px-3 py-4 font-mono text-slate-500">{r.time}</td>
+                                    <td className="px-3 py-4 font-medium text-slate-700 flex items-center gap-2">{r.icon}{r.msg}</td>
+                                    <td className="px-3 py-4 text-slate-500">{r.machine}</td>
+                                    <td className="px-3 py-4"><Badge tone={r.tone}>{r.status}</Badge></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -318,17 +356,17 @@ function Notifications() {
         <Panel title="Notification Channels">
             <div className="divide-y">
                 {[
-                    ['Browser Notification', 'Active', false],
-                    ['Email', 'Future', true],
-                    ['WhatsApp', 'Future', true],
-                    ['Telegram', 'Future', true],
-                ].map(([name, status, future]) => (
-                    <div key={String(name)} className="flex items-center justify-between py-4">
+                    { name: 'Browser Notification', status: 'Active', future: false },
+                    { name: 'Email', status: '', future: true },
+                    { name: 'WhatsApp', status: '', future: true },
+                    { name: 'Telegram', status: '', future: true },
+                ].map((ch) => (
+                    <div key={ch.name} className="flex items-center justify-between py-4">
                         <div>
-                            <p className="font-medium text-slate-700">{name}</p>
+                            <p className="font-medium text-slate-700">{ch.name}</p>
                             <p className="text-sm text-slate-400">Receive SCADA alarms via this channel</p>
                         </div>
-                        {future ? <Badge tone="blue">Future</Badge> : <label className="flex items-center gap-2 text-sm text-emerald-600"><input type="checkbox" defaultChecked className="rounded border-slate-300 text-cyan-600" />{status}</label>}
+                        {ch.future ? <Badge tone="blue">Future</Badge> : <label className="flex items-center gap-2 text-sm text-emerald-600"><input type="checkbox" defaultChecked className="rounded border-slate-300 text-emerald-600" />{ch.status}</label>}
                     </div>
                 ))}
             </div>
@@ -336,7 +374,7 @@ function Notifications() {
     );
 }
 
-function Database() {
+function DatabasePanel() {
     const tables = ['users', 'roles', 'permissions', 'machines', 'devices', 'tnh_registers', 'temperature_logs', 'pressure_logs', 'alarm_logs', 'communication_logs', 'events'];
 
     return (
@@ -345,7 +383,7 @@ function Database() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {tables.map((x, i) => (
                     <div key={x} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
-                        <span className="text-xl">🗄️</span>
+                        <DatabaseIcon className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                         <div>
                             <p className="font-mono text-sm font-semibold text-slate-700">{x}</p>
                             <p className="text-xs text-slate-400">{i < 2 || x === 'devices' ? 'Available / planned schema' : 'Planned schema'}</p>
@@ -367,7 +405,7 @@ const titles: Record<Module, [string, string]> = {
 
 export default function Operations({ module, histories }: Props) {
     const [title, subtitle] = titles[module];
-    const content = { scada: <Scada />, historian: <Historian histories={histories} />, alarm: <Alarm />, notifications: <Notifications />, database: <Database /> }[module];
+    const content = { scada: <Scada />, historian: <Historian histories={histories} />, alarm: <Alarm />, notifications: <Notifications />, database: <DatabasePanel /> }[module];
 
     return (
         <AuthenticatedLayout header={<div><h2 className="text-xl font-semibold text-slate-800">{title}</h2><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div>}>

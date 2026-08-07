@@ -3,6 +3,17 @@ import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps, ScadaCanvas as ScadaCanvasType, ScadaElementType, ScadaMapping } from '@/types';
 import ScadaCanvas from '@/Components/ScadaCanvas';
+import { ReactNode } from 'react';
+import {
+    Gauge,
+    Monitor,
+    GitMerge,
+    Cog,
+    Square,
+    Minus,
+    Type,
+    CircleDot,
+} from 'lucide-react';
 
 interface Props extends PageProps {
     controller: any;
@@ -10,15 +21,15 @@ interface Props extends PageProps {
     mappings: ScadaMapping[];
 }
 
-const ELEMENT_TYPES: Array<{ type: ScadaElementType; label: string; icon: string; defaultW: number; defaultH: number }> = [
-    { type: 'gauge', label: 'Gauge', icon: '◴', defaultW: 140, defaultH: 160 },
-    { type: 'display', label: 'Display', icon: '▣', defaultW: 140, defaultH: 80 },
-    { type: 'valve', label: 'Valve', icon: '⋈', defaultW: 90, defaultH: 110 },
-    { type: 'pump', label: 'Pump', icon: '⚙', defaultW: 90, defaultH: 110 },
-    { type: 'tank', label: 'Vessel / Tank', icon: '▥', defaultW: 180, defaultH: 260 },
-    { type: 'pipe', label: 'Pipe', icon: '═', defaultW: 180, defaultH: 30 },
-    { type: 'label', label: 'Label', icon: 'Aa', defaultW: 180, defaultH: 44 },
-    { type: 'indicator', label: 'Indicator', icon: '●', defaultW: 100, defaultH: 64 },
+const ELEMENT_TYPES: Array<{ type: ScadaElementType; label: string; icon: ReactNode; defaultW: number; defaultH: number }> = [
+    { type: 'gauge', label: 'Gauge', icon: <Gauge size={20} />, defaultW: 140, defaultH: 160 },
+    { type: 'display', label: 'Display', icon: <Monitor size={20} />, defaultW: 140, defaultH: 80 },
+    { type: 'valve', label: 'Valve', icon: <GitMerge size={20} />, defaultW: 90, defaultH: 110 },
+    { type: 'pump', label: 'Pump', icon: <Cog size={20} />, defaultW: 90, defaultH: 110 },
+    { type: 'tank', label: 'Vessel / Tank', icon: <Square size={20} />, defaultW: 180, defaultH: 260 },
+    { type: 'pipe', label: 'Pipe', icon: <Minus size={20} />, defaultW: 180, defaultH: 30 },
+    { type: 'label', label: 'Label', icon: <Type size={20} />, defaultW: 180, defaultH: 44 },
+    { type: 'indicator', label: 'Indicator', icon: <CircleDot size={20} />, defaultW: 100, defaultH: 64 },
 ];
 
 const DATA_SOURCES = [

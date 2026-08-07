@@ -37,13 +37,13 @@ export default function Authenticated({
     });
 
     return (
-        <div className="min-h-screen bg-slate-100">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
             <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950 text-white shadow-lg">
                 <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
                     <Link href={route('dashboard')} className="flex shrink-0 items-center gap-3">
-                        <ApplicationLogo className="h-9 w-9" />
+                        <ApplicationLogo className="h-9 w-9 drop-shadow-[0_0_5px_rgba(5,150,105,0.8)]" />
                         <div className="hidden xl:block">
-                            <p className="text-sm font-bold tracking-wide">SCADA RETORT</p>
+                            <p className="text-sm font-black tracking-wide text-emerald-400">SCADA RETORT</p>
                             <p className="text-[9px] uppercase tracking-[0.2em] text-cyan-400">Control System</p>
                         </div>
                     </Link>
@@ -57,8 +57,8 @@ export default function Authenticated({
                                     href={route(item.routeName)}
                                     className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                                         active
-                                            ? 'bg-cyan-500/15 text-cyan-300'
-                                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                            ? 'bg-emerald-500/15 text-emerald-300'
+                                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                                     }`}
                                 >
                                     {item.label}
@@ -68,15 +68,14 @@ export default function Authenticated({
                     </nav>
 
                     <div className="ml-3 flex shrink-0 items-center gap-1 border-l border-slate-800 pl-3">
-
-                        <Link href={route('profile.edit')} aria-label="Profile" title={user.name} className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/20 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/30">
+                        <Link href={route('profile.edit')} aria-label="Profile" title={user.name} className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/30">
                             {user.name.charAt(0).toUpperCase()}
                         </Link>
                         <Link
                             href={route('logout')}
                             method="post"
                             as="button"
-                            className="hidden rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white md:block"
+                            className="hidden rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white md:block"
                         >
                             Log Out
                         </Link>
@@ -85,12 +84,12 @@ export default function Authenticated({
             </header>
 
             {header && (
-                <div className="border-b border-slate-200 bg-white">
-                    <div className="px-4 py-5 sm:px-6 lg:px-8">{header}</div>
+                <div className="border-b border-slate-200 bg-white px-4 py-5 shadow-sm sm:px-6 lg:px-8">
+                    {header}
                 </div>
             )}
 
-            <main>{children}</main>
+            <main className="bg-slate-50">{children}</main>
         </div>
     );
 }

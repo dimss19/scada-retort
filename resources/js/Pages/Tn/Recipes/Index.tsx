@@ -2,6 +2,7 @@ import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { PageProps } from '@/types';
+import { ClipboardList } from 'lucide-react';
 
 interface Recipe {
     id: number;
@@ -34,7 +35,7 @@ export default function Index({ auth, recipes }: PageProps<{ recipes: Recipe[] }
                         <h3 className="text-lg font-bold text-slate-700">Manage Pattern Profiles</h3>
                         <Link
                             href={route('tn.recipes.create')}
-                            className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded shadow"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow"
                         >
                             + Create New Recipe
                         </Link>
@@ -43,7 +44,9 @@ export default function Index({ auth, recipes }: PageProps<{ recipes: Recipe[] }
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-slate-200">
                         {recipes.length === 0 ? (
                             <div className="p-12 text-center text-slate-500">
-                                <div className="text-4xl mb-4">📋</div>
+                                <div className="w-16 h-16 mx-auto mb-4 text-emerald-500">
+                                    <ClipboardList size={64} />
+                                </div>
                                 <p className="text-lg font-medium">No recipe templates found.</p>
                                 <p className="text-sm">Create one to start defining your temperature profiles.</p>
                             </div>
@@ -67,7 +70,7 @@ export default function Index({ auth, recipes }: PageProps<{ recipes: Recipe[] }
                                                     <div className="text-sm text-slate-500 truncate max-w-xs">{recipe.description}</div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md font-bold text-sm">
+                                                    <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-md font-bold text-sm">
                                                         F₀ {recipe.target_f0}
                                                     </span>
                                                 </td>
@@ -79,7 +82,7 @@ export default function Index({ auth, recipes }: PageProps<{ recipes: Recipe[] }
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                     <div className="flex space-x-3">
-                                                        <Link href={route('tn.recipes.edit', recipe.id)} className="text-indigo-600 hover:text-indigo-900">Edit</Link>
+                                                        <Link href={route('tn.recipes.edit', recipe.id)} className="text-emerald-600 hover:text-emerald-900">Edit</Link>
                                                         <button onClick={() => handleDelete(recipe.id)} className="text-red-600 hover:text-red-900">Delete</button>
                                                     </div>
                                                 </td>
