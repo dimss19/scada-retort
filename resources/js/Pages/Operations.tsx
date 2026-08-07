@@ -400,11 +400,11 @@ function DatabasePanel() {
 }
 
 const titles: Record<Module, [string, string]> = {
-    scada: ['SCADA', 'Realtime process monitoring'],
-    historian: ['History', 'Process data logs and export'],
-    alarm: ['Alarm', 'Active alarms and event history'],
-    notifications: ['Notification', 'Alarm notification channels'],
-    database: ['Database', 'SCADA data structure'],
+    scada: ['SCADA Realtime POV', 'Pantau dan konfigurasi proses SCADA secara visual'],
+    historian: ['Riwayat Proses & Data Log', 'Kelola, analisis, dan ekspor log data proses sterilisasi controller retort'],
+    alarm: ['Manajemen Alarm & Event', 'Pantau riwayat alarm aktif dan kejadian sistem'],
+    notifications: ['Kanal Notifikasi Alarm', 'Konfigurasi integrasi saluran pemberitahuan alarm'],
+    database: ['Struktur Database SCADA', 'Daftar tabel operasional dan skema data sistem'],
 };
 
 export default function Operations({ module, histories }: Props) {
@@ -412,9 +412,14 @@ export default function Operations({ module, histories }: Props) {
     const content = { scada: <Scada />, historian: <Historian histories={histories} />, alarm: <Alarm />, notifications: <Notifications />, database: <DatabasePanel /> }[module];
 
     return (
-        <AuthenticatedLayout header={<div><h2 className="text-xl font-semibold text-slate-800">{title}</h2><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div>}>
+        <AuthenticatedLayout header={
+            <div className="max-w-7xl mx-auto py-1">
+                <h1 className="text-2xl font-black tracking-tight text-slate-900">{title}</h1>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">{subtitle}</p>
+            </div>
+        }>
             <Head title={title} />
-            <div className="space-y-5 p-4 sm:p-6 lg:p-8">{content}</div>
+            <div className="space-y-5 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">{content}</div>
         </AuthenticatedLayout>
     );
 }
