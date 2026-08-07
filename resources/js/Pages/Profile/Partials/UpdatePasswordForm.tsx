@@ -1,5 +1,4 @@
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
@@ -50,23 +49,19 @@ export default function UpdatePasswordForm({
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Update Password
+            <header className="border-b border-slate-200 pb-4 mb-6">
+                <h2 className="text-xl font-black text-slate-900">
+                    Ubah Kata Sandi
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-600">
-                    Ensure your account is using a long, random password to stay
-                    secure.
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                    Pastikan akun Anda menggunakan kata sandi yang kuat dan aman untuk menjaga keamanan sistem.
                 </p>
             </header>
 
-            <form onSubmit={updatePassword} className="mt-6 space-y-6">
+            <form onSubmit={updatePassword} className="space-y-5">
                 <div>
-                    <InputLabel
-                        htmlFor="current_password"
-                        value="Current Password"
-                    />
+                    <label htmlFor="current_password" className="block text-xs font-extrabold text-slate-700 uppercase mb-1">Kata Sandi Saat Ini</label>
 
                     <TextInput
                         id="current_password"
@@ -76,18 +71,18 @@ export default function UpdatePasswordForm({
                             setData('current_password', e.target.value)
                         }
                         type="password"
-                        className="mt-1 block w-full"
+                        className="block w-full"
                         autoComplete="current-password"
                     />
 
                     <InputError
                         message={errors.current_password}
-                        className="mt-2"
+                        className="mt-2 text-xs font-bold text-rose-600"
                     />
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="password" value="New Password" />
+                    <label htmlFor="password" className="block text-xs font-extrabold text-slate-700 uppercase mb-1">Kata Sandi Baru</label>
 
                     <TextInput
                         id="password"
@@ -95,18 +90,15 @@ export default function UpdatePasswordForm({
                         value={data.password}
                         onChange={(e) => setData('password', e.target.value)}
                         type="password"
-                        className="mt-1 block w-full"
+                        className="block w-full"
                         autoComplete="new-password"
                     />
 
-                    <InputError message={errors.password} className="mt-2" />
+                    <InputError message={errors.password} className="mt-2 text-xs font-bold text-rose-600" />
                 </div>
 
                 <div>
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
+                    <label htmlFor="password_confirmation" className="block text-xs font-extrabold text-slate-700 uppercase mb-1">Konfirmasi Kata Sandi Baru</label>
 
                     <TextInput
                         id="password_confirmation"
@@ -115,18 +107,18 @@ export default function UpdatePasswordForm({
                             setData('password_confirmation', e.target.value)
                         }
                         type="password"
-                        className="mt-1 block w-full"
+                        className="block w-full"
                         autoComplete="new-password"
                     />
 
                     <InputError
                         message={errors.password_confirmation}
-                        className="mt-2"
+                        className="mt-2 text-xs font-bold text-rose-600"
                     />
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                <div className="flex items-center gap-4 pt-2">
+                    <PrimaryButton disabled={processing}>Simpan Kata Sandi</PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -135,8 +127,8 @@ export default function UpdatePasswordForm({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600">
-                            Saved.
+                        <p className="text-xs font-bold text-emerald-700">
+                            Tersimpan.
                         </p>
                     </Transition>
                 </div>

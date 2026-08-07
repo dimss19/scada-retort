@@ -12,16 +12,17 @@ export default function Edit({
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Profile
-                </h2>
+                <div className="max-w-7xl mx-auto py-1">
+                    <h1 className="text-2xl font-black tracking-tight text-slate-900">Pengaturan Profil Pengguna</h1>
+                    <p className="text-sm font-semibold text-slate-600 mt-0.5">Kelola informasi akun, kata sandi, dan keamanan sistem SCADA Retort.</p>
+                </div>
             }
         >
-            <Head title="Profile" />
+            <Head title="Profil Akun" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+            <div className="py-8">
+                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+                    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg p-7 backdrop-blur-xl">
                         <UpdateProfileInformationForm
                             mustVerifyEmail={mustVerifyEmail}
                             status={status}
@@ -29,11 +30,11 @@ export default function Edit({
                         />
                     </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg p-7 backdrop-blur-xl">
                         <UpdatePasswordForm className="max-w-xl" />
                     </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg p-7 backdrop-blur-xl">
                         <DeleteUserForm className="max-w-xl" />
                     </div>
                 </div>
