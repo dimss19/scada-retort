@@ -126,7 +126,7 @@ class TnRecipeController extends Controller {
                 DB::transaction(function() use ($p, $configData, $stepsData, $stepCount, $tn, $request) {
                     $template = TnRecipeTemplate::create([
                         'recipe_code' => 'P' . $p . '-' . uniqid(),
-                        'name' => 'Pattern ' . $p . ' (' . $tn->name . ')',
+                        'name' => 'Pattern ' . $p . ($tn->name && strtolower(trim($tn->name)) !== 'asa' ? ' (' . $tn->name . ')' : ''),
                         'status' => 'Draft',
                         'version' => '1.0',
                         'revision' => 1,
