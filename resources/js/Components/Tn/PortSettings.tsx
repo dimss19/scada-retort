@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { router } from '@inertiajs/react';
 
 interface PortInfo {
@@ -151,8 +152,8 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
                 Port: {portLabel}
             </button>
 
-            {open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4"
+            {open && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4"
                     onClick={() => setOpen(false)}>
                     <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-7 shadow-2xl border border-slate-200"
                         onClick={e => e.stopPropagation()}>
@@ -252,7 +253,8 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );
