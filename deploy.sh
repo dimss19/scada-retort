@@ -117,8 +117,11 @@ step4_cmd="
 if [ ! -f '$APP_DIR/.env' ] && [ -f '$APP_DIR/.env.example' ]; then
     cp '$APP_DIR/.env.example' '$APP_DIR/.env'
 fi && \
-chown -R www-data:www-data '$APP_DIR/storage' '$APP_DIR/bootstrap/cache' && \
-chmod -R 775 '$APP_DIR/storage' '$APP_DIR/bootstrap/cache'
+mkdir -p '$APP_DIR/database' && \
+touch '$APP_DIR/database/database.sqlite' 2>/dev/null || true && \
+chown -R www-data:www-data '$APP_DIR/storage' '$APP_DIR/bootstrap/cache' '$APP_DIR/database' && \
+chmod -R 775 '$APP_DIR/storage' '$APP_DIR/bootstrap/cache' '$APP_DIR/database' && \
+chmod 664 '$APP_DIR/database/database.sqlite' 2>/dev/null || true
 "
 execute_step "4/8" "Setup File Environment (.env) & Hak Akses Folder" "$step4_cmd"
 
@@ -268,7 +271,9 @@ CRON_JOB='* * * * * cd $APP_DIR && php8.4 artisan schedule:run >> /dev/null 2>&1
 execute_step "Extra" "Konfigurasi Supervisor Worker & Crontab Scheduler" "$step9_cmd"
 
 # Final permission fix
-chown -R www-data:www-data "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" 2>/dev/null || true
+chown -R www-data:www-data "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" "$APP_DIR/database" 2>/dev/null || true
+chmod -R 775 "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" "$APP_DIR/database" 2>/dev/null || true
+chmod 664 "$APP_DIR/database/database.sqlite" 2>/dev/null || true
 
 # ------------------------------------------------------------------------------
 # FINAL REPORT SUMMARY
