@@ -73,8 +73,10 @@ export function buildRetortTelemetry(reading: any, isOnline: boolean): RetortTel
     const targetTemperature = toEngineeringValue(reading?.sv, decimalPoint);
     const heatingPercent = toOutputPercent(reading?.heating_mv);
     const coolingPercent = toOutputPercent(reading?.cooling_mv);
-    const running = Boolean(isOnline && reading && reading.run_status === false);
-    const automatic = Boolean(reading && reading.auto_manual === false);
+    const isRunActive = reading && (reading.run_status === false || reading.run_status === 0 || reading.run_status === '0' || reading.run_status === 'false');
+    const isAutoActive = reading && (reading.auto_manual === false || reading.auto_manual === 0 || reading.auto_manual === '0' || reading.auto_manual === 'false');
+    const running = Boolean(isOnline && reading && isRunActive);
+    const automatic = Boolean(reading && isAutoActive);
     const heatingActive = Boolean(running && (reading?.out1_active || (heatingPercent ?? 0) > 0));
     const coolingActive = Boolean(running && (reading?.out2_active || (coolingPercent ?? 0) > 0));
     const sensorFault = typeof reading?.pv === 'number' ? SENSOR_FAULTS[reading.pv] ?? null : null;
