@@ -32,27 +32,27 @@ export default function Login({
         <GuestLayout>
             <Head title="Log in" />
 
-            <div className="mb-6 text-center">
-                <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
-                <p className="text-sm text-slate-400">Sign in to your SCADA dashboard</p>
+            <div className="mb-8 text-center">
+                <h2 className="text-2xl font-black text-slate-900 mb-1.5">Welcome Back</h2>
+                <p className="text-sm font-semibold text-slate-500">Sign in to your SCADA dashboard</p>
             </div>
 
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-400 bg-green-400/10 p-3 rounded border border-green-400/20">
+                <div className="mb-6 text-sm font-bold text-emerald-800 bg-emerald-50 p-3.5 rounded-xl border border-emerald-200">
                     {status}
                 </div>
             )}
 
             <form onSubmit={submit} className="space-y-5">
                 <div>
-                    <InputLabel htmlFor="email" value="Email" className="text-slate-300" />
+                    <InputLabel htmlFor="email" value="Email" className="text-slate-700 font-bold text-sm" />
 
                     <TextInput
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1 block w-full bg-slate-900/50 border-slate-700 text-white focus:border-cyan-500 focus:ring-cyan-500"
+                        className="mt-1.5 block w-full rounded-xl border-slate-300 bg-slate-50 text-slate-900 focus:border-blue-600 focus:ring-blue-600 font-medium py-3 px-4"
                         autoComplete="username"
                         isFocused={true}
                         onChange={(e) => setData('email', e.target.value)}
@@ -62,14 +62,14 @@ export default function Login({
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="password" value="Password" className="text-slate-300" />
+                    <InputLabel htmlFor="password" value="Password" className="text-slate-700 font-bold text-sm" />
 
                     <TextInput
                         id="password"
                         type="password"
                         name="password"
                         value={data.password}
-                        className="mt-1 block w-full bg-slate-900/50 border-slate-700 text-white focus:border-cyan-500 focus:ring-cyan-500"
+                        className="mt-1.5 block w-full rounded-xl border-slate-300 bg-slate-50 text-slate-900 focus:border-blue-600 focus:ring-blue-600 font-medium py-3 px-4"
                         autoComplete="current-password"
                         onChange={(e) => setData('password', e.target.value)}
                     />
@@ -77,12 +77,12 @@ export default function Login({
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <label className="flex items-center">
+                <div className="flex items-center justify-between pt-1">
+                    <label className="flex items-center cursor-pointer">
                         <Checkbox
                             name="remember"
                             checked={data.remember}
-                            className="border-slate-600 bg-slate-800 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-slate-900"
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                             onChange={(e) =>
                                 setData(
                                     'remember',
@@ -90,7 +90,7 @@ export default function Login({
                                 )
                             }
                         />
-                        <span className="ms-2 text-sm text-slate-400">
+                        <span className="ms-2 text-sm font-semibold text-slate-600">
                             Remember me
                         </span>
                     </label>
@@ -98,16 +98,16 @@ export default function Login({
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="rounded-md text-sm text-cyan-400 hover:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-colors"
+                            className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
                         >
                             Forgot password?
                         </Link>
                     )}
                 </div>
 
-                <div className="pt-2">
-                    <PrimaryButton className="w-full justify-center py-3" disabled={processing}>
-                        Log in
+                <div className="pt-3">
+                    <PrimaryButton className="w-full justify-center py-3.5 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black text-sm rounded-xl shadow-md hover:from-yellow-300 hover:to-amber-400 border-none transition-all" disabled={processing}>
+                        LOG IN
                     </PrimaryButton>
                 </div>
             </form>
