@@ -29,10 +29,7 @@ export default function Index() {
 
             <main className="p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto">
                 <div className="mb-10 max-w-3xl rounded-3xl border border-slate-200/90 bg-white/95 p-8 shadow-lg backdrop-blur-xl">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1 text-xs font-extrabold uppercase tracking-[0.24em] text-blue-700">
-                        Controller Selection
-                    </span>
-                    <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Pilih Tipe Controller Autonics TN</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Pilih Tipe Controller Autonics TN</h1>
                     <p className="mt-3 text-base text-slate-600 leading-relaxed">Pilih TNS, TNH, atau TNL untuk langsung membuka halaman monitoring realtime. Sistem akan mendeteksi koneksi Modbus serial port secara otomatis.</p>
                 </div>
 
