@@ -6,24 +6,74 @@
 
 @layer base {
   :root {
-    --bg-dark: #0f172a;
-    --bg-panel: #1e293b;
+    --bg-dark: #080f26;
+    --bg-panel: rgba(13, 27, 62, 0.75);
     --text-primary: #f8fafc;
     --text-muted: #94a3b8;
-    --accent-emerald: #059669;
-    --accent-emerald-light: #10b981;
+    --accent-blue: #3b82f6;
+    --accent-yellow: #facc15;
+    --accent-amber: #f59e0b;
   }
 
   body {
     font-family: 'Space Grotesk', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    overflow-x: hidden;
   }
 }
 
 @layer utilities {
   .glass-panel {
-    @apply bg-[#1e293b]/80 backdrop-blur-md border border-slate-700 shadow-xl;
+    background: rgba(13, 27, 62, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
   }
-  .glow-emerald {
-    box-shadow: 0 0 15px rgba(5, 150, 105, 0.4);
+
+  .glass-panel-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-panel-hover:hover {
+    background: rgba(23, 42, 90, 0.75);
+    border-color: rgba(250, 204, 21, 0.5);
+    box-shadow: 0 12px 40px 0 rgba(250, 204, 21, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .glass-input {
+    background: rgba(15, 29, 66, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #f8fafc;
+  }
+
+  .glass-input:focus {
+    border-color: #facc15;
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+    outline: none;
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+  }
+
+  .glow-yellow {
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.4);
+  }
+
+  .text-gradient-blue-yellow {
+    background: linear-gradient(135deg, #60a5fa 0%, #facc15 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .text-gradient-yellow {
+    background: linear-gradient(135deg, #fde047 0%, #f59e0b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 }
