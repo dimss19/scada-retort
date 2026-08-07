@@ -28,7 +28,7 @@ export default function Authenticated({
 
     const visibleNavigation = navigation.filter((item) => {
         if (isDashboardPage) {
-            return !item.requiresController;
+            return false;
         }
 
         if (hasActiveController && item.hideWhenControllerActive) {
