@@ -57,11 +57,6 @@ export default function Welcome({
                     <div className="absolute bottom-10 right-10 w-[35rem] h-[35rem] bg-amber-400/15 rounded-full blur-[150px] pointer-events-none"></div>
 
                     <div className="relative max-w-7xl mx-auto px-6 pt-20 pb-16 text-center z-10 flex-grow flex flex-col justify-center">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-blue-700 mx-auto mb-6 shadow-sm">
-                            <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
-                            Next Generation Temperature SCADA
-                        </div>
-
                         <h1 className="text-5xl md:text-6xl font-black text-slate-900 mb-6 tracking-tight leading-tight">
                             Industrial Temperature <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-blue-600 to-amber-600">

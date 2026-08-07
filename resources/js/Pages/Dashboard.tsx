@@ -15,13 +15,6 @@ const controllerTypes = [
 ];
 
 export default function Dashboard({ auth, tnCount, tnOnline }: DashboardProps) {
-    const activity = [
-        ['10:42:18', 'Retort-01 temperature reached setpoint (121.0 °C)', 'Normal'],
-        ['10:31:04', 'High temperature alarm acknowledged', 'Critical'],
-        ['09:58:42', 'Boiler-01 started heating cycle', 'Running'],
-        ['09:12:11', 'ESP32 Modbus communication restored', 'Online'],
-    ];
-
     return (
         <AuthenticatedLayout>
             <Head title="Dashboard" />
@@ -35,7 +28,7 @@ export default function Dashboard({ auth, tnCount, tnOnline }: DashboardProps) {
                             <span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse"></span>
                             SCADA Control Center
                         </div>
-                        <h3 className="mt-4 text-3xl font-extrabold text-white sm:text-4xl">Selamat datang kembali, {auth.user.name} 👋</h3>
+                        <h3 className="mt-4 text-3xl font-extrabold text-white sm:text-4xl">Selamat datang kembali, {auth.user.name}</h3>
                         <p className="mt-2 max-w-2xl text-base text-blue-100/90 leading-relaxed">
                             Pilih tipe controller Autonics TN Series di bawah untuk membuka sistem monitoring realtime, kurva temperatur, dan kontrol SCADA.
                         </p>
@@ -66,37 +59,6 @@ export default function Dashboard({ auth, tnCount, tnOnline }: DashboardProps) {
                             </div>
                         </Link>
                     ))}
-                </div>
-
-                {/* Activity Feed Section */}
-                <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-7 shadow-lg backdrop-blur-xl">
-                    <div className="mb-6 flex items-center justify-between">
-                        <div>
-                            <h3 className="text-xl font-extrabold text-slate-900">Latest Activity Log</h3>
-                            <p className="text-xs text-slate-500 mt-0.5">Riwayat aktivitas & telemetri sistem terbaru</p>
-                        </div>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1 text-xs font-bold text-blue-700">
-                            <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
-                            Live Updates
-                        </span>
-                    </div>
-                    <div className="divide-y divide-slate-100">
-                        {activity.map(([time, message, status]) => (
-                            <div key={time} className="flex items-center gap-4 py-4 transition-colors hover:bg-slate-50/80 px-3 rounded-2xl">
-                                <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-lg shadow-sm">{time}</span>
-                                <span className="flex-1 text-sm font-bold text-slate-800">{message}</span>
-                                <span className={`rounded-full px-3.5 py-1 text-xs font-extrabold border ${
-                                    status === 'Critical'
-                                        ? 'bg-rose-100 text-rose-700 border-rose-200'
-                                        : status === 'Running' || status === 'Online'
-                                        ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                        : 'bg-blue-100 text-blue-800 border-blue-200'
-                                }`}>
-                                    {status}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>

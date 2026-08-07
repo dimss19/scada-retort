@@ -249,8 +249,8 @@ export default function CreateEdit({ auth, recipe }: PageProps<{ recipe?: any }>
                                             </div>
                                         </div>
 
-                                        <button type="button" onClick={() => removeStep(idx)} disabled={data.steps.length === 1} className="text-red-500 hover:text-red-700 disabled:opacity-30 p-1">
-                                            🗑️
+                                        <button type="button" onClick={() => removeStep(idx)} disabled={data.steps.length === 1} className="text-red-500 hover:text-red-700 text-xs font-bold disabled:opacity-30 p-1">
+                                            Hapus
                                         </button>
                                     </div>
                                 ))}

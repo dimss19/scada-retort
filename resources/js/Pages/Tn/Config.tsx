@@ -77,10 +77,10 @@ export default function Config({ auth, controller, configs, groups }: Props) {
                                     </div>
                                     <div className="flex gap-3">
                                         <button onClick={handleSync} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg border border-slate-300">
-                                            🔄 Sync from Device
+                                            Sync from Device
                                         </button>
                                         <button onClick={handleSaveGroup} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-sm">
-                                            💾 Save Group
+                                            Save Group
                                         </button>
                                     </div>
                                 </div>

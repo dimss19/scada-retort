@@ -79,7 +79,7 @@ export default function RetortMonitorShell(props: Props) {
                                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:text-blue-800'
                             }`}
                         >
-                            📊 Monitoring Dashboard
+                            Monitoring Dashboard
                         </button>
                         <button
                             type="button"
@@ -90,7 +90,7 @@ export default function RetortMonitorShell(props: Props) {
                                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:text-blue-800'
                             }`}
                         >
-                            🎨 SCADA Canvas POV
+                            SCADA Canvas POV
                         </button>
                     </div>
 
