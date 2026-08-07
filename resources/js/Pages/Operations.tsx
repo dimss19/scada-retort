@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ReactNode, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Gauge,
     Settings,
@@ -181,46 +182,44 @@ function Historian({ histories = [] }: { histories?: any[] }) {
         window.addEventListener('click', closeMenu);
         return () => window.removeEventListener('click', closeMenu);
     }, []);
-
-
-
     return (
         <div className="space-y-6">
             <Panel>
-                <div className="flex flex-wrap items-end gap-3">
+                <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-slate-500">Filter periode</label>
-                        <div className="flex rounded-lg bg-slate-100 p-1">
+                        <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-700">Filter Periode</label>
+                        <div className="flex gap-1.5 rounded-2xl bg-slate-100 p-1.5 border border-slate-200">
                             {['Hari', 'Minggu', 'Bulan'].map((x) => (
-                                <button key={x} onClick={() => setPeriod(x)} className={`rounded-md px-4 py-2 text-sm ${period === x ? 'bg-white font-semibold text-emerald-700 shadow-sm' : 'text-slate-500'}`}>
+                                <button key={x} onClick={() => setPeriod(x)} className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${period === x ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
                                     {x}
                                 </button>
                             ))}
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-slate-500">Custom Date</label>
-                        <input type="date" className="rounded-lg border-slate-300 text-sm" />
+                        <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-700">Tanggal Kustom</label>
+                        <input type="date" className="rounded-xl border-slate-300 bg-slate-50 text-xs font-bold text-slate-800 shadow-sm focus:border-blue-600 focus:ring-blue-600 py-2 px-3" />
                     </div>
-                </div>            </Panel>
+                </div>
+            </Panel>
 
             <Panel title="Process Batches (Heating Logs)">
                 <div className="overflow-x-auto min-h-[280px]">
                     <table className="w-full text-left text-sm">
-                        <thead className="border-b text-xs uppercase text-slate-400">
+                        <thead className="bg-[#0f172a] text-white">
                             <tr>
-                                <th className="px-3 py-3">Machine</th>
-                                <th className="px-3 py-3">Start Time</th>
-                                <th className="px-3 py-3">End Time</th>
-                                <th className="px-3 py-3">Duration (Mins)</th>
-                                <th className="px-3 py-3">Data Points</th>
-                                <th className="px-3 py-3 text-right">Action</th>
+                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider rounded-tl-2xl">Mesin / Controller</th>
+                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider">Waktu Mulai</th>
+                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider">Waktu Selesai</th>
+                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider">Durasi</th>
+                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider">Data Points</th>
+                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider text-right rounded-tr-2xl">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-100 bg-white">
                             {histories.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-3 py-8 text-center text-slate-500">No process history recorded yet.</td>
+                                    <td colSpan={6} className="px-4 py-12 text-center text-xs font-bold text-slate-400">Belum ada riwayat proses tercatat.</td>
                                 </tr>
                             ) : (
                                 histories.map((h) => {
@@ -231,31 +230,35 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                                     return (
                                         <tr
                                             key={h.id}
-                                            className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
+                                            className="hover:bg-blue-50/50 transition-colors cursor-pointer"
                                             onClick={() => setSelectedBatch(h)}
                                         >
-                                            <td className="px-3 py-4 font-medium text-slate-700">
+                                            <td className="px-4 py-4 font-extrabold text-slate-900">
                                                 {h.controller?.machine?.machine_name || h.controller?.model_type || `Controller #${h.tn_controller_id}`}
                                             </td>
-                                            <td className="px-3 py-4 text-slate-500">{start.toLocaleString()}</td>
-                                            <td className="px-3 py-4 text-slate-500">{end.toLocaleString()}</td>
-                                            <td className="px-3 py-4 font-mono text-slate-600">{durationMins} min</td>
-                                            <td className="px-3 py-4 text-emerald-600 font-semibold">{h.log_data?.length || 0} rows <span className="text-slate-400 font-normal ml-2 text-xs">(Click to view)</span></td>
-                                            <td className="px-3 py-4 text-right relative">
+                                            <td className="px-4 py-4 text-xs font-semibold text-slate-600">{start.toLocaleString()}</td>
+                                            <td className="px-4 py-4 text-xs font-semibold text-slate-600">{end.toLocaleString()}</td>
+                                            <td className="px-4 py-4 font-mono font-bold text-slate-800 text-xs">{durationMins} min</td>
+                                            <td className="px-4 py-4">
+                                                <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-mono font-black text-xs inline-flex items-center gap-1">
+                                                    {h.log_data?.length || 0} baris
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-4 text-right relative">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === h.id ? null : h.id); }}
-                                                    className="text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-100"
+                                                    className="text-slate-500 hover:text-slate-900 px-3 py-1.5 rounded-xl hover:bg-slate-100 font-bold transition-colors"
                                                 >
                                                     &#8942;
                                                 </button>
                                                 {activeMenu === h.id && (
-                                                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 text-left">
-                                                        <div className="py-1">
-                                                            <button onClick={(e) => { e.stopPropagation(); handleDownload(h, 'csv'); }} className="block w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 text-left">Download CSV</button>
-                                                            <button onClick={(e) => { e.stopPropagation(); handleDownload(h, 'excel'); }} className="block w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 text-left">Download Excel</button>
-                                                            <button onClick={(e) => { e.stopPropagation(); handleDownload(h, 'pdf'); }} className="block w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 text-left">Download PDF</button>
+                                                    <div className="absolute right-0 mt-2 w-48 rounded-2xl shadow-xl bg-white border border-slate-200 z-50 text-left overflow-hidden">
+                                                        <div className="p-1.5 space-y-0.5">
+                                                            <button onClick={(e) => { e.stopPropagation(); handleDownload(h, 'csv'); }} className="block w-full px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl text-left transition-colors">Download CSV</button>
+                                                            <button onClick={(e) => { e.stopPropagation(); handleDownload(h, 'excel'); }} className="block w-full px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl text-left transition-colors">Download Excel</button>
+                                                            <button onClick={(e) => { e.stopPropagation(); handleDownload(h, 'pdf'); }} className="block w-full px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl text-left transition-colors">Download PDF</button>
                                                             <hr className="my-1 border-slate-100" />
-                                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="block w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left">Delete</button>
+                                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="block w-full px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-xl text-left transition-colors">Hapus</button>
                                                         </div>
                                                     </div>
                                                 )}
@@ -269,35 +272,35 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                 </div>
             </Panel>
 
-            {/* Modal Detail Popup */}
-            {selectedBatch && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedBatch(null)}>
-                    <div className="bg-white rounded-xl max-w-3xl w-full max-h-[80vh] flex flex-col shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            {/* Modal Detail Popup via createPortal */}
+            {selectedBatch && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[99999] flex items-center justify-center p-4" onClick={() => setSelectedBatch(null)}>
+                    <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-[#0f172a] text-white">
                             <div>
-                                <h3 className="font-bold text-slate-800 text-lg">Batch Details: {selectedBatch.controller?.machine?.machine_name || selectedBatch.controller?.model_type || `Controller #${selectedBatch.tn_controller_id}`}</h3>
-                                <p className="text-xs text-slate-500">
+                                <h3 className="font-black text-lg text-white">Detail Batch Log: {selectedBatch.controller?.machine?.machine_name || selectedBatch.controller?.model_type || `Controller #${selectedBatch.tn_controller_id}`}</h3>
+                                <p className="text-xs font-semibold text-blue-300 mt-0.5">
                                     {new Date(selectedBatch.start_time).toLocaleString()} - {new Date(selectedBatch.end_time).toLocaleString()}
                                 </p>
                             </div>
-                            <button onClick={() => setSelectedBatch(null)} className="text-slate-400 hover:text-slate-600 text-xl font-semibold px-2">&times;</button>
+                            <button onClick={() => setSelectedBatch(null)} className="h-8 w-8 rounded-full bg-blue-900/60 flex items-center justify-center text-lg font-bold text-blue-200 hover:bg-blue-800 transition-colors">&times;</button>
                         </div>
 
                         <div className="p-6 overflow-y-auto flex-1">
                             <table className="w-full text-left text-sm">
-                                <thead className="border-b text-xs uppercase text-slate-400 bg-white sticky top-0">
+                                <thead className="border-b border-slate-200 text-xs uppercase font-black text-slate-700 bg-slate-50 sticky top-0">
                                     <tr>
-                                        <th className="pb-3">Time</th>
-                                        <th className="pb-3">PV (&deg;C)</th>
-                                        <th className="pb-3">SV (&deg;C)</th>
+                                        <th className="py-3 px-3">Waktu</th>
+                                        <th className="py-3 px-3">PV (&deg;C)</th>
+                                        <th className="py-3 px-3">SV (&deg;C)</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="divide-y divide-slate-100 font-mono">
                                     {getChronologicalLogs(selectedBatch).map((log: any, idx: number) => (
-                                        <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
-                                            <td className="py-2 font-mono text-slate-500">{new Date(log.created_at).toLocaleTimeString()}</td>
-                                            <td className="py-2 font-semibold text-blue-600">{log.decimal_point ? (log.pv / Math.pow(10, log.decimal_point)).toFixed(log.decimal_point) : log.pv}</td>
-                                            <td className="py-2 text-emerald-600">{log.decimal_point ? (log.sv / Math.pow(10, log.decimal_point)).toFixed(log.decimal_point) : log.sv}</td>
+                                        <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
+                                            <td className="py-2.5 px-3 font-semibold text-slate-600">{new Date(log.created_at).toLocaleTimeString()}</td>
+                                            <td className="py-2.5 px-3 font-black text-blue-700">{log.decimal_point ? (log.pv / Math.pow(10, log.decimal_point)).toFixed(log.decimal_point) : log.pv}</td>
+                                            <td className="py-2.5 px-3 font-black text-amber-700">{log.decimal_point ? (log.sv / Math.pow(10, log.decimal_point)).toFixed(log.decimal_point) : log.sv}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -305,10 +308,11 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                         </div>
 
                         <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
-                            <button onClick={() => setSelectedBatch(null)} className="rounded-lg border px-4 py-2 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">Close</button>
+                            <button onClick={() => setSelectedBatch(null)} className="rounded-xl border border-slate-300 px-5 py-2.5 text-xs font-black text-slate-800 bg-white hover:bg-slate-50 shadow-sm transition-all">Tutup</button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
