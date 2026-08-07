@@ -64,16 +64,24 @@ fi
 APP_DIR="$(pwd)"
 HTTP_PORT="${HTTP_PORT:-80}"
 HTTPS_PORT="${HTTPS_PORT:-8443}"
-DOMAIN_OR_IP="172.18.0.1"
+PUBLIC_IP=$(hostname -I | awk '{print $1}')
+[ -z "$PUBLIC_IP" ] && PUBLIC_IP="49.13.233.119"
 
 log_info "Memulai proses deploy di: $APP_DIR"
+log_info "IP Server Terdeteksi: $PUBLIC_IP"
 log_info "Target HTTPS Port: $HTTPS_PORT | Target HTTP Port: $HTTP_PORT"
 
 # ------------------------------------------------------------------------------
-# STEP 1: Base System Tools Installation
+# STEP 1: Base System Tools Installation & Firewall Configuration
 # ------------------------------------------------------------------------------
-step1_cmd="apt-get update -y && apt-get install -y software-properties-common curl git unzip zip supervisor nginx python3 python3-pip python3-venv"
-execute_step "1/8" "Install Perkakas Utama Sistem (Curl, Git, Nginx, Supervisor, Python)" "$step1_cmd"
+step1_cmd="
+apt-get update -y && apt-get install -y software-properties-common curl git unzip zip supervisor nginx python3 python3-pip python3-venv ufw && \
+ufw allow $HTTP_PORT/tcp 2>/dev/null || true && \
+ufw allow $HTTPS_PORT/tcp 2>/dev/null || true && \
+ufw allow 80/tcp 2>/dev/null || true && \
+ufw allow 443/tcp 2>/dev/null || true
+"
+execute_step "1/8" "Install Perkakas Utama Sistem & Buka Firewall (Port $HTTP_PORT, $HTTPS_PORT)" "$step1_cmd"
 
 # ------------------------------------------------------------------------------
 # STEP 2: PHP 8.4 Setup via Ondrej PPA
@@ -170,7 +178,7 @@ if [ ! -f '$SSL_CERT' ] || [ ! -f '$SSL_KEY' ]; then
     openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
         -keyout '$SSL_KEY' \
         -out '$SSL_CERT' \
-        -subj '/C=ID/ST=State/L=City/O=SCADA/OU=IT/CN=$DOMAIN_OR_IP' 2>/dev/null
+        -subj '/C=ID/ST=State/L=City/O=SCADA/OU=IT/CN=$PUBLIC_IP' 2>/dev/null
     chmod 600 '$SSL_KEY'
     chmod 644 '$SSL_CERT'
 fi && \
@@ -178,14 +186,14 @@ cat <<EOF > /etc/nginx/sites-available/scadaretort
 server {
     listen $HTTP_PORT;
     listen [::]:$HTTP_PORT;
-    server_name $DOMAIN_OR_IP localhost;
+    server_name _ localhost $PUBLIC_IP;
     return 301 $REDIRECT_TARGET;
 }
 
 server {
     listen $HTTPS_PORT ssl http2;
     listen [::]:$HTTPS_PORT ssl http2;
-    server_name $DOMAIN_OR_IP localhost;
+    server_name _ localhost $PUBLIC_IP;
     root $APP_DIR/public;
 
     ssl_certificate $SSL_CERT;
