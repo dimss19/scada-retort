@@ -37,37 +37,38 @@ export default function Authenticated({
     });
 
     return (
-        <div className="relative min-h-screen bg-[#060c1e] font-sans text-slate-100 selection:bg-yellow-400 selection:text-slate-950">
-            {/* Ambient Background Glowing Orbs (Blue & Yellow) */}
+        <div className="relative min-h-screen bg-[#f0f4f9] font-sans text-slate-800 selection:bg-yellow-400 selection:text-slate-950">
+            {/* Soft Ambient Background Orbs */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute -top-40 -left-40 w-[30rem] h-[30rem] bg-blue-600/15 rounded-full blur-[140px]"></div>
-                <div className="absolute top-1/3 -right-40 w-[32rem] h-[32rem] bg-amber-500/15 rounded-full blur-[150px]"></div>
-                <div className="absolute -bottom-40 left-1/3 w-[28rem] h-[28rem] bg-blue-500/15 rounded-full blur-[130px]"></div>
-                <div className="absolute inset-0 bg-[radial-gradient(#1e3a8a_1px,transparent_1px)] [background-size:32px_32px] opacity-20"></div>
+                <div className="absolute -top-40 -left-40 w-[32rem] h-[32rem] bg-blue-400/10 rounded-full blur-[140px]"></div>
+                <div className="absolute top-1/3 -right-40 w-[35rem] h-[35rem] bg-amber-400/15 rounded-full blur-[160px]"></div>
+                <div className="absolute -bottom-40 left-1/3 w-[30rem] h-[30rem] bg-blue-600/10 rounded-full blur-[140px]"></div>
             </div>
 
-            {/* Blue & Yellow Glassmorphism Header */}
-            <header className="sticky top-0 z-40 border-b border-blue-900/60 bg-[#09132e]/80 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(2,6,23,0.5)]">
+            {/* Fresh Royal Blue & Gold Header */}
+            <header className="sticky top-0 z-40 border-b border-blue-900/40 bg-[#0f172a] shadow-[0_4px_25px_0_rgba(15,23,42,0.15)] text-white">
                 <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
                     <Link href={route('dashboard')} className="flex shrink-0 items-center gap-3 group">
-                        <ApplicationLogo className="h-9 w-9 filter drop-shadow-[0_0_10px_rgba(250,204,21,0.8)] transition-transform duration-300 group-hover:scale-105" />
+                        <ApplicationLogo className="h-9 w-9 filter drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] transition-transform duration-300 group-hover:scale-105" />
                         <div className="hidden xl:block">
-                            <p className="text-sm font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-yellow-400">SCADA RETORT</p>
-                            <p className="text-[9px] uppercase tracking-[0.22em] text-amber-400 font-bold">Control System</p>
+                            <p className="text-base font-black tracking-wider text-white">
+                                SCADA <span className="text-yellow-400">RETORT</span>
+                            </p>
+                            <p className="text-[9px] uppercase tracking-[0.25em] text-blue-300 font-bold">Control System</p>
                         </div>
                     </Link>
 
-                    <nav className="ml-4 flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:ml-8">
+                    <nav className="ml-6 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:ml-10">
                         {visibleNavigation.map((item) => {
                             const active = (route().current(item.activePattern) ?? false) && !(item.excludePattern && route().current(item.excludePattern));
                             return (
                                 <Link
                                     key={item.label}
                                     href={route(item.routeName)}
-                                    className={`shrink-0 rounded-xl px-3.5 py-2 text-sm font-bold transition-all duration-200 ${
+                                    className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
                                         active
-                                            ? 'bg-blue-600/30 text-yellow-300 border border-yellow-400/40 shadow-[0_0_15px_rgba(250,204,21,0.25)]'
-                                            : 'text-slate-300 hover:bg-blue-900/40 hover:text-white hover:border hover:border-blue-700/50'
+                                            ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
+                                            : 'text-slate-200 hover:bg-blue-900/50 hover:text-white'
                                     }`}
                                 >
                                     {item.label}
@@ -76,15 +77,15 @@ export default function Authenticated({
                         })}
                     </nav>
 
-                    <div className="ml-3 flex shrink-0 items-center gap-2 border-l border-blue-900/60 pl-3">
-                        <Link href={route('profile.edit')} aria-label="Profile" title={user.name} className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 border border-amber-400/40 text-sm font-bold text-yellow-300 hover:bg-amber-500/30 hover:shadow-[0_0_15px_rgba(250,204,21,0.4)] transition-all">
+                    <div className="ml-3 flex shrink-0 items-center gap-3 border-l border-blue-800/60 pl-4">
+                        <Link href={route('profile.edit')} aria-label="Profile" title={user.name} className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 text-sm font-black text-slate-950 shadow-[0_0_10px_rgba(250,204,21,0.4)] hover:scale-105 transition-transform">
                             {user.name.charAt(0).toUpperCase()}
                         </Link>
                         <Link
                             href={route('logout')}
                             method="post"
                             as="button"
-                            className="hidden rounded-xl border border-blue-900/60 bg-blue-950/60 px-3.5 py-2 text-sm font-semibold text-slate-300 hover:border-blue-700 hover:bg-blue-900/60 hover:text-white transition-all md:block"
+                            className="hidden rounded-xl border border-blue-700/60 bg-blue-900/40 px-3.5 py-2 text-xs font-bold text-slate-200 hover:border-amber-400/60 hover:bg-amber-400 hover:text-slate-950 transition-all md:block"
                         >
                             Log Out
                         </Link>
@@ -93,7 +94,7 @@ export default function Authenticated({
             </header>
 
             {header && (
-                <div className="relative z-10 border-b border-blue-900/50 bg-[#0c183b]/60 backdrop-blur-md px-4 py-5 shadow-lg sm:px-6 lg:px-8">
+                <div className="relative z-10 border-b border-slate-200/80 bg-white/90 backdrop-blur-md px-4 py-5 shadow-sm sm:px-6 lg:px-8">
                     {header}
                 </div>
             )}

@@ -4,21 +4,21 @@ import { Head, Link } from '@inertiajs/react';
 const controllerTypes = [
     {
         model: 'TNS',
-        label: 'Compact',
-        description: 'Controller ringkas untuk sistem retort berkapasitas kecil.',
-        accent: 'from-cyan-500 to-blue-600',
+        label: 'Compact Setup',
+        description: 'Controller ringkas untuk sistem retort berkapasitas kecil & medium.',
+        accent: 'from-blue-600 to-blue-800',
     },
     {
         model: 'TNH',
-        label: 'Standard',
-        description: 'Controller utama untuk proses produksi retort standar.',
-        accent: 'from-slate-800 to-slate-950',
+        label: 'Standard Line',
+        description: 'Controller utama untuk proses produksi retort standar pabrik.',
+        accent: 'from-blue-800 to-slate-900',
     },
     {
         model: 'TNL',
-        label: 'Extended',
-        description: 'Controller dengan dukungan I/O untuk sistem yang lebih besar.',
-        accent: 'from-amber-500 to-orange-600',
+        label: 'Extended I/O',
+        description: 'Controller dengan dukungan I/O lengkap untuk sistem retort besar.',
+        accent: 'from-amber-500 to-yellow-600',
     },
 ] as const;
 
@@ -27,39 +27,38 @@ export default function Index() {
         <AuthenticatedLayout>
             <Head title="Pilih Controller" />
 
-            <main className="p-4 sm:p-8 lg:p-12">
-                <div className="mx-auto max-w-6xl">
-                    <div className="mb-10 max-w-2xl rounded-3xl border border-blue-800/60 bg-[#0d1b3e]/65 p-8 backdrop-blur-xl shadow-2xl">
-                        <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.24em] text-yellow-300 shadow-[0_0_12px_rgba(250,204,21,0.2)]">
-                            Controller Selection
-                        </span>
-                        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Pilih Tipe Alat Controller</h1>
-                        <p className="mt-3 text-base text-slate-300 leading-relaxed">Pilih TNS, TNH, atau TNL untuk langsung membuka halaman monitoring. Port serial akan dideteksi secara otomatis oleh sistem.</p>
-                    </div>
+            <main className="p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto">
+                <div className="mb-10 max-w-3xl rounded-3xl border border-slate-200/90 bg-white/95 p-8 shadow-lg backdrop-blur-xl">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1 text-xs font-extrabold uppercase tracking-[0.24em] text-blue-700">
+                        Controller Selection
+                    </span>
+                    <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Pilih Tipe Controller Autonics TN</h1>
+                    <p className="mt-3 text-base text-slate-600 leading-relaxed">Pilih TNS, TNH, atau TNL untuk langsung membuka halaman monitoring realtime. Sistem akan mendeteksi koneksi Modbus serial port secara otomatis.</p>
+                </div>
 
-                    <div className="grid gap-6 md:grid-cols-3">
-                        {controllerTypes.map((controller) => (
-                            <Link
-                                key={controller.model}
-                                href={route('tn.quick-start', controller.model)}
-                                method="post"
-                                as="button"
-                                className="group relative flex min-h-80 flex-col justify-between overflow-hidden rounded-3xl border border-blue-800/60 bg-[#0d1b3e]/65 p-8 text-left text-white shadow-xl backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:border-amber-400/60 hover:shadow-[0_15px_45px_0_rgba(250,204,21,0.25)]"
-                            >
-                                <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-blue-600 to-amber-500 opacity-20 blur-2xl transition-transform duration-500 group-hover:scale-150" />
-                                <div>
-                                    <span className="inline-block rounded-xl bg-blue-950/80 border border-blue-700/60 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-yellow-300 shadow-md">
-                                        {controller.label}
-                                    </span>
-                                    <h2 className="mt-5 text-5xl font-black tracking-tight text-white">{controller.model}</h2>
-                                    <p className="mt-4 text-sm leading-relaxed text-slate-300">{controller.description}</p>
-                                </div>
-                                <div className="mt-8 inline-flex items-center gap-2.5 rounded-xl border border-amber-400/40 bg-amber-500/15 px-4 py-2.5 text-sm font-bold text-yellow-300 backdrop-blur-md group-hover:bg-amber-400 group-hover:text-slate-950 transition-all shadow-md">
-                                    Buka Monitoring <span className="transition-transform group-hover:translate-x-1.5">→</span>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+                <div className="grid gap-6 md:grid-cols-3">
+                    {controllerTypes.map((controller) => (
+                        <Link
+                            key={controller.model}
+                            href={route('tn.quick-start', controller.model)}
+                            method="post"
+                            as="button"
+                            className="group relative flex min-h-80 flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-8 text-left shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:border-amber-400 hover:shadow-2xl"
+                        >
+                            <div className="absolute -right-14 -top-14 h-40 w-40 rounded-full bg-blue-100/60 transition-transform duration-500 group-hover:scale-150 pointer-events-none" />
+                            <div>
+                                <span className="inline-block rounded-xl bg-blue-50 border border-blue-200 px-3.5 py-1 text-xs font-extrabold uppercase tracking-[0.2em] text-blue-700">
+                                    {controller.label}
+                                </span>
+                                <h2 className="mt-5 text-5xl font-black tracking-tight text-slate-900 group-hover:text-blue-700 transition-colors">{controller.model}</h2>
+                                <p className="mt-4 text-sm leading-relaxed text-slate-600">{controller.description}</p>
+                            </div>
+                            <div className="mt-8 inline-flex items-center justify-between rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 px-4 py-3 text-sm font-extrabold text-slate-950 shadow-md group-hover:from-yellow-300 group-hover:to-amber-400 transition-all">
+                                <span>Buka Monitoring {controller.model}</span>
+                                <span className="transition-transform group-hover:translate-x-1 font-black">→</span>
+                            </div>
+                        </Link>
+                    ))}
                 </div>
             </main>
         </AuthenticatedLayout>
