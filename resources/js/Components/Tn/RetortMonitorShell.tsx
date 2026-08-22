@@ -98,12 +98,10 @@ export default function RetortMonitorShell(props: Props) {
 
                     {props.activeTab === 'monitor' ? (
                         <TnNormalMonitor
+                            controllerId={controller.id}
                             telemetry={telemetry}
                             history={props.history}
                             isOnline={isOnline}
-                            onRun={props.onRun}
-                            onStop={props.onStop}
-                            commandPending={props.commandPending}
                         />
                     ) : (
                         <section className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 shadow-xl backdrop-blur-xl">

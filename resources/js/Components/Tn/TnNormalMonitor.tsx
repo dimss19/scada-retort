@@ -1,23 +1,51 @@
-import React, { useMemo } from 'react';
-import { Play, Square, Loader2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Zap, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { RetortTelemetry, formatControllerTime } from '@/Pages/Tn/retortTelemetry';
 import TnGauge from './TnGauge';
 import TnTrendChart from './TnTrendChart';
 
 interface Props {
+    controllerId: number;
     telemetry: RetortTelemetry;
     history: any[];
     isOnline: boolean;
-    onRun?: () => void;
-    onStop?: () => void;
-    commandPending?: 'run' | 'stop' | 'reset' | null;
 }
 
 const formatValue = (value: number | null, digits = 1) => value === null
     ? undefined
     : value.toLocaleString('id-ID', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-export default function TnNormalMonitor({ telemetry, history, isOnline, onRun, onStop, commandPending }: Props) {
+export default function TnNormalMonitor({ controllerId, telemetry, history, isOnline }: Props) {
+    const [testLoading, setTestLoading] = useState(false);
+    const [testMessage, setTestMessage] = useState<{ text: string; success: boolean } | null>(null);
+
+    const handleTestPin1821 = async () => {
+        setTestLoading(true);
+        setTestMessage(null);
+        try {
+            const res = await fetch(route('tn.port.toggle-pin', controllerId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content || '',
+                },
+                body: JSON.stringify({ channel: 'PIN18_21' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setTestMessage({ text: data.message || 'Pin 18–21 Terhubung! MV 100% Aktif.', success: true });
+            } else {
+                setTestMessage({ text: data.message || 'Gagal menghubungkan pin 18–21.', success: false });
+            }
+        } catch (err: any) {
+            setTestMessage({ text: `Error: ${err.message}`, success: false });
+        } finally {
+            setTestLoading(false);
+            setTimeout(() => setTestMessage(null), 6000);
+        }
+    };
+
     const heatingLogs = useMemo(() => history
         .filter((item) => Number(item.heating_mv ?? 0) > 0)
         .slice(-100)
@@ -36,26 +64,30 @@ export default function TnNormalMonitor({ telemetry, history, isOnline, onRun, o
                         </p>
                     </div>
 
-                    {/* Software START (RUN) / STOP Controller (Bypass Jumper 18-21) */}
-                    <div className="flex items-center gap-3">
+                    {/* Single Test Button (Hubungkan Pin 18-21 tanpa jumper) */}
+                    <div className="flex flex-col items-center sm:items-start gap-2">
                         <button
                             type="button"
-                            disabled={commandPending !== null}
-                            onClick={onRun}
-                            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white px-5 py-3 text-sm font-black shadow-lg hover:shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer border border-emerald-400/30"
+                            disabled={testLoading}
+                            onClick={handleTestPin1821}
+                            className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 px-6 py-3.5 text-sm font-black shadow-xl hover:shadow-amber-400/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer border border-yellow-300"
                         >
-                            {commandPending === 'run' ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />}
-                            <span>START (RUN)</span>
+                            {testLoading ? (
+                                <Loader2 size={18} className="animate-spin text-slate-950" />
+                            ) : (
+                                <Zap size={18} className="text-slate-950 fill-slate-950" />
+                            )}
+                            <span>{testLoading ? 'Mengaktifkan Pin 18–21...' : 'Test Hubungkan Pin 18–21 (MV 100%)'}</span>
                         </button>
-                        <button
-                            type="button"
-                            disabled={commandPending !== null}
-                            onClick={onStop}
-                            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white px-5 py-3 text-sm font-black shadow-lg hover:shadow-rose-500/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer border border-rose-400/30"
-                        >
-                            {commandPending === 'stop' ? <Loader2 size={16} className="animate-spin" /> : <Square size={16} fill="currentColor" />}
-                            <span>STOP</span>
-                        </button>
+                        {testMessage && (
+                            <span className={`text-xs font-bold px-3 py-1 rounded-xl border transition-all ${
+                                testMessage.success
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                            }`}>
+                                {testMessage.text}
+                            </span>
+                        )}
                     </div>
 
                     <div className="flex gap-8">

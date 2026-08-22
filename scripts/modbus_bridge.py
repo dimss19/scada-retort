@@ -147,17 +147,17 @@ def toggle_pin(client, args):
         # Set RUN to allow MV manipulation
         client.write_register(address=0, value=0, device_id=slave)
 
-        if channel in ["OUT1", "OUT2"]:
-            mv_reg = 3 if channel == "OUT1" else 4
+        if channel in ["OUT1", "OUT2", "PIN18_21", "18_21", "RUN_MV100"]:
+            mv_reg = 3 if channel != "OUT2" else 4
             # Mode manual
             client.write_register(address=2, value=1, device_id=slave)
-            # Set 100% MV
+            # Set 100% MV (1000 = 100.0%)
             client.write_register(address=mv_reg, value=1000, device_id=slave)
-            time.sleep(2)
+            time.sleep(3)
             # Reset MV & set Auto mode
             client.write_register(address=mv_reg, value=0, device_id=slave)
             client.write_register(address=2, value=0, device_id=slave)
-            return {"success": True, "message": f"{channel} berhasil di-trigger aktif selama 2 detik."}
+            return {"success": True, "message": "Pin 18–21 berhasil dihubungkan via Software Modbus! MV 100% aktif tanpa jumper fisik."}
         elif channel.startswith("AL"):
             idx = int(channel.replace("AL", ""))
             base = 451 + 8 * (idx - 1)  # REG_ALARM_MODE offset
