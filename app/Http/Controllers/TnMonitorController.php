@@ -35,7 +35,15 @@ class TnMonitorController extends Controller
         $result = $modbus->writeSingleCoil($tn, 0, ! $validated['run']);
         
         if ($result['success']) {
-            return back()->with('success', 'Command sent successfully.');
+            $msg = $validated['run'] ? 'START (RUN) berhasil dikirim via Modbus (Tanpa Jumper 18-21).' : 'STOP berhasil dikirim.';
+            if (request()->wantsJson() || request()->header('Accept') === 'application/json') {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return back()->with('success', $msg);
+        }
+
+        if (request()->wantsJson() || request()->header('Accept') === 'application/json') {
+            return response()->json(['success' => false, 'message' => 'Gagal mengirim perintah: ' . ($result['error'] ?? 'Unknown error')], 422);
         }
         return back()->with('error', 'Command failed: ' . $result['error']);
     }

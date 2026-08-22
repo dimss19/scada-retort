@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Wrench, CheckCircle2, AlertCircle, Play, Sparkles, RefreshCw, Cpu, Activity } from 'lucide-react';
+import { Wrench, CheckCircle2, AlertCircle, Play, Square, Sparkles, RefreshCw, Cpu, Activity } from 'lucide-react';
 
 interface PinChannel {
     name: string;
@@ -225,6 +225,30 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
         }
     };
 
+    const handleTriggerRun = async (run: boolean) => {
+        addLog(`Mengirim perintah ${run ? 'START (RUN)' : 'STOP'} via Modbus (menghubungkan pin 18-21 secara software tanpa jumper)...`, true);
+        try {
+            const res = await fetch(route('tn.cmd.runstop', controllerId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content || '',
+                },
+                body: JSON.stringify({ run }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setLocalOnline(true);
+                addLog(`PASS: Perintah ${run ? 'START (RUN)' : 'STOP'} berhasil diterapkan! MV aktif tanpa jumper fisik.`, true);
+            } else {
+                addLog(`FAIL: ${data.message || 'Gagal mengirim perintah'}`, false);
+            }
+        } catch (err: any) {
+            addLog(`FAIL: Error koneksi saat kirim run/stop: ${err.message}`, false);
+        }
+    };
+
     const handleSweepAll = async () => {
         addLog(`Memulai Sweep Test semua pin output (${schema.channels.length} kanal)...`, true);
         for (const ch of schema.channels) {
@@ -280,14 +304,24 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                         <>
                             {/* Actions Top Bar */}
                             <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                     <button onClick={() => handleTestPort()} disabled={testingPort}
-                                        className="flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2.5 text-xs font-black text-white shadow-lg transition-all disabled:opacity-50">
+                                        className="flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-3.5 py-2.5 text-xs font-black text-white shadow-lg transition-all disabled:opacity-50">
                                         <RefreshCw size={14} className={testingPort ? "animate-spin" : ""} />
-                                        {testingPort ? "Testing Port..." : "Test Koneksi RS485"}
+                                        {testingPort ? "Testing..." : "Test Koneksi"}
+                                    </button>
+                                    <button onClick={() => handleTriggerRun(true)}
+                                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2.5 text-xs font-black text-white shadow-lg transition-all">
+                                        <Play size={13} fill="currentColor" />
+                                        START (RUN / 18-21)
+                                    </button>
+                                    <button onClick={() => handleTriggerRun(false)}
+                                        className="flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 px-3.5 py-2.5 text-xs font-black text-white shadow-lg transition-all">
+                                        <Square size={13} fill="currentColor" />
+                                        STOP
                                     </button>
                                     <button onClick={handleSweepAll} disabled={testingChannel !== null}
-                                        className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2.5 text-xs font-black text-slate-950 shadow-lg transition-all disabled:opacity-50">
+                                        className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-3.5 py-2.5 text-xs font-black text-slate-950 shadow-lg transition-all disabled:opacity-50">
                                         <Sparkles size={14} />
                                         Sweep Semua Pin
                                     </button>

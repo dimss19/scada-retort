@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import React, { useState } from 'react';
-import { Wrench, ArrowRight, Activity, CheckCircle, XCircle } from 'lucide-react';
+import { Wrench, ArrowRight, Activity, CheckCircle, XCircle, Play, Square, Loader2 } from 'lucide-react';
 import ControllerPinTestModal from '@/Components/Tn/ControllerPinTestModal';
 
 interface TnControllerItem {
@@ -55,6 +55,36 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [] }:
         serialPort: string | null;
         isOnline: boolean;
     } | null>(null);
+
+    const [actionMsg, setActionMsg] = useState<{ id: number; text: string; success: boolean } | null>(null);
+    const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+    const handleToggleStart = async (ctrlId: number, run: boolean) => {
+        setActionLoading(ctrlId);
+        setActionMsg(null);
+        try {
+            const res = await fetch(route('tn.cmd.runstop', ctrlId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content || '',
+                },
+                body: JSON.stringify({ run }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setActionMsg({ id: ctrlId, text: data.message || (run ? 'START Aktif!' : 'STOP Aktif!'), success: true });
+            } else {
+                setActionMsg({ id: ctrlId, text: data.message || 'Gagal mengirim perintah.', success: false });
+            }
+        } catch (err: any) {
+            setActionMsg({ id: ctrlId, text: `Error: ${err.message}`, success: false });
+        } finally {
+            setActionLoading(null);
+            setTimeout(() => setActionMsg(null), 6000);
+        }
+    };
 
     return (
         <AuthenticatedLayout>
@@ -112,6 +142,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [] }:
                                 </div>
 
                                 {/* Action Buttons (Open Monitoring & Pin Test) */}
+                                {/* Action Buttons (Open Monitoring, Start RUN & Pin Test) */}
                                 <div className="mt-7 space-y-2.5">
                                     <Link
                                         href={route('tn.quick-start', item.model)}
@@ -122,6 +153,34 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [] }:
                                         <span>Buka Monitoring {item.model}</span>
                                         <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                                     </Link>
+
+                                    {/* Software RUN Button (Bypass Physical 18-21 Jumper) */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={actionLoading === ctrl.id}
+                                            onClick={() => handleToggleStart(ctrl.id, true)}
+                                            className="flex items-center justify-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2.5 text-xs font-black shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                                        >
+                                            {actionLoading === ctrl.id ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} fill="currentColor" />}
+                                            <span>START (RUN)</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={actionLoading === ctrl.id}
+                                            onClick={() => handleToggleStart(ctrl.id, false)}
+                                            className="flex items-center justify-center gap-1.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white px-3 py-2.5 text-xs font-black shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                                        >
+                                            {actionLoading === ctrl.id ? <Loader2 size={13} className="animate-spin" /> : <Square size={13} fill="currentColor" />}
+                                            <span>STOP</span>
+                                        </button>
+                                    </div>
+
+                                    {actionMsg && actionMsg.id === ctrl.id && (
+                                        <div className={`p-2 rounded-xl text-[11px] font-bold text-center border ${actionMsg.success ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'}`}>
+                                            {actionMsg.text}
+                                        </div>
+                                    )}
 
                                     <button
                                         type="button"
