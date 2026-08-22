@@ -97,7 +97,14 @@ export default function RetortMonitorShell(props: Props) {
                     </div>
 
                     {props.activeTab === 'monitor' ? (
-                        <TnNormalMonitor telemetry={telemetry} history={props.history} isOnline={isOnline} />
+                        <TnNormalMonitor
+                            telemetry={telemetry}
+                            history={props.history}
+                            isOnline={isOnline}
+                            onRun={props.onRun}
+                            onStop={props.onStop}
+                            commandPending={props.commandPending}
+                        />
                     ) : (
                         <section className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 shadow-xl backdrop-blur-xl">
                             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[#0f172a] px-6 py-4 text-white">

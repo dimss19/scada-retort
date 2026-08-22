@@ -60,7 +60,7 @@ def setup_client(args):
         parity=parity_map.get(args.parity, 'N'),
         stopbits=args.stopbits,
         timeout=args.timeout,
-        retries=1
+        retries=0
     )
 
 def handle_response(response, count=None):
@@ -174,24 +174,34 @@ def toggle_pin(client, args):
         return {"success": False, "error": f"Gagal trigger {args.channel}: {str(e)}"}
 
 def list_ports(args):
-    ports = []
-    for p in serial.tools.list_ports.comports():
-        ports.append({
-            "device": p.device,
-            "description": p.description,
-            "hwid": p.hwid,
-            "vid": p.vid,
-            "pid": p.pid,
-            "serial_number": p.serial_number,
-            "manufacturer": p.manufacturer,
-        })
-    ports.sort(key=lambda x: x["device"].lower())
-    return {"success": True, "ports": ports}
+    import serial.tools.list_ports
+    ports = serial.tools.list_ports.comports()
+    return {
+        "success": True,
+        "ports": [
+            {
+                "device": p.device,
+                "description": p.description,
+                "hwid": p.hwid,
+                "manufacturer": p.manufacturer,
+                "serial_number": p.serial_number,
+                "location": p.location,
+            }
+            for p in ports
+        ]
+    }
 
 def scan_ports(client, args):
-    def port_sort_key(port):
-        match = re.search(r'(\d+)$', port.device)
-        return (port.device.rstrip('0123456789'), int(match.group(1)) if match else 0)
+    import serial.tools.list_ports
+
+    def port_sort_key(port_info):
+        desc = (port_info.description or "").lower()
+        dev = port_info.device.lower()
+        if "ch340" in desc or "ch341" in desc or "ftdi" in desc or "cp210" in desc or "prolific" in desc or "usb-serial" in desc or "rs485" in desc:
+            return (0, dev)
+        if "usb" in desc or "usb" in dev:
+            return (1, dev)
+        return (2, dev)
 
     ports = sorted(serial.tools.list_ports.comports(), key=port_sort_key)
     found = []
@@ -214,6 +224,12 @@ def read_all(client, args):
     results = {}
     for slave_id in slaves:
         try:
+            if hasattr(client, 'socket') and client.socket and getattr(client.socket, 'is_open', False):
+                try:
+                    client.socket.reset_input_buffer()
+                    client.socket.reset_output_buffer()
+                except Exception:
+                    pass
             response = client.read_input_registers(address=args.addr, count=args.count, device_id=slave_id)
             if response.isError():
                 results[slave_id] = {"success": False, "error": f"Modbus Exception: {response}"}

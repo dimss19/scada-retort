@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Play, Square, Loader2 } from 'lucide-react';
 import { RetortTelemetry, formatControllerTime } from '@/Pages/Tn/retortTelemetry';
 import TnGauge from './TnGauge';
 import TnTrendChart from './TnTrendChart';
@@ -7,13 +8,16 @@ interface Props {
     telemetry: RetortTelemetry;
     history: any[];
     isOnline: boolean;
+    onRun?: () => void;
+    onStop?: () => void;
+    commandPending?: 'run' | 'stop' | 'reset' | null;
 }
 
 const formatValue = (value: number | null, digits = 1) => value === null
     ? undefined
     : value.toLocaleString('id-ID', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-export default function TnNormalMonitor({ telemetry, history, isOnline }: Props) {
+export default function TnNormalMonitor({ telemetry, history, isOnline, onRun, onStop, commandPending }: Props) {
     const heatingLogs = useMemo(() => history
         .filter((item) => Number(item.heating_mv ?? 0) > 0)
         .slice(-100)
@@ -23,14 +27,37 @@ export default function TnNormalMonitor({ telemetry, history, isOnline }: Props)
         <div className="space-y-6">
             {/* Status Banner (Royal Blue & Yellow Accent) */}
             <div className="rounded-3xl border border-blue-900/40 bg-gradient-to-r from-blue-900 via-blue-950 to-slate-900 p-7 shadow-xl text-white">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <p className="text-xs font-black uppercase tracking-wider text-yellow-400">Operation Status</p>
-                        <p className="mt-1 text-3xl font-black text-white">
-                            {telemetry.pattern !== null ? `PTN.${telemetry.pattern}` : 'NO PATTERN'}
-                            <span className="ml-3 text-slate-950 font-black bg-gradient-to-r from-amber-400 to-yellow-500 px-3.5 py-1 rounded-xl text-lg shadow-md">Step {telemetry.step ?? '--'}</span>
+                        <p className="mt-1 text-3xl font-black text-white flex flex-wrap items-center gap-2">
+                            <span>{telemetry.pattern !== null ? `PTN.${telemetry.pattern}` : 'NO PATTERN'}</span>
+                            <span className="text-slate-950 font-black bg-gradient-to-r from-amber-400 to-yellow-500 px-3 py-0.5 rounded-xl text-base shadow-md">Step {telemetry.step ?? '--'}</span>
                         </p>
                     </div>
+
+                    {/* Software START (RUN) / STOP Controller (Bypass Jumper 18-21) */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            disabled={commandPending !== null}
+                            onClick={onRun}
+                            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white px-5 py-3 text-sm font-black shadow-lg hover:shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer border border-emerald-400/30"
+                        >
+                            {commandPending === 'run' ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />}
+                            <span>START (RUN)</span>
+                        </button>
+                        <button
+                            type="button"
+                            disabled={commandPending !== null}
+                            onClick={onStop}
+                            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white px-5 py-3 text-sm font-black shadow-lg hover:shadow-rose-500/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer border border-rose-400/30"
+                        >
+                            {commandPending === 'stop' ? <Loader2 size={16} className="animate-spin" /> : <Square size={16} fill="currentColor" />}
+                            <span>STOP</span>
+                        </button>
+                    </div>
+
                     <div className="flex gap-8">
                         <div>
                             <p className="text-xs font-extrabold uppercase text-blue-200">Process Time</p>
