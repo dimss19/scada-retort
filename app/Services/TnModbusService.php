@@ -273,10 +273,10 @@ class TnModbusService
                 '--slaves', $slaves,
                 '--addr', '1000',
                 '--count', '27',
-            ], config('tn.timeout') + 2);
+            ], (config('tn.timeout') * 2) + 5);
 
             if (!$result['success'] || !isset($result['controllers'])) {
-                if ($this->isConnectionError($result['error'] ?? '')) {
+                if (!$first->serial_port && $this->isConnectionError($result['error'] ?? '')) {
                     $this->clearPortCache($first);
                 }
                 return [];

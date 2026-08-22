@@ -28,12 +28,8 @@ if os.name == 'nt':
             if self._timeout != 0 and self._inter_byte_timeout is not None:
                 timeouts.ReadIntervalTimeout = max(int(self._inter_byte_timeout * 1000), 1)
 
-            if self._write_timeout is None:
-                pass
-            elif self._write_timeout == 0:
-                timeouts.WriteTotalTimeoutConstant = _win32.win32.MAXDWORD
-            else:
-                timeouts.WriteTotalTimeoutConstant = max(int(self._write_timeout * 1000), 1)
+            timeouts.WriteTotalTimeoutConstant = 2000
+            timeouts.WriteTotalTimeoutMultiplier = 0
 
             _win32.win32.SetCommTimeouts(self._port_handle, ctypes.byref(timeouts))
             _win32.win32.SetCommMask(self._port_handle, _win32.win32.EV_ERR)
@@ -64,7 +60,7 @@ def setup_client(args):
         parity=parity_map.get(args.parity, 'N'),
         stopbits=args.stopbits,
         timeout=args.timeout,
-        retries=0
+        retries=1
     )
 
 def handle_response(response, count=None):
