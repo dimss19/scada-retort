@@ -6,6 +6,56 @@ from pymodbus.exceptions import ModbusException
 import serial.tools.list_ports
 import re
 
+import os
+if os.name == 'nt':
+    try:
+        import ctypes
+        import serial
+        import serial.serialwin32 as _win32
+        _orig_reconfigure = _win32.Serial._reconfigure_port
+
+        def _safe_reconfigure_port(self):
+            if not self._port_handle:
+                raise serial.SerialException('Can only operate on a valid port handle')
+
+            timeouts = _win32.win32.COMMTIMEOUTS()
+            if self._timeout is None:
+                pass
+            elif self._timeout == 0:
+                timeouts.ReadIntervalTimeout = _win32.win32.MAXDWORD
+            else:
+                timeouts.ReadTotalTimeoutConstant = max(int(self._timeout * 1000), 1)
+            if self._timeout != 0 and self._inter_byte_timeout is not None:
+                timeouts.ReadIntervalTimeout = max(int(self._inter_byte_timeout * 1000), 1)
+
+            if self._write_timeout is None:
+                pass
+            elif self._write_timeout == 0:
+                timeouts.WriteTotalTimeoutConstant = _win32.win32.MAXDWORD
+            else:
+                timeouts.WriteTotalTimeoutConstant = max(int(self._write_timeout * 1000), 1)
+
+            _win32.win32.SetCommTimeouts(self._port_handle, ctypes.byref(timeouts))
+            _win32.win32.SetCommMask(self._port_handle, _win32.win32.EV_ERR)
+
+            comDCB = _win32.win32.DCB()
+            _win32.win32.GetCommState(self._port_handle, ctypes.byref(comDCB))
+            comDCB.BaudRate = self._baudrate
+            comDCB.ByteSize = 8
+            comDCB.Parity = _win32.win32.NOPARITY
+            comDCB.StopBits = _win32.win32.TWOSTOPBITS if self._stopbits == serial.STOPBITS_TWO else _win32.win32.ONESTOPBIT
+            comDCB.fBinary = 1
+            
+            # Try SetCommState, ignore Error 31 (Windows CH340 driver bug)
+            if not _win32.win32.SetCommState(self._port_handle, ctypes.byref(comDCB)):
+                err = ctypes.GetLastError()
+                if err != 31:
+                    raise serial.SerialException(f'Cannot configure port: Error {err}')
+
+        _win32.Serial._reconfigure_port = _safe_reconfigure_port
+    except Exception:
+        pass
+
 def setup_client(args):
     parity_map = {'N': 'N', 'E': 'E', 'O': 'O'}
     return ModbusSerialClient(
@@ -13,7 +63,8 @@ def setup_client(args):
         baudrate=args.baud,
         parity=parity_map.get(args.parity, 'N'),
         stopbits=args.stopbits,
-        timeout=args.timeout
+        timeout=args.timeout,
+        retries=0
     )
 
 def handle_response(response, count=None):

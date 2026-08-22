@@ -79,39 +79,14 @@ class TnModbusService
 
     public function testPort(TnController $controller, ?string $port = null): array
     {
-        $targetPort = ($port && strtolower($port) !== 'auto') ? $port : $this->resolveControllerPort($controller);
-        if (!$targetPort) {
-            return ['success' => false, 'error' => 'Port serial belum terdeteksi. Silakan scan port terlebih dahulu atau tentukan port COM.'];
-        }
-
-        return $this->runPython([
-            '--port', $targetPort,
-            '--baud', (string)($controller->baudrate ?? config('tn.baudrate')),
-            '--parity', $controller->parity ?? config('tn.parity'),
-            '--stopbits', (string)($controller->stopbits ?? config('tn.stopbits')),
-            '--timeout', (string)config('tn.timeout'),
-            'test_connection',
-            '--slave', (string)$controller->slave_id,
-        ], config('tn.timeout') + 2);
+        $overridePort = ($port && strtolower($port) !== 'auto') ? $port : null;
+        return $this->executeCommand('test_connection', $controller, [], $overridePort);
     }
 
     public function togglePin(TnController $controller, string $channel, ?string $port = null): array
     {
-        $targetPort = ($port && strtolower($port) !== 'auto') ? $port : $this->resolveControllerPort($controller);
-        if (!$targetPort) {
-            return ['success' => false, 'error' => 'Port serial belum terdeteksi. Silakan scan port terlebih dahulu.'];
-        }
-
-        return $this->runPython([
-            '--port', $targetPort,
-            '--baud', (string)($controller->baudrate ?? config('tn.baudrate')),
-            '--parity', $controller->parity ?? config('tn.parity'),
-            '--stopbits', (string)($controller->stopbits ?? config('tn.stopbits')),
-            '--timeout', (string)config('tn.timeout'),
-            'toggle_pin',
-            '--slave', (string)$controller->slave_id,
-            '--channel', $channel,
-        ], config('tn.timeout') + 5);
+        $overridePort = ($port && strtolower($port) !== 'auto') ? $port : null;
+        return $this->executeCommand('toggle_pin', $controller, ['--channel', $channel], $overridePort);
     }
 
     public function clearPortCache(TnController $controller): void
@@ -140,12 +115,12 @@ class TnModbusService
         });
     }
 
-    protected function executeCommand(string $command, TnController $controller, array $args = [])
+    protected function executeCommand(string $command, TnController $controller, array $args = [], ?string $overridePort = null)
     {
         $configPort = config('tn.serial_port');
-        // Priority: manual port set by user > config AUTO > config fixed port
-        $configuredPort = $controller->serial_port
-            ?? (strtoupper((string) $configPort) === 'AUTO' ? 'AUTO' : $configPort);
+        // Priority: overridePort > manual port set by user > config AUTO > config fixed port
+        $configuredPort = $overridePort ?: ($controller->serial_port
+            ?? (strtoupper((string) $configPort) === 'AUTO' ? 'AUTO' : $configPort));
         $baud = $controller->baudrate ?? config('tn.baudrate');
         $parity = $controller->parity ?? config('tn.parity');
         $stopbits = $controller->stopbits ?? config('tn.stopbits');
@@ -200,7 +175,7 @@ class TnModbusService
                     ];
                     $processArgs = array_merge($baseArgs, $args);
 
-                    $result = $this->runPython($processArgs, $timeout + 2);
+                    $result = $this->runPython($processArgs, ($timeout * 2) + 6);
 
                     if (!$result['success'] && $this->isConnectionError($result['error'] ?? '')) {
                         $this->clearPortCache($controller);
