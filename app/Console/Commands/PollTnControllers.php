@@ -117,10 +117,26 @@ class PollTnControllers extends Command
                             'last_error' => null,
                         ]);
 
-                        try {
-                            event(new TnDataReceived($controller, $reading));
-                        } catch (\Throwable $e) {
-                            $this->warn("Realtime broadcast failed for {$controller->name}: {$e->getMessage()}");
+                        static $isReverbAlive = null;
+                        static $lastReverbCheck = 0;
+
+                        if (time() - $lastReverbCheck > 5) {
+                            $lastReverbCheck = time();
+                            $fp = @fsockopen('127.0.0.1', 8080, $errno, $errstr, 0.02);
+                            if ($fp) {
+                                $isReverbAlive = true;
+                                fclose($fp);
+                            } else {
+                                $isReverbAlive = false;
+                            }
+                        }
+
+                        if ($isReverbAlive) {
+                            try {
+                                event(new TnDataReceived($controller, $reading));
+                            } catch (\Throwable $e) {
+                                $isReverbAlive = false;
+                            }
                         }
 
                         $this->info("Successfully polled {$controller->name} (slave {$slaveId})");
