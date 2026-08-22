@@ -20,9 +20,9 @@ const PIN_SCHEMAS: Record<string, {
     TNS: {
         title: 'TNS Controller (48×48 mm)',
         dimension: 'Compact 48×48 mm',
-        rs485A: 'Terminal Skrup A (+)',
-        rs485B: 'Terminal Skrup B (-)',
-        power: 'Terminal 5–6 (220V AC)',
+        rs485A: 'Pin Skrup A (+)',
+        rs485B: 'Pin Skrup B (-)',
+        power: 'Pin 5–6 (220V AC)',
         channels: [
             { name: 'OUT1', pin: '1–2', type: 'out', label: 'Control OUT1 (Heater Output)' },
             { name: 'OUT2', pin: '3–4', type: 'out', label: 'Control OUT2 (Cooler Output)' },
@@ -196,7 +196,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
 
     const handleTogglePin = async (channel: string, pin: string) => {
         setTestingChannel(channel);
-        addLog(`Mengirim sinyal ON ke ${channel} (Terminal ${pin}) selama 2 detik...`, true);
+        addLog(`Mengirim sinyal ON ke ${channel} (Pin ${pin}) selama 2 detik...`, true);
         try {
             const res = await fetch(route('tn.port.toggle-pin', controllerId), {
                 method: 'POST',
@@ -205,7 +205,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
             });
             const data = await res.json();
             if (data.success) {
-                addLog(`PASS: ${channel} (Terminal ${pin}) berhasil di-trigger aktif 2 detik.`, true);
+                addLog(`PASS: ${channel} (Pin ${pin}) berhasil di-trigger aktif 2 detik.`, true);
             } else {
                 addLog(`FAIL: ${data.message || 'Gagal memicu pin output'}`, false);
             }
@@ -261,7 +261,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                         <RefreshCw size={14} /> Serial Port Settings
                     </button>
                     <button onClick={() => setActiveTab('wiring')} className={`pb-3 px-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'wiring' ? 'border-amber-400 text-amber-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
-                        <Wrench size={14} /> Panduan Wiring Terminal {model}
+                        <Wrench size={14} /> Panduan Wiring Pin {model}
                     </button>
                 </div>
 
@@ -290,7 +290,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
 
                             {/* Pin Interactive Grid */}
                             <div className="space-y-3">
-                                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Daftar Pin Terminal {model}</h3>
+                                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Daftar Pin {model}</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {schema.channels.map(ch => (
                                         <div key={ch.name} className="flex items-center justify-between p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 hover:border-slate-600 transition-all">
@@ -298,7 +298,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-mono font-black text-base text-white">{ch.name}</span>
                                                     <span className="rounded-lg bg-slate-900 border border-slate-700 px-2 py-0.5 font-mono text-[11px] font-bold text-amber-400">
-                                                        Terminal {ch.pin}
+                                                        Pin {ch.pin}
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-slate-400 mt-1">{ch.label}</p>
@@ -456,13 +456,13 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                             </div>
 
                             <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-5">
-                                <h3 className="font-bold text-slate-200 text-sm mb-3">Tabel Terminal Pin Output</h3>
+                                <h3 className="font-bold text-slate-200 text-sm mb-3">Tabel Pin Output</h3>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-xs font-mono border-collapse">
                                         <thead>
                                             <tr className="border-b border-slate-800 text-slate-400">
                                                 <th className="py-2.5 px-3">Kanal</th>
-                                                <th className="py-2.5 px-3">Terminal Pin {model}</th>
+                                                <th className="py-2.5 px-3">Pin {model}</th>
                                                 <th className="py-2.5 px-3">Fungsi & Beban</th>
                                                 <th className="py-2.5 px-3">Tipe Output</th>
                                             </tr>
