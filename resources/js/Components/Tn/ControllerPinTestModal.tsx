@@ -74,14 +74,19 @@ interface Props {
 
 export default function ControllerPinTestModal({ controllerId, model, serialPort, isOnline, onClose }: Props) {
     const schema = PIN_SCHEMAS[model.toUpperCase()] || PIN_SCHEMAS.TNL;
-    const [activeTab, setActiveTab] = useState<'test' | 'wiring'>('test');
+    const [activeTab, setActiveTab] = useState<'test' | 'ports' | 'wiring'>('test');
     const [testingChannel, setTestingChannel] = useState<string | null>(null);
     const [testingPort, setTestingPort] = useState(false);
+    const [ports, setPorts] = useState<Array<{ device: string; description: string; manufacturer?: string; serial_number?: string; hwid?: string }>>([]);
+    const [scanning, setScanning] = useState(false);
+    const [currentSelectedPort, setCurrentSelectedPort] = useState<string | null>(serialPort);
+    const [currentMode, setCurrentMode] = useState<'auto' | 'manual'>(serialPort ? 'manual' : 'auto');
+
     const [logs, setLogs] = useState<Array<{ id: number; time: string; text: string; success: boolean }>>([
         {
             id: 1,
             time: new Date().toLocaleTimeString(),
-            text: `Pin test bench siap untuk ${schema.title}. Mode komunikasi: ${serialPort || 'Auto-Detect'}`,
+            text: `Pin test bench siap untuk ${schema.title}. Mode: ${currentMode === 'auto' ? 'Auto-Detect' : (currentSelectedPort || 'Manual')}`,
             success: true
         }
     ]);
@@ -93,15 +98,88 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
         ]);
     };
 
-    const handleTestPort = async () => {
+    const fetchPorts = async () => {
+        setScanning(true);
+        try {
+            const res = await fetch(route('tn.port.list', controllerId));
+            const data = await res.json();
+            if (data.success) {
+                setPorts(data.ports);
+                addLog(`Ditemukan ${data.ports.length} port serial di sistem.`, true);
+            }
+        } catch (err: any) {
+            addLog(`Gagal mengambil daftar port: ${err.message}`, false);
+        } finally {
+            setScanning(false);
+        }
+    };
+
+    const handleScan = async () => {
+        setScanning(true);
+        addLog(`Memulai scanning seluruh port COM untuk ${schema.title}...`, true);
+        try {
+            const res = await fetch(route('tn.port.scan', controllerId), { method: 'POST' });
+            const data = await res.json();
+            if (data.success && data.port) {
+                setCurrentSelectedPort(data.port);
+                setCurrentMode('manual');
+                addLog(data.message || `Port ${data.port} ditemukan dan merespons.`, true);
+                fetchPorts();
+            } else {
+                addLog(data.message || 'Tidak ada port yang merespons.', false);
+            }
+        } catch (err: any) {
+            addLog(`Gagal melakukan scan: ${err.message}`, false);
+        } finally {
+            setScanning(false);
+        }
+    };
+
+    const handleSelectPort = async (port: string) => {
+        try {
+            const res = await fetch(route('tn.port.select', controllerId), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ port, mode: 'manual' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setCurrentSelectedPort(port);
+                setCurrentMode('manual');
+                addLog(`Port aktif di-set ke ${port}.`, true);
+            }
+        } catch (err: any) {
+            addLog(`Gagal memilih port: ${err.message}`, false);
+        }
+    };
+
+    const handleAutoMode = async () => {
+        try {
+            const res = await fetch(route('tn.port.select', controllerId), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ port: '', mode: 'auto' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setCurrentMode('auto');
+                setCurrentSelectedPort(null);
+                addLog('Mode auto-detect diaktifkan.', true);
+            }
+        } catch (err: any) {
+            addLog(`Gagal mengaktifkan mode auto: ${err.message}`, false);
+        }
+    };
+
+    const handleTestPort = async (testPortTarget?: string) => {
         setTestingPort(true);
-        const targetPort = (serialPort && serialPort.toLowerCase() !== 'auto') ? serialPort : '';
-        addLog(`Memulai test koneksi Modbus RTU ke ${schema.title} (${targetPort || 'Auto-Detect Port'})...`, true);
+        const target = testPortTarget || ((currentSelectedPort && currentSelectedPort.toLowerCase() !== 'auto') ? currentSelectedPort : '');
+        addLog(`Memulai test koneksi Modbus RTU (${target || 'Auto-Detect'})...`, true);
         try {
             const res = await fetch(route('tn.port.test', controllerId), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ port: targetPort })
+                body: JSON.stringify({ port: target })
             });
             const data = await res.json();
             if (data.success) {
@@ -123,7 +201,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
             const res = await fetch(route('tn.port.toggle-pin', controllerId), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channel, port: serialPort || '' })
+                body: JSON.stringify({ channel, port: currentSelectedPort || '' })
             });
             const data = await res.json();
             if (data.success) {
@@ -179,6 +257,9 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                     <button onClick={() => setActiveTab('test')} className={`pb-3 px-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'test' ? 'border-amber-400 text-amber-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
                         <Play size={14} /> Pengujian Pin & Output
                     </button>
+                    <button onClick={() => { setActiveTab('ports'); if (ports.length === 0) fetchPorts(); }} className={`pb-3 px-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ports' ? 'border-amber-400 text-amber-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
+                        <RefreshCw size={14} /> Serial Port Settings
+                    </button>
                     <button onClick={() => setActiveTab('wiring')} className={`pb-3 px-3 border-b-2 transition-all flex items-center gap-2 ${activeTab === 'wiring' ? 'border-amber-400 text-amber-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
                         <Wrench size={14} /> Panduan Wiring Terminal {model}
                     </button>
@@ -191,7 +272,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                             {/* Actions Top Bar */}
                             <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
                                 <div className="flex items-center gap-2">
-                                    <button onClick={handleTestPort} disabled={testingPort}
+                                    <button onClick={() => handleTestPort()} disabled={testingPort}
                                         className="flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2.5 text-xs font-black text-white shadow-lg transition-all disabled:opacity-50">
                                         <RefreshCw size={14} className={testingPort ? "animate-spin" : ""} />
                                         {testingPort ? "Testing Port..." : "Test Koneksi RS485"}
@@ -203,7 +284,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                                     </button>
                                 </div>
                                 <span className="text-[11px] font-semibold text-slate-400">
-                                    Klik tombol pin di bawah untuk toggle 2 detik
+                                    Port: <b className="text-amber-400 font-mono">{currentMode === 'auto' ? 'Auto-Detect' : (currentSelectedPort || 'None')}</b>
                                 </span>
                             </div>
 
@@ -266,6 +347,92 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                                 </div>
                             </div>
                         </>
+                    ) : activeTab === 'ports' ? (
+                        /* Serial Port Settings Tab */
+                        <div className="space-y-6 text-sm">
+                            {/* Status Box */}
+                            <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-5">
+                                <h3 className="mb-3 text-[11px] font-black uppercase tracking-wider text-slate-400">STATUS KONEKSI</h3>
+                                <div className="grid grid-cols-2 gap-4 text-xs">
+                                    <div>
+                                        <span className="text-slate-400">Status:</span>{' '}
+                                        <span className={`font-black ${isOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {isOnline ? 'Connected' : 'Disconnected'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-400">Port Aktif:</span>{' '}
+                                        <span className="font-mono font-black text-amber-400">
+                                            {currentMode === 'auto' ? 'Auto Detect' : (currentSelectedPort || 'None')}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-400">Mode:</span>{' '}
+                                        <span className="font-black text-slate-200">{currentMode === 'auto' ? 'Auto Detect' : 'Manual'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Scan & Auto Action Buttons */}
+                            <div className="flex gap-3">
+                                <button onClick={handleScan} disabled={scanning}
+                                    className="rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2.5 text-xs font-black text-white disabled:opacity-50 shadow-md transition-all">
+                                    {scanning ? 'Scanning...' : 'Scan Ports'}
+                                </button>
+                                <button onClick={handleAutoMode}
+                                    className={`rounded-xl border px-5 py-2.5 text-xs font-black transition-all ${
+                                        currentMode === 'auto'
+                                            ? 'bg-amber-400 border-amber-500 text-slate-950 shadow-sm'
+                                            : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                                    }`}>
+                                    Auto Mode
+                                </button>
+                            </div>
+
+                            {/* Available Ports List */}
+                            <div className="space-y-3">
+                                <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-400">DAFTAR PORT TERSEDIA</h3>
+                                {scanning && ports.length === 0 ? (
+                                    <div className="py-8 text-center text-xs font-bold text-slate-400">Scanning serial ports...</div>
+                                ) : ports.length === 0 ? (
+                                    <div className="py-8 text-center text-xs font-bold text-slate-400 bg-slate-950/60 rounded-2xl border border-dashed border-slate-800 p-6">
+                                        Tidak ada port terdeteksi. Klik "Scan Ports" untuk mencari perangkat Modbus RS485.
+                                    </div>
+                                ) : (
+                                    ports.map(p => (
+                                        <div key={p.device}
+                                            className={`flex items-center justify-between rounded-2xl border p-4 transition-all ${
+                                                currentSelectedPort === p.device
+                                                    ? 'border-amber-400 bg-amber-500/10 shadow-sm'
+                                                    : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
+                                            }`}>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono font-black text-white text-sm">{p.device}</span>
+                                                    {currentSelectedPort === p.device && (
+                                                        <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-[10px] font-black text-slate-950">AKTIF</span>
+                                                    )}
+                                                </div>
+                                                <p className="truncate text-xs font-medium text-slate-400 mt-0.5">{p.description || p.hwid || 'No description'}</p>
+                                                {p.manufacturer && (
+                                                    <p className="text-[10px] font-mono text-slate-500 mt-0.5">{p.manufacturer}{p.serial_number ? ` - SN: ${p.serial_number}` : ''}</p>
+                                                )}
+                                            </div>
+                                            <div className="ml-4 flex gap-2 shrink-0">
+                                                <button onClick={() => handleTestPort(p.device)} disabled={testingPort}
+                                                    className="rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-slate-200 disabled:opacity-50 shadow-sm">
+                                                    Test
+                                                </button>
+                                                <button onClick={() => handleSelectPort(p.device)}
+                                                    className="rounded-xl bg-blue-600 hover:bg-blue-500 px-3.5 py-2 text-xs font-extrabold text-white shadow-sm">
+                                                    Select
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                     ) : (
                         /* Wiring Diagram Tab */
                         <div className="space-y-6 text-sm">
