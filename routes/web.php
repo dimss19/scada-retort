@@ -97,6 +97,7 @@ Route::middleware('auth')->group(function () {
 
         // SCADA POV
         Route::get('/{tn}/scada/edit', [\App\Http\Controllers\ScadaController::class, 'edit'])->name('tn.scada.edit');
+        Route::post('/{tn}/scada/save', [\App\Http\Controllers\ScadaController::class, 'save'])->name('tn.scada.save');
         Route::post('/{tn}/scada/canvas', [\App\Http\Controllers\ScadaController::class, 'updateCanvas'])->name('tn.scada.canvas');
         Route::post('/{tn}/scada/mappings', [\App\Http\Controllers\ScadaController::class, 'saveMappings'])->name('tn.scada.mappings');
         Route::post('/{tn}/scada/upload-bg', [\App\Http\Controllers\ScadaController::class, 'uploadBackground'])->name('tn.scada.upload-bg');

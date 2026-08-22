@@ -35,6 +35,63 @@ class ScadaController extends Controller
         ]);
     }
 
+    public function save(Request $request, TnController $tn)
+    {
+        if ($request->has('canvas')) {
+            $canvasData = $request->input('canvas');
+            ScadaCanvas::updateOrCreate(
+                ['tn_controller_id' => $tn->id],
+                [
+                    'background_image_url' => $canvasData['background_image_url'] ?? null,
+                    'width' => (int) ($canvasData['width'] ?? 1200),
+                    'height' => (int) ($canvasData['height'] ?? 800),
+                    'grid_enabled' => (bool) ($canvasData['grid_enabled'] ?? true),
+                    'grid_size' => (int) ($canvasData['grid_size'] ?? 20),
+                    'snap_to_grid' => (bool) ($canvasData['snap_to_grid'] ?? true),
+                ]
+            );
+        }
+
+        if ($request->has('mappings')) {
+            $mappings = $request->input('mappings', []);
+            $existingIds = ScadaMapping::where('tn_controller_id', $tn->id)->pluck('id')->toArray();
+            $keptIds = [];
+
+            foreach ($mappings as $item) {
+                $id = (!empty($item['id']) && (int)$item['id'] > 0) ? (int)$item['id'] : null;
+                $mapping = ScadaMapping::updateOrCreate(
+                    ['id' => $id, 'tn_controller_id' => $tn->id],
+                    [
+                        'element_id' => $item['element_id'] ?? ('elem_' . uniqid()),
+                        'element_type' => $item['element_type'] ?? 'display',
+                        'label' => $item['label'] ?? null,
+                        'data_source' => $item['data_source'] ?? 'pv',
+                        'position_x' => (int) ($item['position_x'] ?? 0),
+                        'position_y' => (int) ($item['position_y'] ?? 0),
+                        'width' => (int) ($item['width'] ?? 120),
+                        'height' => (int) ($item['height'] ?? 80),
+                        'rotation' => (int) ($item['rotation'] ?? 0),
+                        'z_index' => (int) ($item['z_index'] ?? 0),
+                        'normal_color' => $item['normal_color'] ?? '#22c55e',
+                        'warning_color' => $item['warning_color'] ?? '#eab308',
+                        'critical_color' => $item['critical_color'] ?? '#ef4444',
+                        'warning_threshold' => isset($item['warning_threshold']) && is_numeric($item['warning_threshold']) ? (float)$item['warning_threshold'] : null,
+                        'critical_threshold' => isset($item['critical_threshold']) && is_numeric($item['critical_threshold']) ? (float)$item['critical_threshold'] : null,
+                        'module_dependency' => $item['module_dependency'] ?? null,
+                    ]
+                );
+                $keptIds[] = $mapping->id;
+            }
+
+            $toDelete = array_diff($existingIds, $keptIds);
+            if (!empty($toDelete)) {
+                ScadaMapping::whereIn('id', $toDelete)->delete();
+            }
+        }
+
+        return back()->with('success', 'SCADA Editor configuration saved successfully.');
+    }
+
     public function updateCanvas(Request $request, TnController $tn)
     {
         $validated = $request->validate([
