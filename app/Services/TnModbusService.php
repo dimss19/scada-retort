@@ -77,10 +77,15 @@ class TnModbusService
             config('tn.timeout'));
     }
 
-    public function testPort(TnController $controller, string $port): array
+    public function testPort(TnController $controller, ?string $port = null): array
     {
+        $targetPort = ($port && strtolower($port) !== 'auto') ? $port : $this->resolveControllerPort($controller);
+        if (!$targetPort) {
+            return ['success' => false, 'error' => 'Port serial belum terdeteksi. Silakan scan port terlebih dahulu atau tentukan port COM.'];
+        }
+
         return $this->runPython([
-            '--port', $port,
+            '--port', $targetPort,
             '--baud', (string)($controller->baudrate ?? config('tn.baudrate')),
             '--parity', $controller->parity ?? config('tn.parity'),
             '--stopbits', (string)($controller->stopbits ?? config('tn.stopbits')),
@@ -92,7 +97,7 @@ class TnModbusService
 
     public function togglePin(TnController $controller, string $channel, ?string $port = null): array
     {
-        $targetPort = $port ?: $this->resolveControllerPort($controller);
+        $targetPort = ($port && strtolower($port) !== 'auto') ? $port : $this->resolveControllerPort($controller);
         if (!$targetPort) {
             return ['success' => false, 'error' => 'Port serial belum terdeteksi. Silakan scan port terlebih dahulu.'];
         }

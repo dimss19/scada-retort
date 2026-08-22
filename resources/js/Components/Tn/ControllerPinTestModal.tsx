@@ -95,12 +95,13 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
 
     const handleTestPort = async () => {
         setTestingPort(true);
-        addLog(`Memulai test koneksi Modbus RTU ke ${schema.title}...`, true);
+        const targetPort = (serialPort && serialPort.toLowerCase() !== 'auto') ? serialPort : '';
+        addLog(`Memulai test koneksi Modbus RTU ke ${schema.title} (${targetPort || 'Auto-Detect Port'})...`, true);
         try {
             const res = await fetch(route('tn.port.test', controllerId), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ port: serialPort || 'COM6' })
+                body: JSON.stringify({ port: targetPort })
             });
             const data = await res.json();
             if (data.success) {

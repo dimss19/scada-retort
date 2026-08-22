@@ -41,24 +41,27 @@ class TnPortController extends Controller
 
     public function test(TnController $tn, Request $request, TnModbusService $modbus)
     {
-        $request->validate(['port' => 'required|string']);
+        $request->validate(['port' => 'nullable|string']);
 
-        $result = $modbus->testPort($tn, $request->port);
+        $port = $request->port ?: ($tn->serial_port ?: null);
+        $result = $modbus->testPort($tn, $port);
 
         if ($result['success']) {
             $rawPv = $result['data'][0] ?? null;
             $pvText = $rawPv !== null ? ' (PV: ' . number_format($rawPv / 10, 1) . ' °C)' : '';
+            $portDisplay = ($port && strtolower($port) !== 'auto') ? $port : ($tn->serial_port ?: 'Auto Port');
             return response()->json([
                 'success' => true,
-                'message' => "Koneksi ke {$request->port} berhasil! Respons controller diterima{$pvText}.",
+                'message' => "Koneksi ke {$portDisplay} berhasil! Respons controller diterima{$pvText}.",
                 'data' => $result['data'] ?? null,
                 'pv' => $rawPv !== null ? $rawPv / 10 : null,
             ]);
         }
 
+        $portDisplay = ($port && strtolower($port) !== 'auto') ? $port : ($tn->serial_port ?: 'Auto Port');
         return response()->json([
             'success' => false,
-            'message' => "Koneksi ke {$request->port} gagal: " . ($result['error'] ?? 'Unknown error'),
+            'message' => "Koneksi ke {$portDisplay} gagal: " . ($result['error'] ?? 'Unknown error'),
         ]);
     }
 
