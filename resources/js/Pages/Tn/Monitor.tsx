@@ -24,7 +24,7 @@ type MonitorTab = 'monitor' | 'scada';
 
 export default function Monitor({ controller, latestReading: initialReading }: Props) {
     const pollIntervalMs = Math.max(1000, controller.polling_interval ?? 1000);
-    const staleAfterMs = Math.max(15000, pollIntervalMs * 5);
+    const staleAfterMs = Math.max(60000, pollIntervalMs * 10);
     const getReadingTimestamp = (value: any) => value?.created_at ?? value?.timestamp ?? null;
     const timestampToMs = (timestamp: any): number | false => {
         if (!timestamp) return false;
@@ -40,7 +40,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
     const [history, setHistory] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<MonitorTab>('monitor');
     const [isLiveOnline, setIsLiveOnline] = useState(Boolean(
-        controller.is_online && isFreshTimestamp(getReadingTimestamp(initialReading)),
+        controller.is_online || isFreshTimestamp(getReadingTimestamp(initialReading)),
     ));
     const [commandPending, setCommandPending] = useState<'run' | 'stop' | 'reset' | null>(null);
     const lastReadingTimestampRef = useRef<any>(getReadingTimestamp(initialReading));
@@ -55,11 +55,9 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             if (!isMounted || !newReading) return;
 
             const timestamp = getReadingTimestamp(newReading);
-            if (timestamp && timestamp === lastReadingTimestampRef.current) return;
-
             const timestampMs = timestampToMs(timestamp);
             lastSeenAtRef.current = timestampMs !== false ? timestampMs : Date.now();
-            setIsLiveOnline(timestampMs === false || Date.now() - timestampMs <= staleAfterMs);
+            setIsLiveOnline(timestampMs === false || Date.now() - (timestampMs || Date.now()) <= staleAfterMs);
             lastReadingTimestampRef.current = timestamp;
             setReading(newReading);
 
@@ -84,25 +82,14 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 setHistory(data);
                 const latest = data[data.length - 1];
 
-                if (replaceLatest && latest) {
+                if (latest) {
                     const timestamp = getReadingTimestamp(latest);
                     const timestampMs = timestampToMs(timestamp);
                     lastReadingTimestampRef.current = timestamp;
                     lastSeenAtRef.current = timestampMs;
-                    setIsLiveOnline(timestampMs !== false && Date.now() - timestampMs <= staleAfterMs);
+                    setIsLiveOnline(timestampMs !== false ? (Date.now() - timestampMs <= staleAfterMs) : Boolean(controller.is_online));
                     setReading(latest);
-                    return;
                 }
-
-                const lastTimestamp = lastReadingTimestampRef.current;
-                const newer = lastTimestamp
-                    ? data.filter((item: any) => {
-                        const itemTimestamp = getReadingTimestamp(item);
-                        return itemTimestamp && new Date(itemTimestamp).getTime() > new Date(lastTimestamp).getTime();
-                    })
-                    : latest ? [latest] : [];
-
-                newer.forEach((item: any) => applyReading(item, false));
             } catch {
                 if (isMounted) setIsLiveOnline(false);
             }
