@@ -50,11 +50,19 @@ class TnPortController extends Controller
             $rawPv = $result['data'][0] ?? null;
             $pvText = $rawPv !== null ? ' (PV: ' . number_format($rawPv / 10, 1) . ' °C)' : '';
             $portDisplay = ($port && strtolower($port) !== 'auto') ? $port : ($tn->serial_port ?: 'Auto Port');
+
+            $tn->update([
+                'is_online' => true,
+                'last_seen_at' => now(),
+                'last_error' => null,
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => "Koneksi ke {$portDisplay} berhasil! Respons controller diterima{$pvText}.",
                 'data' => $result['data'] ?? null,
                 'pv' => $rawPv !== null ? $rawPv / 10 : null,
+                'is_online' => true,
             ]);
         }
 

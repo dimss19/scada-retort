@@ -81,6 +81,11 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
     const [scanning, setScanning] = useState(false);
     const [currentSelectedPort, setCurrentSelectedPort] = useState<string | null>(serialPort);
     const [currentMode, setCurrentMode] = useState<'auto' | 'manual'>(serialPort ? 'manual' : 'auto');
+    const [localOnline, setLocalOnline] = useState<boolean>(isOnline);
+
+    React.useEffect(() => {
+        setLocalOnline(isOnline);
+    }, [isOnline]);
 
     const [logs, setLogs] = useState<Array<{ id: number; time: string; text: string; success: boolean }>>([
         {
@@ -123,6 +128,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
             if (data.success && data.port) {
                 setCurrentSelectedPort(data.port);
                 setCurrentMode('manual');
+                setLocalOnline(true);
                 addLog(data.message || `Port ${data.port} ditemukan dan merespons.`, true);
                 fetchPorts();
             } else {
@@ -146,6 +152,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
             if (data.success) {
                 setCurrentSelectedPort(port);
                 setCurrentMode('manual');
+                setLocalOnline(true);
                 addLog(`Port aktif di-set ke ${port}.`, true);
             }
         } catch (err: any) {
@@ -183,6 +190,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
             });
             const data = await res.json();
             if (data.success) {
+                setLocalOnline(true);
                 addLog(data.message || `Koneksi Berhasil! Controller merespons.`, true);
             } else {
                 addLog(data.message || `Koneksi Gagal. Cek kabel serial RS485.`, false);
@@ -205,6 +213,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
             });
             const data = await res.json();
             if (data.success) {
+                setLocalOnline(true);
                 addLog(`PASS: ${channel} (Pin ${pin}) berhasil di-trigger aktif 2 detik.`, true);
             } else {
                 addLog(`FAIL: ${data.message || 'Gagal memicu pin output'}`, false);
@@ -243,7 +252,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                                 </span>
                             </div>
                             <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                                Port: <span className="text-amber-400 font-mono font-bold">{serialPort || 'Auto-Detect'}</span> · Status: {isOnline ? <span className="text-emerald-400 font-bold">Online</span> : <span className="text-rose-400 font-bold">Standby/Disconnected</span>}
+                                Port: <span className="text-amber-400 font-mono font-bold">{currentMode === 'auto' ? 'Auto-Detect' : (currentSelectedPort || 'Auto-Detect')}</span> · Status: {localOnline ? <span className="text-emerald-400 font-bold">Online</span> : <span className="text-rose-400 font-bold">Standby/Disconnected</span>}
                             </p>
                         </div>
                     </div>
@@ -356,8 +365,8 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                                 <div className="grid grid-cols-2 gap-4 text-xs">
                                     <div>
                                         <span className="text-slate-400">Status:</span>{' '}
-                                        <span className={`font-black ${isOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            {isOnline ? 'Connected' : 'Disconnected'}
+                                        <span className={`font-black ${localOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {localOnline ? 'Connected' : 'Disconnected'}
                                         </span>
                                     </div>
                                     <div>

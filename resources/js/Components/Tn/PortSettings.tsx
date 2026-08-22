@@ -27,6 +27,11 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
     const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
     const [mode, setMode] = useState<'auto' | 'manual'>(currentPort ? 'manual' : 'auto');
     const [selectedPort, setSelectedPort] = useState<string | null>(currentPort);
+    const [localOnline, setLocalOnline] = useState<boolean>(isOnline);
+
+    useEffect(() => {
+        setLocalOnline(isOnline);
+    }, [isOnline]);
 
     const showStatus = useCallback((type: 'success' | 'error' | 'info', text: string) => {
         setStatusMsg({ type, text });
@@ -62,6 +67,7 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
             const data = await res.json();
             if (data.success) {
                 setSelectedPort(data.port);
+                setLocalOnline(true);
                 showStatus('success', data.message || `Port ${data.port} ditemukan.`);
                 router.reload({ only: ['controller'] });
             } else {
@@ -86,7 +92,9 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
             });
             const data = await res.json();
             if (data.success) {
+                setLocalOnline(true);
                 showStatus('success', data.message);
+                router.reload({ only: ['controller'] });
             } else {
                 showStatus('error', data.message);
             }
@@ -189,8 +197,8 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
                                 <div className="grid grid-cols-2 gap-3 text-xs font-semibold">
                                     <div>
                                         <span className="text-slate-500">Status:</span>{' '}
-                                        <span className={`font-black ${isOnline ? 'text-amber-700' : 'text-rose-700'}`}>
-                                            {isOnline ? 'Connected' : 'Disconnected'}
+                                        <span className={`font-black ${localOnline ? 'text-emerald-700 font-black' : 'text-rose-700'}`}>
+                                            {localOnline ? 'Connected' : 'Disconnected'}
                                         </span>
                                     </div>
                                     <div>

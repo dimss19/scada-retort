@@ -22,12 +22,20 @@ class PollTnControllers extends Command
 
         do {
             $start = microtime(true);
+            $controllerOption = $this->option('controller');
             $controllers = TnController::query()
-                ->when($this->option('controller'), fn ($query, $id) => $query->whereKey($id))
+                ->when($controllerOption, function ($query, $val) {
+                    $query->where(function ($q) use ($val) {
+                        $q->where('id', $val)
+                          ->orWhere('slave_id', $val)
+                          ->orWhere('model_type', strtoupper($val))
+                          ->orWhere('name', 'like', "%{$val}%");
+                    });
+                })
                 ->get();
 
             if ($controllers->isEmpty()) {
-                $this->warn('No TN controllers found.');
+                $this->warn("No TN controllers found matching '{$controllerOption}'.");
                 if ($this->option('once')) break;
                 sleep($interval);
                 continue;
