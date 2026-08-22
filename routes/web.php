@@ -19,6 +19,7 @@ Route::get('/dashboard', function () {
         'tnCount' => \App\Models\TnController::count(),
         'tnOnline' => \App\Models\TnController::where('is_online', true)->count(),
         'recipeCount' => \App\Models\TnRecipeTemplate::count(),
+        'controllers' => \App\Models\TnController::all(),
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -83,6 +84,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{tn}/port/list', [\App\Http\Controllers\TnPortController::class, 'list'])->name('tn.port.list');
         Route::post('/{tn}/port/scan', [\App\Http\Controllers\TnPortController::class, 'scan'])->name('tn.port.scan');
         Route::post('/{tn}/port/test', [\App\Http\Controllers\TnPortController::class, 'test'])->name('tn.port.test');
+        Route::post('/{tn}/port/toggle-pin', [\App\Http\Controllers\TnPortController::class, 'togglePin'])->name('tn.port.toggle-pin');
         Route::post('/{tn}/port/select', [\App\Http\Controllers\TnPortController::class, 'select'])->name('tn.port.select');
         Route::get('/{tn}/port/status', [\App\Http\Controllers\TnPortController::class, 'status'])->name('tn.port.status');
 

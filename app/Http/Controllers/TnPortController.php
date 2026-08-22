@@ -46,10 +46,13 @@ class TnPortController extends Controller
         $result = $modbus->testPort($tn, $request->port);
 
         if ($result['success']) {
+            $rawPv = $result['data'][0] ?? null;
+            $pvText = $rawPv !== null ? ' (PV: ' . number_format($rawPv / 10, 1) . ' °C)' : '';
             return response()->json([
                 'success' => true,
-                'message' => "Koneksi ke {$request->port} berhasil.",
+                'message' => "Koneksi ke {$request->port} berhasil! Respons controller diterima{$pvText}.",
                 'data' => $result['data'] ?? null,
+                'pv' => $rawPv !== null ? $rawPv / 10 : null,
             ]);
         }
 
@@ -57,6 +60,29 @@ class TnPortController extends Controller
             'success' => false,
             'message' => "Koneksi ke {$request->port} gagal: " . ($result['error'] ?? 'Unknown error'),
         ]);
+    }
+
+    public function togglePin(TnController $tn, Request $request, TnModbusService $modbus)
+    {
+        $request->validate([
+            'channel' => 'required|string',
+            'port' => 'nullable|string',
+        ]);
+
+        $result = $modbus->togglePin($tn, $request->channel, $request->port);
+
+        if ($result['success']) {
+            return response()->json([
+                'success' => true,
+                'message' => $result['message'] ?? "Pin {$request->channel} berhasil diaktifkan selama 2 detik.",
+                'channel' => $request->channel,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => "Test Pin {$request->channel} gagal: " . ($result['error'] ?? 'Unknown error'),
+        ], 422);
     }
 
     public function select(TnController $tn, Request $request, TnModbusService $modbus)

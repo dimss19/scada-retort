@@ -92,6 +92,40 @@ def test_connection(client, args):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+def toggle_pin(client, args):
+    import time
+    try:
+        channel = args.channel.upper()
+        slave = args.slave
+        # Set RUN to allow MV manipulation
+        client.write_register(address=0, value=0, device_id=slave)
+
+        if channel in ["OUT1", "OUT2"]:
+            mv_reg = 3 if channel == "OUT1" else 4
+            # Mode manual
+            client.write_register(address=2, value=1, device_id=slave)
+            # Set 100% MV
+            client.write_register(address=mv_reg, value=1000, device_id=slave)
+            time.sleep(2)
+            # Reset MV & set Auto mode
+            client.write_register(address=mv_reg, value=0, device_id=slave)
+            client.write_register(address=2, value=0, device_id=slave)
+            return {"success": True, "message": f"{channel} berhasil di-trigger aktif selama 2 detik."}
+        elif channel.startswith("AL"):
+            idx = int(channel.replace("AL", ""))
+            base = 451 + 8 * (idx - 1)  # REG_ALARM_MODE offset
+            client.write_register(address=base, value=0x0005, device_id=slave)
+            client.write_register(address=base + 2, value=100, device_id=slave) # Absolute high
+            client.write_register(address=base + 7, value=idx, device_id=slave)
+            time.sleep(2)
+            # Reset alarm config
+            client.write_register(address=base, value=0, device_id=slave)
+            return {"success": True, "message": f"{channel} (Alarm {idx}) berhasil di-trigger aktif selama 2 detik."}
+        else:
+            return {"success": False, "error": f"Kanal {channel} tidak dikenal"}
+    except Exception as e:
+        return {"success": False, "error": f"Gagal trigger {args.channel}: {str(e)}"}
+
 def list_ports(args):
     ports = []
     for p in serial.tools.list_ports.comports():
@@ -199,6 +233,11 @@ def main():
     p_tc = subparsers.add_parser("test_connection")
     p_tc.add_argument("--slave", type=int, required=True)
     
+    # toggle_pin
+    p_tp = subparsers.add_parser("toggle_pin")
+    p_tp.add_argument("--slave", type=int, required=True)
+    p_tp.add_argument("--channel", required=True, help="Channel name e.g. OUT1, OUT2, AL1..AL6")
+    
     # list_ports
     subparsers.add_parser("list_ports")
 
@@ -258,7 +297,8 @@ def main():
         "write_register": write_register,
         "write_coil": write_coil,
         "write_registers": write_registers,
-        "test_connection": test_connection
+        "test_connection": test_connection,
+        "toggle_pin": toggle_pin
     }
     
     result = handlers[args.command](client, args)

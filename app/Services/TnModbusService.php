@@ -90,6 +90,25 @@ class TnModbusService
         ], config('tn.timeout') + 2);
     }
 
+    public function togglePin(TnController $controller, string $channel, ?string $port = null): array
+    {
+        $targetPort = $port ?: $this->resolveControllerPort($controller);
+        if (!$targetPort) {
+            return ['success' => false, 'error' => 'Port serial belum terdeteksi. Silakan scan port terlebih dahulu.'];
+        }
+
+        return $this->runPython([
+            '--port', $targetPort,
+            '--baud', (string)($controller->baudrate ?? config('tn.baudrate')),
+            '--parity', $controller->parity ?? config('tn.parity'),
+            '--stopbits', (string)($controller->stopbits ?? config('tn.stopbits')),
+            '--timeout', (string)config('tn.timeout'),
+            'toggle_pin',
+            '--slave', (string)$controller->slave_id,
+            '--channel', $channel,
+        ], config('tn.timeout') + 5);
+    }
+
     public function clearPortCache(TnController $controller): void
     {
         Cache::forget('tn_auto_port_' . $controller->id);
