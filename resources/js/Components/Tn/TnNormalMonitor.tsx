@@ -2,9 +2,11 @@ import React, { useMemo } from 'react';
 import { RetortTelemetry, formatControllerTime } from '@/Pages/Tn/retortTelemetry';
 import TnGauge from './TnGauge';
 import TnTrendChart from './TnTrendChart';
+import TnFaceplateDisplay from './TnFaceplateDisplay';
 
 interface Props {
     controllerId?: number;
+    controllerModel?: string;
     telemetry: RetortTelemetry;
     history: any[];
     isOnline: boolean;
@@ -14,7 +16,7 @@ const formatValue = (value: number | null, digits = 1) => value === null
     ? undefined
     : value.toLocaleString('id-ID', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-export default function TnNormalMonitor({ telemetry, history, isOnline }: Props) {
+export default function TnNormalMonitor({ controllerModel = 'TNH', telemetry, history, isOnline }: Props) {
     const heatingLogs = useMemo(() => history
         .filter((item) => Number(item.heating_mv ?? 0) > 0)
         .slice(-100)
@@ -79,6 +81,13 @@ export default function TnNormalMonitor({ telemetry, history, isOnline }: Props)
                 </div>
                 <div className="h-72 w-full"><TnTrendChart data={isOnline ? history : []} /></div>
             </section>
+
+            {/* Autonics Industrial Digital Faceplate Display (Mirroring Physical TNH-P Screen) */}
+            <TnFaceplateDisplay
+                telemetry={telemetry}
+                modelType={controllerModel}
+                isOnline={isOnline}
+            />
 
             {/* Process Logs Table */}
             <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-7 shadow-lg backdrop-blur-xl">

@@ -96,6 +96,7 @@ export default function RetortMonitorShell(props: Props) {
                     {props.activeTab === 'monitor' ? (
                         <TnNormalMonitor
                             controllerId={controller.id}
+                            controllerModel={controller.model_type}
                             telemetry={telemetry}
                             history={props.history}
                             isOnline={isOnline}
