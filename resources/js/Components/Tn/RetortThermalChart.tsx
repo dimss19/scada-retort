@@ -148,23 +148,25 @@ export default function RetortThermalChart({ data = [], targetSv = 121.0, height
             }
         }
 
-        // 2. Draw Target Sterilization Line (121 °C Red Dashed Line)
-        const targetY = getY(targetSv);
-        ctx.save();
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
-        ctx.beginPath();
-        ctx.moveTo(padding.left, targetY);
-        ctx.lineTo(padding.left + plotWidth, targetY);
-        ctx.stroke();
-        ctx.restore();
+        // 2. Draw Target Line ONLY when process is running (START / RUN)
+        if (isRunning && targetSv && targetSv > 0) {
+            const targetY = getY(targetSv);
+            ctx.save();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(padding.left, targetY);
+            ctx.lineTo(padding.left + plotWidth, targetY);
+            ctx.stroke();
+            ctx.restore();
 
-        // Target Line Label Badge
-        ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 10px Inter, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`Target: ${targetSv}°C`, padding.left + 8, targetY - 6);
+            // Target Line Label Badge
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 10px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Target: ${targetSv}°C`, padding.left + 8, targetY - 6);
+        }
 
         // 3. Draw Step Segments & Vertical Dashed Separators
         segments.forEach((seg, idx) => {
