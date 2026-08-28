@@ -185,9 +185,6 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                     <div className="bg-white p-6 rounded-3xl shadow-lg border border-slate-200/90 backdrop-blur-xl">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
                             <h3 className="text-lg font-black text-slate-900">Informasi Resep Sterilisasi</h3>
-                            <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
-                                Revisi v{data.version} (Rev {data.revision})
-                            </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
