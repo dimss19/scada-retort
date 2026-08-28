@@ -9,6 +9,28 @@ export default function Index({ recipes = [], controllers = [] }: { recipes?: an
     const [isScanning, setIsScanning] = useState(false);
     const [scanMessage, setScanMessage] = useState({ text: '', type: '' });
 
+    const [applyingId, setApplyingId] = useState<number | null>(null);
+
+    const handleApplyPattern = async (recipeId: number, recipeName: string) => {
+        const targetController = selectedController || activeTnId || (controllers.length > 0 ? controllers[0].id : '');
+        if (!confirm(`Kirim dan terapkan '${recipeName}' langsung ke memori TN Controller?`)) {
+            return;
+        }
+
+        setApplyingId(recipeId);
+        setScanMessage({ text: `Menulis parameter '${recipeName}' ke TN Controller via Modbus...`, type: 'info' });
+
+        try {
+            const response = await axios.post(route('tn.recipes.apply', { recipe: recipeId, tn: targetController || undefined }));
+            setScanMessage({ text: response.data.message || 'Pattern berhasil ditulis ke Controller TN!', type: 'success' });
+        } catch (error: any) {
+            const msg = error.response?.data?.error || 'Gagal menulis pattern ke TN Controller.';
+            setScanMessage({ text: msg, type: 'error' });
+        } finally {
+            setApplyingId(null);
+        }
+    };
+
     const handleAutoScan = async () => {
         const targetController = selectedController || activeTnId || (controllers.length > 0 ? controllers[0].id : '');
         if (!targetController) {
@@ -41,7 +63,7 @@ export default function Index({ recipes = [], controllers = [] }: { recipes?: an
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between max-w-7xl mx-auto">
                     <div>
                         <h1 className="text-2xl font-black tracking-tight text-slate-900">Manajemen Pattern</h1>
-                        <p className="text-sm font-semibold text-slate-600">Kelola dan scan profil sterilisasi controller retort</p>
+                        <p className="text-sm font-semibold text-slate-600">Kelola, simpan, dan tulis profil sterilisasi langsung ke controller retort</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <Link
@@ -135,20 +157,30 @@ export default function Index({ recipes = [], controllers = [] }: { recipes?: an
                                         </div>
                                     </div>
                                 </div>
-                                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                                <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                                     <button
                                         onClick={() => {
                                             if (confirm('Hapus pattern ini?')) {
                                                 router.delete(route('tn.recipes.destroy', recipe.id));
                                             }
                                         }}
-                                        className="text-xs font-extrabold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-xl transition-colors"
+                                        className="text-xs font-extrabold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-2 rounded-xl transition-colors"
                                     >
                                         Hapus
                                     </button>
-                                    <Link href={route('tn.recipes.edit', recipe.id)} className="text-xs font-extrabold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3.5 py-1.5 rounded-xl transition-colors">
-                                        Edit / Detail →
-                                    </Link>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleApplyPattern(recipe.id, recipe.name)}
+                                            disabled={applyingId === recipe.id}
+                                            className="text-xs font-black text-amber-950 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-yellow-300 hover:to-amber-400 shadow-sm px-3.5 py-2 rounded-xl transition-all disabled:opacity-50"
+                                            title="Tulis parameter pattern ini ke memori hardware Controller TN"
+                                        >
+                                            {applyingId === recipe.id ? 'Menulis...' : '⚡ Tulis ke TN'}
+                                        </button>
+                                        <Link href={route('tn.recipes.edit', recipe.id)} className="text-xs font-extrabold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3.5 py-2 rounded-xl transition-colors">
+                                            Edit →
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         ))}

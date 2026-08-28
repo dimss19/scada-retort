@@ -56,7 +56,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{recipe}/duplicate', [\App\Http\Controllers\TnRecipeController::class, 'duplicate'])->name('duplicate');
         Route::patch('/{recipe}/archive', [\App\Http\Controllers\TnRecipeController::class, 'archive'])->name('archive');
         Route::delete('/{recipe}', [\App\Http\Controllers\TnRecipeController::class, 'destroy'])->name('destroy');
-        Route::post('/{recipe}/apply/{tn}', [\App\Http\Controllers\TnRecipeController::class, 'apply'])->name('apply');
+        Route::post('/{recipe}/apply/{tn?}', [\App\Http\Controllers\TnRecipeController::class, 'apply'])->name('apply');
         Route::post('/scan-all', [\App\Http\Controllers\TnRecipeController::class, 'scanAllPatterns'])->name('scan-all');
         Route::post('/scan/{tn}', [\App\Http\Controllers\TnRecipeController::class, 'scanFromDevice'])->name('scan');
     });

@@ -88,6 +88,7 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
         pid_group: recipe?.pid_group ?? 0,
         wait_width: recipe?.wait_width ?? 2,
         wait_time: recipe?.wait_time ?? 0,
+        sync_to_tn: true,
         tn_config: recipe?.tn_config || defaultTnConfig,
         steps: recipe?.steps?.length > 0 ? recipe.steps : [
             { step_number: 1, step_name: 'Venting', target_sv: 100, duration: 300, end_action: 'CONT', event_link: null, pid_group: null, steam_enable: true, cooling_enable: false, drain_enable: false, alarm_enable: true },
@@ -107,6 +108,17 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
             name: `Pattern ${num}`,
             recipe_code: code,
         }));
+    };
+
+    const handleSubmitWithSync = (sync: boolean) => {
+        setData('sync_to_tn', sync);
+        setTimeout(() => {
+            if (isEditing) {
+                put(route('tn.recipes.update', recipe.id));
+            } else {
+                post(route('tn.recipes.store'));
+            }
+        }, 50);
     };
 
     const submit: FormEventHandler = (e) => {
@@ -1086,7 +1098,7 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                     )}
 
                     {/* Bottom Actions */}
-                    <div className="flex items-center justify-end gap-4 pt-4 border-t border-slate-200">
+                    <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-200">
                         <Link
                             href={route('tn.recipes.index')}
                             className="px-5 py-2.5 border border-slate-300 rounded-xl text-xs font-black text-slate-700 bg-white hover:bg-slate-50 shadow-sm transition-all"
@@ -1094,11 +1106,21 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                             Batal
                         </Link>
                         <button
-                            type="submit"
+                            type="button"
+                            onClick={() => handleSubmitWithSync(false)}
                             disabled={processing}
-                            className="px-7 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all border-none disabled:opacity-50"
+                            className="px-5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 shadow-sm transition-all disabled:opacity-50"
                         >
-                            {isEditing ? 'Simpan Perubahan Pattern' : 'Simpan & Buat Pattern Baru'}
+                            Simpan ke Database Saja
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleSubmitWithSync(true)}
+                            disabled={processing}
+                            className="px-7 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all border-none disabled:opacity-50 flex items-center gap-2"
+                        >
+                            <span>⚡</span>
+                            <span>{isEditing ? 'Simpan & Tulis ke TN Controller' : 'Simpan & Tulis ke TN Controller'}</span>
                         </button>
                     </div>
                 </form>
