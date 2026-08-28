@@ -371,7 +371,7 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                                         <div className="flex items-center gap-2">
                                             <span className="flex h-3 w-3 rounded-full bg-amber-500 animate-pulse"></span>
                                             <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                                                Langkah Operasi Sterilisasi (PATN Ts□ / Tm□)
+                                                Langkah Operasi Sterilisasi
                                             </h3>
                                         </div>
                                         <p className="text-xs font-bold text-amber-900 mt-1">
