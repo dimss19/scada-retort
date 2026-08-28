@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { RetortTelemetry } from '@/Pages/Tn/retortTelemetry';
 
 interface Props {
@@ -8,6 +8,15 @@ interface Props {
 }
 
 export default function TnFaceplateDisplay({ telemetry, modelType = 'TNH-P', isOnline }: Props) {
+    const [blinkToggle, setBlinkToggle] = useState(false);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setBlinkToggle(prev => !prev);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
     // Format timestamp
     const updateTime = telemetry.timestamp
         ? new Date(telemetry.timestamp).toLocaleDateString('id-ID', {
@@ -28,9 +37,14 @@ export default function TnFaceplateDisplay({ telemetry, modelType = 'TNH-P', isO
 
     // Format SV / Status
     const isStopped = !telemetry.running;
-    const svValueDisplay = !isStopped && telemetry.targetTemperature !== null && telemetry.targetTemperature !== undefined
+    const targetSvFormatted = telemetry.targetTemperature !== null && telemetry.targetTemperature !== undefined
         ? telemetry.targetTemperature.toFixed(1)
-        : 'Stop';
+        : '25.0';
+
+    // Alternates between 'Stop' and target SV when in STOP mode (identical to hardware)
+    const svValueDisplay = isStopped
+        ? (blinkToggle ? 'Stop' : targetSvFormatted)
+        : targetSvFormatted;
 
     // Format MV
     const mvDisplay = telemetry.heatingPercent !== null && telemetry.heatingPercent !== undefined
