@@ -54,8 +54,9 @@ export default function TnNormalMonitor({ controllerModel = 'TNH', telemetry, hi
                 
                 <RetortThermalChart
                     data={isOnline ? history : []}
-                    targetSv={telemetry.targetTemperature ?? 121.0}
+                    targetSv={(telemetry.targetTemperature && telemetry.targetTemperature > 60) ? telemetry.targetTemperature : 121.0}
                     height={380}
+                    isRunning={Boolean(telemetry.running && telemetry.phase !== 'Waiting' && telemetry.phase !== 'Offline')}
                 />
             </section>
 

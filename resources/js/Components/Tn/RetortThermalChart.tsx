@@ -5,18 +5,24 @@ interface Props {
     data: any[];
     targetSv?: number;
     height?: number;
+    isRunning?: boolean;
 }
 
-export default function RetortThermalChart({ data = [], targetSv = 121.0, height = 360 }: Props) {
+export default function RetortThermalChart({ data = [], targetSv = 121.0, height = 360, isRunning = false }: Props) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
     const [containerWidth, setContainerWidth] = useState<number>(800);
 
-    // Compute step segments
+    // Compute step segments ONLY when process is running (START / RUN)
     const segments: RetortStepSegment[] = useMemo(() => {
+        if (!isRunning || !data || data.length === 0) {
+            return [];
+        }
+
+        // Only segment during active process run
         return segmentThermalSteps(data);
-    }, [data]);
+    }, [data, isRunning]);
 
     // Compute total accumulated F0 and overall stats
     const stats = useMemo(() => {
