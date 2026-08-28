@@ -172,19 +172,79 @@ export default function RetortThermalChart({ data = [], targetSv = 121.0, height
             else if (seg.category === 'COOL') tint = 'rgba(224, 242, 254, 0.25)'; // Sky for Cooling
             else if (seg.category === 'CUT') tint = 'rgba(254, 226, 226, 0.2)'; // Rose for CUT
 
-            ctx.fillStyle = tint;
-            ctx.fillRect(startX, padding.top, segWidth, plotHeight);
+            // Draw In-Canvas Callout Box matching technical diagram
+            if (segWidth > 30) {
+                const centerX = startX + segWidth / 2;
+                let boxY = padding.top + plotHeight * 0.65;
+                let boxWidth = Math.min(130, Math.max(90, segWidth - 10));
+                let boxHeight = 44;
 
-            // Vertical separator line
-            if (idx > 0) {
+                if (seg.category === 'HOLD') {
+                    boxY = padding.top + plotHeight * 0.45;
+                    boxHeight = 52;
+                } else if (seg.category === 'COOL') {
+                    boxY = padding.top + plotHeight * 0.65;
+                    boxHeight = 52;
+                } else if (seg.category === 'CUT') {
+                    boxY = padding.top + plotHeight * 0.68;
+                    boxHeight = 44;
+                }
+
+                const boxLeft = Math.max(padding.left + 5, Math.min(padding.left + plotWidth - boxWidth - 5, centerX - boxWidth / 2));
+
+                // Box background with shadow
                 ctx.save();
-                ctx.strokeStyle = '#8b5cf6'; // Purple dashed separator
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 4]);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 1;
+                
+                // Rounded rect
+                const r = 4;
                 ctx.beginPath();
-                ctx.moveTo(startX, padding.top);
-                ctx.lineTo(startX, padding.top + plotHeight);
+                ctx.moveTo(boxLeft + r, boxY);
+                ctx.lineTo(boxLeft + boxWidth - r, boxY);
+                ctx.quadraticCurveTo(boxLeft + boxWidth, boxY, boxLeft + boxWidth, boxY + r);
+                ctx.lineTo(boxLeft + boxWidth, boxY + boxHeight - r);
+                ctx.quadraticCurveTo(boxLeft + boxWidth, boxY + boxHeight, boxLeft + boxWidth - r, boxY + boxHeight);
+                ctx.lineTo(boxLeft + r, boxY + boxHeight);
+                ctx.quadraticCurveTo(boxLeft, boxY + boxHeight, boxLeft, boxY + boxHeight - r);
+                ctx.lineTo(boxLeft, boxY + r);
+                ctx.quadraticCurveTo(boxLeft, boxY, boxLeft + r, boxY);
+                ctx.closePath();
+                ctx.fill();
                 ctx.stroke();
+
+                // Box text
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 10px Inter, sans-serif';
+
+                if (seg.category === 'CUT') {
+                    ctx.fillText('CUT', boxLeft + boxWidth / 2, boxY + 16);
+                    ctx.font = 'bold 9px Inter, sans-serif';
+                    ctx.fillStyle = '#475569';
+                    ctx.fillText(`${seg.durationMinutes} minutes`, boxLeft + boxWidth / 2, boxY + 30);
+                } else if (seg.category === 'HOLD') {
+                    ctx.fillText('Holding Time', boxLeft + boxWidth / 2, boxY + 14);
+                    ctx.font = 'bold 9px Inter, sans-serif';
+                    ctx.fillStyle = '#475569';
+                    ctx.fillText(`${seg.durationMinutes} minutes`, boxLeft + boxWidth / 2, boxY + 28);
+                    ctx.font = 'bold 9px Inter, sans-serif';
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillText(`Fo = ${seg.f0Value}`, boxLeft + boxWidth / 2, boxY + 42);
+                } else if (seg.category === 'COOL') {
+                    ctx.fillText('Cooling Time', boxLeft + boxWidth / 2, boxY + 14);
+                    ctx.font = 'bold 9px Inter, sans-serif';
+                    ctx.fillStyle = '#475569';
+                    ctx.fillText('in retort', boxLeft + boxWidth / 2, boxY + 28);
+                    ctx.fillText(`${seg.durationMinutes} minutes`, boxLeft + boxWidth / 2, boxY + 42);
+                } else {
+                    ctx.fillText(seg.stepName, boxLeft + boxWidth / 2, boxY + 16);
+                    ctx.font = 'bold 9px Inter, sans-serif';
+                    ctx.fillStyle = '#475569';
+                    ctx.fillText(`${seg.durationMinutes} minutes`, boxLeft + boxWidth / 2, boxY + 30);
+                }
+
                 ctx.restore();
             }
         });
@@ -356,109 +416,30 @@ export default function RetortThermalChart({ data = [], targetSv = 121.0, height
     const hoveredMinute = hoverIndex !== null ? (Math.round((hoverIndex / 60) * 10) / 10) : 0;
 
     return (
-        <div className="space-y-4">
-            {/* Top Annotation Cards per Step Category (Matching Reference Diagram) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {segments.length === 0 ? (
-                    <div className="col-span-full py-2 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
-                        Menunggu proses berjalan untuk kalkulasi zona step (CUT, Holding, Cooling)...
+        <div ref={containerRef} className="relative w-full rounded-2xl border border-slate-300 bg-white p-3 shadow-inner">
+            {/* Hover Tooltip Overlay */}
+            {hoverIndex !== null && hoveredTemp !== null && (
+                <div className="absolute top-4 right-4 bg-slate-950/90 text-white p-3 rounded-xl shadow-xl backdrop-blur-md border border-slate-800 text-xs font-mono z-10 pointer-events-none animate-fadeIn">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        Waktu: {hoveredMinute} menit ({hoverIndex}s)
                     </div>
-                ) : (
-                    segments.map((seg, sIdx) => {
-                        let badgeBg = 'bg-slate-100 border-slate-300 text-slate-800';
-                        let accentBorder = 'border-l-4 border-l-slate-400';
-
-                        if (seg.category === 'CUT') {
-                            badgeBg = 'bg-gradient-to-r from-rose-50 to-white border-rose-200 text-rose-950';
-                            accentBorder = 'border-l-4 border-l-rose-500';
-                        } else if (seg.category === 'HOLD') {
-                            badgeBg = 'bg-gradient-to-r from-amber-50 to-white border-amber-300 text-amber-950';
-                            accentBorder = 'border-l-4 border-l-amber-500';
-                        } else if (seg.category === 'COOL') {
-                            badgeBg = 'bg-gradient-to-r from-blue-50 to-white border-blue-200 text-blue-950';
-                            accentBorder = 'border-l-4 border-l-blue-500';
-                        }
-
-                        return (
-                            <div
-                                key={sIdx}
-                                className={`p-3.5 rounded-2xl shadow-sm border ${badgeBg} ${accentBorder} transition-all hover:shadow-md`}
-                            >
-                                <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[11px] font-black uppercase tracking-wider">
-                                        {seg.stepName}
-                                    </span>
-                                    <span className="text-[10px] font-mono font-bold bg-white/90 px-2 py-0.5 rounded-md shadow-xs border border-slate-200">
-                                        Step {seg.stepIndex}
-                                    </span>
-                                </div>
-                                <div className="mt-2 flex items-baseline justify-between">
-                                    <span className="text-lg font-black font-mono tracking-tight">
-                                        {seg.durationMinutes} <span className="text-xs font-bold text-slate-500">menit</span>
-                                    </span>
-                                    {seg.category === 'HOLD' && (
-                                        <span className="text-xs font-mono font-black text-amber-700 bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-300">
-                                            F₀ = {seg.f0Value}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 font-semibold">
-                                    <span>Rentang: {seg.startMinute}m – {seg.endMinute}m</span>
-                                    <span>Avg: {seg.avgTemperature}°C</span>
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
-            </div>
-
-            {/* Main Interactive Canvas Chart */}
-            <div ref={containerRef} className="relative w-full rounded-2xl border border-slate-300 bg-white p-3 shadow-inner">
-                {/* Hover Tooltip Overlay */}
-                {hoverIndex !== null && hoveredTemp !== null && (
-                    <div className="absolute top-4 right-4 bg-slate-950/90 text-white p-3 rounded-xl shadow-xl backdrop-blur-md border border-slate-800 text-xs font-mono z-10 pointer-events-none animate-fadeIn">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                            Waktu: {hoveredMinute} menit ({hoverIndex}s)
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm font-black text-cyan-300">
-                                PV: {hoveredTemp}°C
-                            </span>
-                            <span className="text-xs font-bold text-yellow-400">
-                                Step {hoveredItem?.step_current ?? 0}
-                            </span>
-                        </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-black text-cyan-300">
+                            PV: {hoveredTemp}°C
+                        </span>
+                        <span className="text-xs font-bold text-yellow-400">
+                            Step {hoveredItem?.step_current ?? 0}
+                        </span>
                     </div>
-                )}
-
-                <canvas
-                    ref={canvasRef}
-                    onMouseMove={handleMouseMove}
-                    onMouseLeave={handleMouseLeave}
-                    style={{ width: '100%', height: `${height}px`, display: 'block', cursor: 'crosshair' }}
-                />
-            </div>
-
-            {/* Bottom Chart Footer Status */}
-            <div className="flex flex-wrap items-center justify-between text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1.5 font-bold">
-                        <span className="h-3 w-3 rounded-full bg-[#1e3a8a]"></span>
-                        Suhu Aktual PV (°C)
-                    </span>
-                    <span className="flex items-center gap-1.5 font-bold text-rose-600">
-                        <span className="h-0.5 w-4 border-b-2 border-dashed border-rose-500"></span>
-                        Target Sterilisasi ({targetSv}°C)
-                    </span>
                 </div>
-                <div className="flex items-center gap-4 font-mono font-bold">
-                    <span>Durasi: <strong className="text-slate-900">{stats.totalMinutes} Menit</strong></span>
-                    <span>Suhu Max: <strong className="text-blue-700">{stats.maxTemp}°C</strong></span>
-                    <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300">
-                        Total F₀: <strong>{stats.totalF0}</strong>
-                    </span>
-                </div>
-            </div>
+            )}
+
+            <canvas
+                ref={canvasRef}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                style={{ width: '100%', height: `${height}px`, display: 'block', cursor: 'crosshair' }}
+            />
         </div>
     );
 }
