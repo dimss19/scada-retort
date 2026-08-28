@@ -5,6 +5,7 @@ import { FormEventHandler, useState } from 'react';
 export default function Form({ recipe, users = [] }: { recipe?: any; users?: any[] }) {
     const isEditing = !!recipe;
     const [activeTab, setActiveTab] = useState<'PATN' | 'IN' | 'CNTL' | 'PIdC' | 'ALM' | 'COMM' | 'ETC'>('PATN');
+    const [showAdvance, setShowAdvance] = useState(false);
 
     const defaultTnConfig = {
         IN: {
@@ -378,14 +379,31 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                                             Parameter kunci sterilisasi: Target Suhu (<code className="font-mono bg-amber-100 px-1 py-0.5 rounded text-slate-900">Ts0..Ts19</code>), Durasi Waktu (<code className="font-mono bg-amber-100 px-1 py-0.5 rounded text-slate-900">Tm0..Tm19</code>), dan Aksi Akhir Tiap Langkah.
                                         </p>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={addStep}
-                                        disabled={data.steps.length >= 20}
-                                        className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black px-4 py-2.5 text-xs rounded-xl shadow-md transition-all border-none disabled:opacity-50"
-                                    >
-                                        + Tambah Step ({data.steps.length}/20)
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAdvance(!showAdvance)}
+                                            className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-black rounded-xl shadow-sm transition-all border ${
+                                                showAdvance
+                                                    ? 'bg-blue-900 text-yellow-400 border-blue-800 ring-2 ring-blue-600/30'
+                                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                                            }`}
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            {showAdvance ? 'Tutup Advance' : 'Advance'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={addStep}
+                                            disabled={data.steps.length >= 20}
+                                            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black px-4 py-2.5 text-xs rounded-xl shadow-md transition-all border-none disabled:opacity-50"
+                                        >
+                                            + Tambah Step ({data.steps.length}/20)
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="overflow-x-auto rounded-2xl border border-amber-200">
@@ -403,12 +421,16 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                                                 <th className="py-3 px-3 text-left text-xs font-black uppercase tracking-wider min-w-[130px]">
                                                     End Action (HOLD / CONT)
                                                 </th>
-                                                <th className="py-3 px-3 text-left text-xs font-black uppercase tracking-wider min-w-[110px]">
-                                                    Event Link
-                                                </th>
-                                                <th className="py-3 px-3 text-left text-xs font-black uppercase tracking-wider min-w-[110px]">
-                                                    PID Group
-                                                </th>
+                                                {showAdvance && (
+                                                    <>
+                                                        <th className="py-3 px-3 text-left text-xs font-black uppercase tracking-wider min-w-[110px]">
+                                                            Event Link
+                                                        </th>
+                                                        <th className="py-3 px-3 text-left text-xs font-black uppercase tracking-wider min-w-[110px]">
+                                                            PID Group
+                                                        </th>
+                                                    </>
+                                                )}
                                                 <th className="py-3 px-3 text-center text-xs font-black uppercase tracking-wider w-16">Aksi</th>
                                             </tr>
                                         </thead>
@@ -486,32 +508,36 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                                                     </td>
 
                                                     {/* Event Link (EV.0 - EV.9) */}
-                                                    <td className="whitespace-nowrap py-3 px-3">
-                                                        <select
-                                                            value={step.event_link ?? ''}
-                                                            onChange={e => updateStep(index, 'event_link', e.target.value === '' ? null : parseInt(e.target.value))}
-                                                            className="block w-full rounded-xl border-slate-300 bg-slate-50 font-mono font-bold text-slate-800 text-xs py-2 px-2 shadow-sm focus:border-blue-600 focus:ring-blue-600"
-                                                        >
-                                                            <option value="">- Tanpa Event -</option>
-                                                            {[...Array(10)].map((_, evIdx) => (
-                                                                <option key={evIdx} value={evIdx}>EV.{evIdx}</option>
-                                                            ))}
-                                                        </select>
-                                                    </td>
+                                                    {showAdvance && (
+                                                        <>
+                                                            <td className="whitespace-nowrap py-3 px-3">
+                                                                <select
+                                                                    value={step.event_link ?? ''}
+                                                                    onChange={e => updateStep(index, 'event_link', e.target.value === '' ? null : parseInt(e.target.value))}
+                                                                    className="block w-full rounded-xl border-slate-300 bg-slate-50 font-mono font-bold text-slate-800 text-xs py-2 px-2 shadow-sm focus:border-blue-600 focus:ring-blue-600"
+                                                                >
+                                                                    <option value="">- Tanpa Event -</option>
+                                                                    {[...Array(10)].map((_, evIdx) => (
+                                                                        <option key={evIdx} value={evIdx}>EV.{evIdx}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </td>
 
-                                                    {/* PID Group Override */}
-                                                    <td className="whitespace-nowrap py-3 px-3">
-                                                        <select
-                                                            value={step.pid_group ?? ''}
-                                                            onChange={e => updateStep(index, 'pid_group', e.target.value === '' ? null : parseInt(e.target.value))}
-                                                            className="block w-full rounded-xl border-slate-300 bg-slate-50 font-mono font-bold text-slate-800 text-xs py-2 px-2 shadow-sm focus:border-blue-600 focus:ring-blue-600"
-                                                        >
-                                                            <option value="">Default (PId.{data.pid_group})</option>
-                                                            {[...Array(8)].map((_, pidIdx) => (
-                                                                <option key={pidIdx} value={pidIdx}>PId.{pidIdx}</option>
-                                                            ))}
-                                                        </select>
-                                                    </td>
+                                                            {/* PID Group Override */}
+                                                            <td className="whitespace-nowrap py-3 px-3">
+                                                                <select
+                                                                    value={step.pid_group ?? ''}
+                                                                    onChange={e => updateStep(index, 'pid_group', e.target.value === '' ? null : parseInt(e.target.value))}
+                                                                    className="block w-full rounded-xl border-slate-300 bg-slate-50 font-mono font-bold text-slate-800 text-xs py-2 px-2 shadow-sm focus:border-blue-600 focus:ring-blue-600"
+                                                                >
+                                                                    <option value="">Default (PId.{data.pid_group})</option>
+                                                                    {[...Array(8)].map((_, pidIdx) => (
+                                                                        <option key={pidIdx} value={pidIdx}>PId.{pidIdx}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </td>
+                                                        </>
+                                                    )}
 
                                                     {/* Delete Step Button */}
                                                     <td className="whitespace-nowrap py-3 px-3 text-center">
