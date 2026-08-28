@@ -66,10 +66,11 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
         },
     };
 
+    const initialPNum = recipe?.pattern_number ?? 0;
     const { data, setData, post, put, processing, errors } = useForm({
-        recipe_code: recipe?.recipe_code || '',
-        name: recipe?.name || '',
-        product_name: recipe?.product_name || 'Sterilization Product',
+        recipe_code: recipe?.recipe_code || `P${initialPNum}-${Math.random().toString(36).substring(2, 8)}`,
+        name: recipe?.name || `Pattern ${initialPNum}`,
+        product_name: recipe?.product_name || 'N/A',
         product_category: recipe?.product_category || '',
         package_type: recipe?.package_type || '',
         package_size: recipe?.package_size || '',
@@ -82,7 +83,7 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
         time_unit: recipe?.time_unit || 'MM.SS',
         start_condition: recipe?.start_condition || 'SSV',
         pattern_end_state: recipe?.pattern_end_state || 'STOP',
-        pattern_number: recipe?.pattern_number ?? 0,
+        pattern_number: initialPNum,
         repetitions: recipe?.repetitions ?? 0,
         pid_group: recipe?.pid_group ?? 0,
         wait_width: recipe?.wait_width ?? 2,
@@ -94,6 +95,19 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
             { step_number: 3, step_name: 'Cooling', target_sv: 40, duration: 600, end_action: 'STOP', event_link: null, pid_group: null, steam_enable: false, cooling_enable: true, drain_enable: true, alarm_enable: true },
         ],
     });
+
+    const handlePatternSelect = (num: number) => {
+        const code = isEditing && recipe?.pattern_number === num
+            ? recipe.recipe_code
+            : `P${num}-${Math.random().toString(36).substring(2, 8)}`;
+
+        setData(prev => ({
+            ...prev,
+            pattern_number: num,
+            name: `Pattern ${num}`,
+            recipe_code: code,
+        }));
+    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -189,13 +203,35 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
-                                <label className="block text-xs font-extrabold text-slate-700 uppercase">Kode Pattern</label>
-                                <input type="text" value={data.recipe_code} onChange={e => setData('recipe_code', e.target.value)} className="mt-1.5 block w-full rounded-xl border-slate-300 bg-slate-50 text-slate-900 font-mono font-bold focus:border-blue-600 focus:ring-blue-600 text-sm py-2 px-3" required />
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-extrabold text-slate-700 uppercase">Kode Pattern</label>
+                                    <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">Otomatis</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={data.recipe_code}
+                                    readOnly
+                                    className="mt-1.5 block w-full rounded-xl border-slate-200 bg-slate-100/90 text-slate-700 font-mono font-bold text-sm py-2 px-3 cursor-not-allowed select-all"
+                                    required
+                                />
                                 {errors.recipe_code && <p className="mt-1 text-xs font-bold text-rose-600">{errors.recipe_code}</p>}
                             </div>
                             <div>
-                                <label className="block text-xs font-extrabold text-slate-700 uppercase">Nama Pattern</label>
-                                <input type="text" value={data.name} onChange={e => setData('name', e.target.value)} className="mt-1.5 block w-full rounded-xl border-slate-300 bg-slate-50 text-slate-900 font-bold focus:border-blue-600 focus:ring-blue-600 text-sm py-2 px-3" required />
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-extrabold text-slate-700 uppercase">Pilih Pattern (0 – 9)</label>
+                                    <span className="text-[10px] font-mono font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">PTnN (400205)</span>
+                                </div>
+                                <select
+                                    value={data.pattern_number}
+                                    onChange={e => handlePatternSelect(parseInt(e.target.value) || 0)}
+                                    className="mt-1.5 block w-full rounded-xl border-slate-300 bg-slate-50 text-slate-900 font-bold focus:border-blue-600 focus:ring-blue-600 text-sm py-2 px-3"
+                                >
+                                    {[...Array(10)].map((_, i) => (
+                                        <option key={i} value={i}>
+                                            Pattern {i} (PTN.{i})
+                                        </option>
+                                    ))}
+                                </select>
                                 {errors.name && <p className="mt-1 text-xs font-bold text-rose-600">{errors.name}</p>}
                             </div>
                             <div>
@@ -343,8 +379,18 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-mono font-black text-slate-800 uppercase">PTnN (Pattern number 0-9)</label>
-                                        <input type="number" min="0" max="9" value={data.pattern_number} onChange={e => setData('pattern_number', parseInt(e.target.value) || 0)} className="mt-1.5 block w-full rounded-xl border-slate-300 bg-white text-slate-900 font-mono font-bold focus:border-amber-500 focus:ring-amber-500 text-xs py-2 px-3" />
+                                        <label className="block text-xs font-mono font-black text-slate-800 uppercase">PTnN (Pattern 0-9)</label>
+                                        <select
+                                            value={data.pattern_number}
+                                            onChange={e => handlePatternSelect(parseInt(e.target.value) || 0)}
+                                            className="mt-1.5 block w-full rounded-xl border-slate-300 bg-white text-slate-900 font-mono font-bold focus:border-amber-500 focus:ring-amber-500 text-xs py-2 px-3"
+                                        >
+                                            {[...Array(10)].map((_, i) => (
+                                                <option key={i} value={i}>
+                                                    PTN.{i} (Pattern {i})
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-mono font-black text-slate-800 uppercase">REP (Repetitions)</label>

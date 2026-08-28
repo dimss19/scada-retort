@@ -30,8 +30,58 @@ class TnRecipeController extends Controller {
     
     public function apply(Request $request, $tnId, TnRecipeTemplate $recipe)
     {
-        // TODO: In Phase 3, this will send the modbus writes to the bridge
-        return back()->with('success', "Recipe '{$recipe->name}' applied to Controller ID: {$tnId} (Simulated).");
+        $tn = \App\Models\TnController::findOrFail($tnId);
+        $modbus = app(\App\Services\TnModbusService::class);
+        $recipe->load('steps');
+
+        $pNum = (int)($recipe->pattern_number ?? 0);
+
+        // 1. Select Pattern Number in TN (400205 -> offset 204)
+        $pSelectRes = $modbus->writeSingleRegister($tn, 204, $pNum);
+        if (!$pSelectRes['success']) {
+            return back()->with('error', 'Gagal memilih slot pattern pada TN: ' . ($pSelectRes['error'] ?? 'Koneksi Modbus gagal'));
+        }
+
+        // 2. Prepare base config values (400201-400209 -> offset 200)
+        $endStates = ['STOP' => 0, 'HOLD' => 1, 'NEXT' => 2, 'PRE' => 3];
+        $endStateVal = $endStates[$recipe->pattern_end_state] ?? 0;
+
+        $configValues = [
+            $recipe->time_unit === 'HH.MM' ? 1 : 0,    // 400201: Time Unit
+            $recipe->start_condition === 'SPV' ? 1 : 0, // 400202: Start Condition
+            (int)($recipe->wait_width ?? 2),           // 400203: Wait Width
+            (int)($recipe->wait_time ?? 0),            // 400204: Wait Time
+            $pNum,                                     // 400205: Pattern Number
+            (int)($recipe->repetitions ?? 0),          // 400206: Repetitions
+            $endStateVal,                              // 400207: End State
+            (int)($recipe->pid_group ?? 0),            // 400208: PID Group
+            count($recipe->steps),                     // 400209: Step Count
+        ];
+
+        $resConfig = $modbus->writeMultipleRegisters($tn, 200, $configValues);
+        if (!$resConfig['success']) {
+            return back()->with('error', 'Gagal menulis konfigurasi pattern ke controller: ' . ($resConfig['error'] ?? 'Modbus error'));
+        }
+
+        // 3. Prepare step registers (400210-400249 -> offset 209, 40 registers)
+        $stepRegisters = [];
+        for ($i = 0; $i < 20; $i++) {
+            if ($i < count($recipe->steps)) {
+                $step = $recipe->steps[$i];
+                $stepRegisters[] = (int)($step->target_sv ?? 0);
+                $stepRegisters[] = (int)($step->duration ?? 0);
+            } else {
+                $stepRegisters[] = 0;
+                $stepRegisters[] = 0;
+            }
+        }
+
+        $resSteps = $modbus->writeMultipleRegisters($tn, 209, $stepRegisters);
+        if (!$resSteps['success']) {
+            return back()->with('error', 'Gagal menulis langkah pattern ke controller: ' . ($resSteps['error'] ?? 'Modbus error'));
+        }
+
+        return back()->with('success', "Pattern '{$recipe->name}' (PTN.{$pNum}) berhasil diterapkan dan ditulis ke Controller TN ({$tn->name}).");
     }
 
     public function scanFromDevice(Request $request, $tnId)
