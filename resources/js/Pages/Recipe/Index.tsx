@@ -44,6 +44,15 @@ export default function Index({ recipes = [], controllers = [] }: { recipes?: an
                         <p className="text-sm font-semibold text-slate-600">Kelola dan scan profil sterilisasi controller retort</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
+                        <Link
+                            href={route('tn.recipes.create')}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-black px-4 py-2.5 shadow-md transition-all border border-blue-800"
+                        >
+                            <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Tambah Pattern
+                        </Link>
                         <button
                             onClick={handleAutoScan}
                             disabled={isScanning || (!selectedController && !activeTnId && controllers.length === 0)}
@@ -81,7 +90,18 @@ export default function Index({ recipes = [], controllers = [] }: { recipes?: an
                 {recipes.length === 0 ? (
                     <div className="rounded-3xl border border-dashed border-slate-300 p-16 text-center text-slate-500 bg-white/90 shadow-sm backdrop-blur-xl">
                         <p className="text-xl font-black text-slate-900">Belum ada pattern ditemukan.</p>
-                        <p className="text-xs font-semibold text-slate-500 mt-1">Mulai dengan memindai dari perangkat controller atau buat resep baru secara manual.</p>
+                        <p className="text-xs font-semibold text-slate-500 mt-1">Mulai dengan memindai dari perangkat controller atau buat pattern baru secara manual.</p>
+                        <div className="mt-6 flex justify-center">
+                            <Link
+                                href={route('tn.recipes.create')}
+                                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-black px-5 py-2.5 shadow-md transition-all border border-blue-800"
+                            >
+                                <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Buat Pattern Baru
+                            </Link>
+                        </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
