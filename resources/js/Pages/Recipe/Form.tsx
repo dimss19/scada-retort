@@ -413,10 +413,10 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                                                 <th className="py-3 px-3 text-center text-xs font-mono font-black text-yellow-400 w-12">#</th>
                                                 <th className="py-3 px-3 text-left text-xs font-black uppercase tracking-wider">Nama Step</th>
                                                 <th className="py-3 px-3 text-left text-xs font-mono font-black text-amber-300 uppercase tracking-wider min-w-[140px]">
-                                                    Ts□ (Target SV °C)
+                                                    Ts (Target SV °C)
                                                 </th>
                                                 <th className="py-3 px-3 text-left text-xs font-mono font-black text-amber-300 uppercase tracking-wider min-w-[140px]">
-                                                    Tm□ (Durasi {data.time_unit})
+                                                    Tm (Durasi {data.time_unit})
                                                 </th>
                                                 <th className="py-3 px-3 text-left text-xs font-black uppercase tracking-wider min-w-[130px]">
                                                     End Action (HOLD / CONT)
