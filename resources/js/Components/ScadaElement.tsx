@@ -33,7 +33,26 @@ function isErrorValue(value: number): boolean {
 
 function getSensorValue(mapping: ScadaMapping, sensorData?: SensorData): ScadaValue {
     if (!sensorData) return null;
-    const rawValue = sensorData[mapping.data_source];
+    let rawValue = sensorData[mapping.data_source];
+
+    // Intelligent fallback for SCADA Retort elements
+    if (rawValue === undefined || rawValue === null) {
+        const id = (mapping.element_id || '').toLowerCase();
+        const src = (mapping.data_source || '').toLowerCase();
+
+        if (src === 'steam_valve' || id.includes('steam') || src.includes('steam')) {
+            rawValue = sensorData.heating_mv ?? (sensorData.out1_active ? 1000 : 0);
+        } else if (src === 'cooling_mv' || id.includes('cooling') || src.includes('cooling') || id.includes('pump')) {
+            rawValue = sensorData.cooling_mv ?? (sensorData.out2_active ? 1000 : 0);
+        } else if (src === 'drain_open' || id.includes('drain')) {
+            rawValue = sensorData.cooling_mv && sensorData.cooling_mv > 0 ? sensorData.cooling_mv : 0;
+        } else if (src === 'gas_ready' || src === 'pilot_flame') {
+            rawValue = sensorData.controller_running ?? (sensorData.run_status ? 1 : 0);
+        } else if (src === 'door_lock') {
+            rawValue = sensorData.controller_running ? true : false;
+        }
+    }
+
     if (rawValue === undefined || rawValue === null) return null;
     if (!['number', 'string', 'boolean'].includes(typeof rawValue)) return null;
 
@@ -46,7 +65,7 @@ function getSensorValue(mapping: ScadaMapping, sensorData?: SensorData): ScadaVa
         }
     }
 
-    if (PERCENT_SOURCES.has(mapping.data_source)) return rawValue / 10;
+    if (PERCENT_SOURCES.has(mapping.data_source) || mapping.data_source === 'steam_valve') return rawValue / 10;
     return rawValue;
 }
 
@@ -212,21 +231,22 @@ function ControllerDisplayElement({ mapping, sensorData, controllerModel = 'TNS'
 }
 
 function ValveElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorData?: SensorData }) {
-    const [wheelTurned, setWheelTurned] = useState(false);
+    const [manualToggle, setManualToggle] = useState(false);
     const value = getSensorValue(mapping, sensorData);
     const isAvailable = value !== null;
-    const isOpen = isSourceActive(mapping, value);
-    const color = !isAvailable ? '#64748b' : isOpen ? mapping.normal_color : mapping.critical_color;
+    const isLiveOpen = isSourceActive(mapping, value);
+    const isOpen = isLiveOpen || manualToggle;
+    const color = !isAvailable ? '#64748b' : isOpen ? (mapping.normal_color || '#22c55e') : (mapping.critical_color || '#ef4444');
     const bodyColor = isAvailable ? '#1456b8' : '#475569';
     const darkBodyColor = isAvailable ? '#0b3b8f' : '#334155';
     const highlightColor = isAvailable ? '#4fa3ff' : '#94a3b8';
 
     return (
         <div
-            className="flex h-full w-full flex-col items-center justify-center rounded-md bg-slate-900/80"
+            className="flex h-full w-full flex-col items-center justify-center rounded-md bg-slate-900/80 cursor-pointer select-none"
             data-testid="scada-valve"
             data-state={!isAvailable ? 'unavailable' : isOpen ? 'open' : 'closed'}
-            onClick={() => setWheelTurned((current) => !current)}
+            onClick={() => setManualToggle((current) => !current)}
         >
             <svg viewBox="0 0 120 140" className="h-[78%] w-[86%]" role="img" aria-label={`${mapping.label || mapping.element_id} valve`}>
                 <g>
@@ -241,7 +261,7 @@ function ValveElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorDa
 
                     <path d="M38 52 H82 Q92 54 95 69 H25 Q28 54 38 52 Z" fill={bodyColor} stroke={darkBodyColor} strokeWidth="3" />
                     <path d="M45 58 H75 Q81 60 83 69 H37 Q39 60 45 58 Z" fill={highlightColor} opacity="0.24" />
-                    <path d="M49 61 H71 Q76 63 77 70 H43 Q44 63 49 61 Z" fill={color} opacity={isOpen ? 0.38 : 0.14} />
+                    <path d="M49 61 H71 Q76 63 77 70 H43 Q44 63 49 61 Z" fill={color} opacity={isOpen ? 0.45 : 0.14} />
 
                     <rect x="35" y="44" width="50" height="13" rx="4" fill={bodyColor} stroke={darkBodyColor} strokeWidth="3" />
                     {[32, 46, 74, 88].map((boltX) => (
@@ -253,7 +273,7 @@ function ValveElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorDa
 
                     <g
                         style={{
-                            transform: `rotate(${wheelTurned ? 90 : 0}deg)`,
+                            transform: `rotate(${isOpen ? 90 : 0}deg)`,
                             transformOrigin: '60px 35px',
                             transition: 'transform 450ms ease-in-out',
                         }}
@@ -270,7 +290,7 @@ function ValveElement({ mapping, sensorData }: { mapping: ScadaMapping; sensorDa
                 </g>
             </svg>
             <span className="max-w-full truncate px-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color }}>
-                {mapping.label || mapping.element_id}: {!isAvailable ? 'N/A' : isOpen ? 'OPEN' : 'CLOSED'}
+                {mapping.label || mapping.element_id}: {!isAvailable ? 'N/A' : isOpen ? (typeof value === 'number' && value > 0 ? `OPEN (${value.toFixed(0)}%)` : 'OPEN') : 'CLOSED'}
             </span>
         </div>
     );

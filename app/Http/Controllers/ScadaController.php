@@ -12,27 +12,102 @@ class ScadaController extends Controller
 {
     public function edit(TnController $tn)
     {
-        $canvas = ScadaCanvas::firstOrCreate(
-            ['tn_controller_id' => $tn->id],
-            [
-                'width' => 1200,
-                'height' => 800,
-                'grid_enabled' => true,
-                'grid_size' => 20,
-                'snap_to_grid' => true,
-            ]
-        );
+        return redirect()->route('tn.monitor', ['tn' => $tn->id, 'tab' => 'scada']);
+    }
 
-        $mappings = ScadaMapping::where('tn_controller_id', $tn->id)
-            ->orderBy('z_index')
-            ->orderBy('id')
-            ->get();
+    public function save(Request $request, TnController $tn)
+    {
+        $validated = $request->validate([
+            'canvas' => 'nullable|array',
+            'canvas.background_image_url' => 'nullable|string',
+            'canvas.width' => 'nullable|integer|min:400|max:4000',
+            'canvas.height' => 'nullable|integer|min:300|max:4000',
+            'canvas.grid_enabled' => 'nullable|boolean',
+            'canvas.grid_size' => 'nullable|integer|min:5|max:100',
+            'canvas.snap_to_grid' => 'nullable|boolean',
 
-        return inertia('Tn/ScadaEditor', [
-            'controller' => $tn->load('machine'),
-            'canvas' => $canvas,
-            'mappings' => $mappings,
+            'mappings' => 'required|array',
+            'mappings.*.id' => 'nullable',
+            'mappings.*.element_id' => 'required|string|max:100',
+            'mappings.*.element_type' => 'required|string|in:gauge,valve,pump,tank,pipe,label,display,indicator',
+            'mappings.*.label' => 'nullable|string|max:200',
+            'mappings.*.data_source' => 'required|string|max:100',
+            'mappings.*.position_x' => 'nullable|integer|min:-5000|max:5000',
+            'mappings.*.position_y' => 'nullable|integer|min:-5000|max:5000',
+            'mappings.*.width' => 'nullable|integer|min:20|max:1000',
+            'mappings.*.height' => 'nullable|integer|min:20|max:1000',
+            'mappings.*.rotation' => 'nullable|integer|min:0|max:360',
+            'mappings.*.z_index' => 'nullable|integer|min:-100|max:100',
+            'mappings.*.normal_color' => 'nullable|string|max:30',
+            'mappings.*.warning_color' => 'nullable|string|max:30',
+            'mappings.*.critical_color' => 'nullable|string|max:30',
+            'mappings.*.warning_threshold' => 'nullable|numeric',
+            'mappings.*.critical_threshold' => 'nullable|numeric',
+            'mappings.*.module_dependency' => 'nullable|string|max:100',
         ]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $tn) {
+            if (!empty($validated['canvas'])) {
+                ScadaCanvas::updateOrCreate(
+                    ['tn_controller_id' => $tn->id],
+                    [
+                        'background_image_url' => $validated['canvas']['background_image_url'] ?? null,
+                        'width' => $validated['canvas']['width'] ?? 1200,
+                        'height' => $validated['canvas']['height'] ?? 800,
+                        'grid_enabled' => $validated['canvas']['grid_enabled'] ?? true,
+                        'grid_size' => $validated['canvas']['grid_size'] ?? 20,
+                        'snap_to_grid' => $validated['canvas']['snap_to_grid'] ?? true,
+                    ]
+                );
+            }
+
+            $existingIds = ScadaMapping::where('tn_controller_id', $tn->id)->pluck('id')->toArray();
+            $keptIds = [];
+
+            foreach ($validated['mappings'] as $item) {
+                $id = !empty($item['id']) && is_numeric($item['id']) && (int)$item['id'] > 0 ? (int)$item['id'] : null;
+
+                $data = [
+                    'element_id' => $item['element_id'],
+                    'element_type' => $item['element_type'],
+                    'label' => $item['label'] ?? null,
+                    'data_source' => $item['data_source'],
+                    'position_x' => (int)($item['position_x'] ?? 0),
+                    'position_y' => (int)($item['position_y'] ?? 0),
+                    'width' => (int)($item['width'] ?? 120),
+                    'height' => (int)($item['height'] ?? 80),
+                    'rotation' => (int)($item['rotation'] ?? 0),
+                    'z_index' => (int)($item['z_index'] ?? 0),
+                    'normal_color' => $item['normal_color'] ?? '#22c55e',
+                    'warning_color' => $item['warning_color'] ?? '#eab308',
+                    'critical_color' => $item['critical_color'] ?? '#ef4444',
+                    'warning_threshold' => isset($item['warning_threshold']) && $item['warning_threshold'] !== '' ? $item['warning_threshold'] : null,
+                    'critical_threshold' => isset($item['critical_threshold']) && $item['critical_threshold'] !== '' ? $item['critical_threshold'] : null,
+                    'module_dependency' => $item['module_dependency'] ?? null,
+                ];
+
+                if ($id && in_array($id, $existingIds, true)) {
+                    $mapping = ScadaMapping::where('id', $id)->where('tn_controller_id', $tn->id)->first();
+                    if ($mapping) {
+                        $mapping->update($data);
+                        $keptIds[] = $mapping->id;
+                        continue;
+                    }
+                }
+
+                $newMapping = ScadaMapping::create(array_merge($data, [
+                    'tn_controller_id' => $tn->id,
+                ]));
+                $keptIds[] = $newMapping->id;
+            }
+
+            $toDelete = array_diff($existingIds, $keptIds);
+            if (!empty($toDelete)) {
+                ScadaMapping::whereIn('id', $toDelete)->delete();
+            }
+        });
+
+        return back()->with('success', 'Konfigurasi SCADA berhasil disimpan.');
     }
 
     public function updateCanvas(Request $request, TnController $tn)
@@ -58,57 +133,71 @@ class ScadaController extends Controller
     {
         $validated = $request->validate([
             'mappings' => 'required|array',
-            'mappings.*.id' => 'nullable|integer|exists:scada_mappings,id',
+            'mappings.*.id' => 'nullable',
             'mappings.*.element_id' => 'required|string|max:100',
             'mappings.*.element_type' => 'required|string|in:gauge,valve,pump,tank,pipe,label,display,indicator',
             'mappings.*.label' => 'nullable|string|max:200',
             'mappings.*.data_source' => 'required|string|max:100',
-            'mappings.*.position_x' => 'integer|min:-5000|max:5000',
-            'mappings.*.position_y' => 'integer|min:-5000|max:5000',
-            'mappings.*.width' => 'integer|min:20|max:1000',
-            'mappings.*.height' => 'integer|min:20|max:1000',
-            'mappings.*.rotation' => 'integer|min:0|max:360',
-            'mappings.*.z_index' => 'integer|min:-100|max:100',
-            'mappings.*.normal_color' => 'string|max:20',
-            'mappings.*.warning_color' => 'string|max:20',
-            'mappings.*.critical_color' => 'string|max:20',
+            'mappings.*.position_x' => 'nullable|integer|min:-5000|max:5000',
+            'mappings.*.position_y' => 'nullable|integer|min:-5000|max:5000',
+            'mappings.*.width' => 'nullable|integer|min:20|max:1000',
+            'mappings.*.height' => 'nullable|integer|min:20|max:1000',
+            'mappings.*.rotation' => 'nullable|integer|min:0|max:360',
+            'mappings.*.z_index' => 'nullable|integer|min:-100|max:100',
+            'mappings.*.normal_color' => 'nullable|string|max:30',
+            'mappings.*.warning_color' => 'nullable|string|max:30',
+            'mappings.*.critical_color' => 'nullable|string|max:30',
             'mappings.*.warning_threshold' => 'nullable|numeric',
             'mappings.*.critical_threshold' => 'nullable|numeric',
             'mappings.*.module_dependency' => 'nullable|string|max:100',
         ]);
 
-        $existingIds = ScadaMapping::where('tn_controller_id', $tn->id)->pluck('id')->toArray();
-        $keptIds = [];
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $tn) {
+            $existingIds = ScadaMapping::where('tn_controller_id', $tn->id)->pluck('id')->toArray();
+            $keptIds = [];
 
-        foreach ($validated['mappings'] as $item) {
-            $mapping = ScadaMapping::updateOrCreate(
-                ['id' => $item['id'] ?? null, 'tn_controller_id' => $tn->id],
-                [
+            foreach ($validated['mappings'] as $item) {
+                $id = !empty($item['id']) && is_numeric($item['id']) && (int)$item['id'] > 0 ? (int)$item['id'] : null;
+
+                $data = [
                     'element_id' => $item['element_id'],
                     'element_type' => $item['element_type'],
                     'label' => $item['label'] ?? null,
                     'data_source' => $item['data_source'],
-                    'position_x' => $item['position_x'] ?? 0,
-                    'position_y' => $item['position_y'] ?? 0,
-                    'width' => $item['width'] ?? 120,
-                    'height' => $item['height'] ?? 80,
-                    'rotation' => $item['rotation'] ?? 0,
-                    'z_index' => $item['z_index'] ?? 0,
+                    'position_x' => (int)($item['position_x'] ?? 0),
+                    'position_y' => (int)($item['position_y'] ?? 0),
+                    'width' => (int)($item['width'] ?? 120),
+                    'height' => (int)($item['height'] ?? 80),
+                    'rotation' => (int)($item['rotation'] ?? 0),
+                    'z_index' => (int)($item['z_index'] ?? 0),
                     'normal_color' => $item['normal_color'] ?? '#22c55e',
                     'warning_color' => $item['warning_color'] ?? '#eab308',
                     'critical_color' => $item['critical_color'] ?? '#ef4444',
-                    'warning_threshold' => $item['warning_threshold'] ?? null,
-                    'critical_threshold' => $item['critical_threshold'] ?? null,
+                    'warning_threshold' => isset($item['warning_threshold']) && $item['warning_threshold'] !== '' ? $item['warning_threshold'] : null,
+                    'critical_threshold' => isset($item['critical_threshold']) && $item['critical_threshold'] !== '' ? $item['critical_threshold'] : null,
                     'module_dependency' => $item['module_dependency'] ?? null,
-                ]
-            );
-            $keptIds[] = $mapping->id;
-        }
+                ];
 
-        $toDelete = array_diff($existingIds, $keptIds);
-        if (!empty($toDelete)) {
-            ScadaMapping::whereIn('id', $toDelete)->delete();
-        }
+                if ($id && in_array($id, $existingIds, true)) {
+                    $mapping = ScadaMapping::where('id', $id)->where('tn_controller_id', $tn->id)->first();
+                    if ($mapping) {
+                        $mapping->update($data);
+                        $keptIds[] = $mapping->id;
+                        continue;
+                    }
+                }
+
+                $newMapping = ScadaMapping::create(array_merge($data, [
+                    'tn_controller_id' => $tn->id,
+                ]));
+                $keptIds[] = $newMapping->id;
+            }
+
+            $toDelete = array_diff($existingIds, $keptIds);
+            if (!empty($toDelete)) {
+                ScadaMapping::whereIn('id', $toDelete)->delete();
+            }
+        });
 
         return back()->with('success', 'Mappings saved.');
     }

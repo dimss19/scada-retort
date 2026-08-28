@@ -38,7 +38,26 @@ export default function Monitor({ controller, latestReading: initialReading }: P
 
     const [reading, setReading] = useState(initialReading);
     const [history, setHistory] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<MonitorTab>('monitor');
+    const [activeTab, setActiveTab] = useState<MonitorTab>(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('tab') === 'scada') return 'scada';
+        }
+        return 'monitor';
+    });
+
+    const handleTabChange = (tab: MonitorTab) => {
+        setActiveTab(tab);
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            if (tab === 'scada') {
+                url.searchParams.set('tab', 'scada');
+            } else {
+                url.searchParams.delete('tab');
+            }
+            window.history.replaceState({}, '', url.toString());
+        }
+    };
     const [isLiveOnline, setIsLiveOnline] = useState(Boolean(
         controller.is_online && isFreshTimestamp(getReadingTimestamp(initialReading)),
     ));
@@ -216,7 +235,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             commandPending={commandPending}
             lastUpdate={lastUpdate}
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             onRun={() => sendCommand('run')}
             onStop={() => sendCommand('stop')}
             onResetAlarm={() => sendCommand('reset')}
