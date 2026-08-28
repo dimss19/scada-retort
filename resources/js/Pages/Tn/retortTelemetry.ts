@@ -186,3 +186,104 @@ export function buildRetortEvents(readings: any[], limit = 12): RetortEvent[] {
 
     return events.slice(-limit).reverse();
 }
+
+export interface RetortStepSegment {
+    stepIndex: number;
+    stepName: string;
+    category: 'CUT' | 'HOLD' | 'COOL' | 'STEP';
+    startIndex: number;
+    endIndex: number;
+    startMinute: number;
+    endMinute: number;
+    durationMinutes: number;
+    avgTemperature: number;
+    maxTemperature: number;
+    f0Value: number;
+    isHolding: boolean;
+}
+
+/**
+ * Calculates F0 sterilization lethality value given temperature history
+ * F0 = sum(dt_minutes * 10^((T - 121.11) / 10)) for T >= 100°C
+ */
+export function calculateF0(temperatures: number[], intervalSeconds: number = 1): number {
+    let f0 = 0;
+    const dtMinutes = intervalSeconds / 60;
+    for (const temp of temperatures) {
+        if (temp >= 100) {
+            f0 += dtMinutes * Math.pow(10, (temp - 121.11) / 10);
+        }
+    }
+    return Math.round(f0 * 100) / 100;
+}
+
+/**
+ * Groups readings into thermal step segments based on step transitions and temperature behavior
+ */
+export function segmentThermalSteps(readings: any[]): RetortStepSegment[] {
+    if (!readings || readings.length === 0) return [];
+
+    const segments: RetortStepSegment[] = [];
+    let currentStep = readings[0].step_current ?? 0;
+    let segStartIndex = 0;
+
+    for (let i = 0; i < readings.length; i++) {
+        const itemStep = readings[i].step_current ?? 0;
+        const isLast = i === readings.length - 1;
+
+        if (itemStep !== currentStep || isLast) {
+            const segEndIndex = isLast ? i : i - 1;
+            const slice = readings.slice(segStartIndex, segEndIndex + 1);
+
+            const temps = slice
+                .map(r => toEngineeringValue(r.pv, r.decimal_point ?? 0))
+                .filter((t): t is number => t !== null);
+
+            const maxTemp = temps.length > 0 ? Math.max(...temps) : 0;
+            const avgTemp = temps.length > 0 ? temps.reduce((a, b) => a + b, 0) / temps.length : 0;
+            const f0Val = calculateF0(temps, 1);
+
+            let category: 'CUT' | 'HOLD' | 'COOL' | 'STEP' = 'STEP';
+            let stepName = `Step ${currentStep}`;
+
+            // Automatic semantic category naming
+            if (currentStep === 0) {
+                category = 'CUT';
+                stepName = 'CUT (Come-Up Time)';
+            } else if (avgTemp >= 115 || currentStep === 1) {
+                category = 'HOLD';
+                stepName = 'Holding Time';
+            } else if (currentStep === 2) {
+                category = 'COOL';
+                stepName = 'Cooling Time in Retort';
+            } else {
+                category = 'STEP';
+                stepName = `Step ${currentStep}`;
+            }
+
+            const startMin = Math.round((segStartIndex / 60) * 10) / 10;
+            const endMin = Math.round(((segEndIndex + 1) / 60) * 10) / 10;
+            const durationMin = Math.max(0.1, Math.round((endMin - startMin) * 10) / 10);
+
+            segments.push({
+                stepIndex: currentStep,
+                stepName,
+                category,
+                startIndex: segStartIndex,
+                endIndex: segEndIndex,
+                startMinute: startMin,
+                endMinute: endMin,
+                durationMinutes: durationMin,
+                avgTemperature: Math.round(avgTemp * 10) / 10,
+                maxTemperature: Math.round(maxTemp * 10) / 10,
+                f0Value: f0Val,
+                isHolding: category === 'HOLD',
+            });
+
+            currentStep = itemStep;
+            segStartIndex = i;
+        }
+    }
+
+    return segments;
+}

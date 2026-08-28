@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { RetortTelemetry } from '@/Pages/Tn/retortTelemetry';
-import TnTrendChart from './TnTrendChart';
+import RetortThermalChart from './RetortThermalChart';
 import TnFaceplateDisplay from './TnFaceplateDisplay';
 
 interface Props {
@@ -26,23 +26,37 @@ export default function TnNormalMonitor({ controllerModel = 'TNH', telemetry, hi
                 isOnline={isOnline}
             />
 
-            {/* Temperature Trend Section */}
-            <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-7 shadow-lg backdrop-blur-xl">
-                <div className="mb-4 flex items-center justify-between gap-3">
+            {/* Industrial Thermal Sterilization Profile Chart */}
+            <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-lg backdrop-blur-xl">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                     <div>
-                        <h2 className="font-extrabold text-slate-900 text-xl">Temperature Trend</h2>
-                        <p className="text-xs text-slate-500 mt-0.5">Data 30 menit terakhir dalam engineering unit.</p>
+                        <div className="flex items-center gap-2.5">
+                            <h2 className="font-extrabold text-slate-900 text-xl tracking-tight">
+                                Profil Termal Sterilisasi Retort
+                            </h2>
+                            <span className="bg-blue-100 text-blue-900 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-blue-200">
+                                Thermal Profile
+                            </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1 font-medium">
+                            Kurva pemanasan riil dengan pembagian zona langkah (CUT, Holding Time & F₀, Cooling Time) berbasis waktu proses.
+                        </p>
                     </div>
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-black border ${
                         isOnline
-                            ? 'bg-amber-100 text-amber-900 border-amber-300'
+                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
                             : 'bg-rose-100 text-rose-800 border-rose-200'
                     }`}>
-                        <span className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-amber-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                        {isOnline ? 'LIVE' : 'OFFLINE'}
+                        <span className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                        {isOnline ? 'LIVE MONITOR' : 'OFFLINE'}
                     </span>
                 </div>
-                <div className="h-72 w-full"><TnTrendChart data={isOnline ? history : []} /></div>
+                
+                <RetortThermalChart
+                    data={isOnline ? history : []}
+                    targetSv={telemetry.targetTemperature ?? 121.0}
+                    height={380}
+                />
             </section>
 
             {/* Process Logs Table */}

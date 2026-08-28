@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
     buildRetortEvents,
     buildRetortTelemetry,
+    calculateF0,
     formatControllerTime,
     getAlarmIds,
+    segmentThermalSteps,
     toEngineeringValue,
     toOutputPercent,
 } from '../retortTelemetry';
@@ -67,5 +69,33 @@ describe('retort telemetry normalization', () => {
             'Heating output ON',
             'Step berubah ke 2',
         ]));
+    });
+
+    it('calculates F0 thermal lethality value accurately for sterilization temperatures', () => {
+        // At exactly 121.11°C for 60 seconds (1 minute), F0 should be 1.0
+        expect(calculateF0(Array(60).fill(121.11), 1)).toBe(1);
+        // At 100°C for 10 minutes, F0 should be small (~0.08)
+        expect(calculateF0(Array(600).fill(100), 1)).toBe(0.08);
+        // Under 100°C contributes 0 to F0
+        expect(calculateF0(Array(600).fill(90), 1)).toBe(0);
+    });
+
+    it('segments multi-step retort process into named categories with duration', () => {
+        const dummyReadings = [
+            // Step 0: CUT (60 seconds -> 1 min)
+            ...Array(60).fill(null).map((_, i) => ({ step_current: 0, pv: 250 + i * 15, decimal_point: 1 })),
+            // Step 1: Holding (120 seconds -> 2 min)
+            ...Array(120).fill(null).map(() => ({ step_current: 1, pv: 1210, decimal_point: 1 })),
+            // Step 2: Cooling (60 seconds -> 1 min)
+            ...Array(60).fill(null).map((_, i) => ({ step_current: 2, pv: 1210 - i * 10, decimal_point: 1 })),
+        ];
+
+        const segments = segmentThermalSteps(dummyReadings);
+        expect(segments.length).toBe(3);
+        expect(segments[0].category).toBe('CUT');
+        expect(segments[0].stepName).toContain('CUT');
+        expect(segments[1].category).toBe('HOLD');
+        expect(segments[1].f0Value).toBeGreaterThan(0);
+        expect(segments[2].category).toBe('COOL');
     });
 });
