@@ -31,7 +31,7 @@ Route::get('/test-lock', function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/scada', fn () => Inertia::render('Operations', ['module' => 'scada']))->name('scada.index');
+    Route::get('/scada', fn () => redirect()->route('tn.index'))->name('scada.index');
     Route::get('/historian', function () {
         $histories = \App\Models\TnProcessHistory::with('controller.machine')->orderBy('start_time')->get();
         return Inertia::render('Operations', ['module' => 'historian', 'histories' => $histories]);

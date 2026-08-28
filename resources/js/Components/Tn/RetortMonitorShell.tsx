@@ -6,6 +6,7 @@ import { RetortEvent, RetortTelemetry, formatControllerTime } from '@/Pages/Tn/r
 import PortSettings from './PortSettings';
 import TnNormalMonitor from './TnNormalMonitor';
 import ScadaCanvasView from '@/Components/ScadaCanvas';
+import RetortIndustrialHmi from './RetortIndustrialHmi';
 
 interface Props {
     controller: any;
@@ -83,13 +84,13 @@ export default function RetortMonitorShell(props: Props) {
                         <button
                             type="button"
                             onClick={() => props.onTabChange('scada')}
-                            className={`rounded-xl px-5 py-2.5 text-xs font-black transition-all shadow-sm ${
+                            className={`rounded-xl px-5 py-2.5 text-xs font-black transition-all shadow-sm flex items-center gap-2 ${
                                 props.activeTab === 'scada'
                                     ? 'bg-blue-700 text-white shadow-md border-none'
                                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:text-blue-800'
                             }`}
                         >
-                            SCADA Canvas POV
+                            <span>SCADA View</span>
                         </button>
                     </div>
 
@@ -102,22 +103,26 @@ export default function RetortMonitorShell(props: Props) {
                             isOnline={isOnline}
                         />
                     ) : (
-                        <section className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 shadow-xl backdrop-blur-xl">
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[#0f172a] px-6 py-4 text-white">
+                        <section className="overflow-hidden rounded-3xl border border-slate-200/90 bg-[#060b18] shadow-2xl backdrop-blur-xl">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-[#0b1329] px-6 py-4 text-white">
                                 <div>
-                                    <h2 className="font-black text-white text-lg">SCADA POV Editor Canvas</h2>
-                                    <p className="text-xs font-semibold text-blue-300 mt-0.5">Layout dari SCADA Editor dengan data controller realtime.</p>
+                                    <h2 className="font-black text-white text-lg tracking-wide">Panel SCADA Mesin Retort & Boiler</h2>
+                                    <p className="text-xs font-semibold text-blue-300 mt-0.5">Monitoring kontroler real-time {controllerName} ({controller.model_type}).</p>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className={`rounded-full px-3 py-1 text-xs font-black ${isOnline ? 'bg-amber-400 text-slate-950' : 'bg-rose-500 text-white'}`}>{isOnline ? 'LIVE' : 'OFFLINE'}</span>
-                                    <Link href={route('tn.scada.edit', controller.id)} className="rounded-xl border border-yellow-400 bg-gradient-to-r from-yellow-400 to-amber-500 px-4 py-1.5 text-xs font-black text-slate-950 hover:scale-105 transition-transform shadow-md">Edit SCADA</Link>
+                                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-black tracking-wider ${isOnline ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'}`}>
+                                        <span className={`h-2 w-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`}></span>
+                                        {isOnline ? 'REALTIME LIVE' : 'OFFLINE'}
+                                    </span>
                                 </div>
                             </div>
-                            <div className="p-6">
-                                <ScadaCanvasView
-                                    canvas={props.canvas}
-                                    mappings={props.mappings}
+                            <div className="p-4 sm:p-6 bg-[#040816]">
+                                <RetortIndustrialHmi
+                                    controllerName={controllerName}
+                                    controllerModel={controller.model_type}
                                     sensorData={props.sensorData}
+                                    telemetry={telemetry}
+                                    isOnline={isOnline}
                                 />
                             </div>
                         </section>

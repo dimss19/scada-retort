@@ -110,31 +110,42 @@ function makeRetortTemplate(controllerId: number): ScadaMapping[] {
     const add = (values: Partial<ScadaMapping>) => makeMapping(controllerId, id--, values);
 
     return [
-        add({ element_id: 'title', element_type: 'label', label: 'MESIN RETORT (STERILISASI)', data_source: 'process_phase', position_x: 60, position_y: 20, width: 900, height: 48, z_index: 10 }),
-        add({ element_id: 'mode', element_type: 'display', label: 'MODE', data_source: 'auto_manual', position_x: 420, position_y: 78, width: 180, height: 60, normal_color: '#34d399' }),
-        add({ element_id: 'controller_run', element_type: 'indicator', label: 'RUN', data_source: 'controller_running', position_x: 45, position_y: 82, width: 100, height: 58, normal_color: '#22c55e' }),
-        add({ element_id: 'alarm', element_type: 'indicator', label: 'ALARM', data_source: 'alarm_active', position_x: 610, position_y: 90, width: 150, height: 76, normal_color: '#ef4444' }),
+        // 1. Header Title Banner (Top Center)
+        add({ element_id: 'title', element_type: 'label', label: 'MESIN RETORT (STERILISASI)', data_source: 'process_phase', position_x: 100, position_y: 20, width: 1000, height: 44, z_index: 10 }),
 
-        add({ element_id: 'boiler_title', element_type: 'label', label: 'BOILER', data_source: 'process_phase', position_x: 25, position_y: 160, width: 250, height: 40 }),
-        add({ element_id: 'boiler_vessel', element_type: 'tank', label: 'WATER LEVEL', data_source: 'water_level', position_x: 40, position_y: 210, width: 190, height: 255, normal_color: '#38bdf8' }),
-        add({ element_id: 'gas_status', element_type: 'indicator', label: 'GAS', data_source: 'gas_ready', position_x: 45, position_y: 610, width: 110, height: 58, normal_color: '#fb923c' }),
-        add({ element_id: 'pilot_status', element_type: 'indicator', label: 'PEMATIK', data_source: 'pilot_flame', position_x: 170, position_y: 610, width: 120, height: 58, normal_color: '#fb923c' }),
+        // 2. Status Row (Top Bar)
+        add({ element_id: 'controller_run', element_type: 'indicator', label: 'RUN', data_source: 'controller_running', position_x: 100, position_y: 76, width: 110, height: 56, normal_color: '#22c55e' }),
+        add({ element_id: 'mode', element_type: 'display', label: 'MODE', data_source: 'auto_manual', position_x: 230, position_y: 76, width: 160, height: 56, normal_color: '#34d399' }),
+        add({ element_id: 'alarm', element_type: 'indicator', label: 'ALARM', data_source: 'alarm_active', position_x: 810, position_y: 76, width: 130, height: 56, normal_color: '#ef4444' }),
+        add({ element_id: 'door_lock', element_type: 'indicator', label: 'DOOR LOCK', data_source: 'door_lock', position_x: 960, position_y: 76, width: 140, height: 56, normal_color: '#22c55e' }),
 
-        add({ element_id: 'steam_pipe', element_type: 'pipe', label: 'STEAM', data_source: 'steam_valve', position_x: 260, position_y: 330, width: 430, height: 30, normal_color: '#38bdf8' }),
-        add({ element_id: 'steam_valve', element_type: 'valve', label: 'STEAM VALVE', data_source: 'steam_valve', position_x: 455, position_y: 215, width: 82, height: 98, normal_color: '#22c55e' }),
-        add({ element_id: 'steam_unmapped', element_type: 'label', label: 'STEAM I/O BELUM DIPETAKAN', data_source: 'steam_valve', position_x: 355, position_y: 405, width: 330, height: 42 }),
+        // 3. Tabung PV (Kiri - Present Value / Suhu Aktual)
+        add({ element_id: 'pv_title', element_type: 'label', label: 'TABUNG PV (SUHU AKTUAL)', data_source: 'pv', position_x: 100, position_y: 150, width: 260, height: 40 }),
+        add({ element_id: 'tank_pv', element_type: 'tank', label: 'PV', data_source: 'pv', position_x: 130, position_y: 205, width: 200, height: 260, normal_color: '#06b6d4', warning_threshold: 121, critical_threshold: 130 }),
+        add({ element_id: 'actual_temp', element_type: 'display', label: 'PV (SUHU AKTUAL)', data_source: 'pv', position_x: 130, position_y: 480, width: 200, height: 75, normal_color: '#22d3ee', warning_threshold: 121, critical_threshold: 130 }),
 
-        add({ element_id: 'retort_title', element_type: 'label', label: 'RETORT', data_source: 'process_phase', position_x: 705, position_y: 185, width: 285, height: 42 }),
-        add({ element_id: 'retort_vessel', element_type: 'tank', label: 'TEMP AKTUAL', data_source: 'pv', position_x: 725, position_y: 245, width: 190, height: 255, normal_color: '#22d3ee', warning_threshold: 121, critical_threshold: 130 }),
-        add({ element_id: 'actual_temp', element_type: 'display', label: 'TEMP AKTUAL', data_source: 'pv', position_x: 690, position_y: 590, width: 220, height: 155, normal_color: '#38bdf8', warning_threshold: 121, critical_threshold: 130 }),
-        add({ element_id: 'current_step', element_type: 'display', label: 'CURRENT STEP', data_source: 'step_current', position_x: 300, position_y: 720, width: 170, height: 66 }),
-        add({ element_id: 'remaining_time', element_type: 'display', label: 'REMAINING', data_source: 'rest_time', position_x: 500, position_y: 720, width: 170, height: 66, normal_color: '#a78bfa' }),
-        add({ element_id: 'door_lock', element_type: 'indicator', label: 'DOOR LOCK', data_source: 'door_lock', position_x: 790, position_y: 90, width: 150, height: 76, normal_color: '#22c55e' }),
+        // 4. Center Piping & Valves (Aliran Uap & Sirkulasi Antar Tabung)
+        add({ element_id: 'steam_valve', element_type: 'valve', label: 'STEAM VALVE', data_source: 'heating_mv', position_x: 555, position_y: 215, width: 90, height: 95, normal_color: '#22c55e' }),
+        add({ element_id: 'steam_pipe', element_type: 'pipe', label: 'STEAM FLOW', data_source: 'heating_mv', position_x: 340, position_y: 290, width: 520, height: 28, normal_color: '#38bdf8' }),
+        add({ element_id: 'steam_info', element_type: 'label', label: 'STEAM & WATER LINE', data_source: 'process_phase', position_x: 460, position_y: 335, width: 280, height: 38 }),
+        add({ element_id: 'cooling_pipe', element_type: 'pipe', label: 'COOLING FLOW', data_source: 'cooling_mv', position_x: 340, position_y: 420, width: 520, height: 28, normal_color: '#0284c7' }),
+        add({ element_id: 'cooling_pump', element_type: 'pump', label: 'COOLING PUMP', data_source: 'cooling_mv', position_x: 555, position_y: 460, width: 90, height: 95, normal_color: '#38bdf8' }),
 
-        add({ element_id: 'cooling_pipe', element_type: 'pipe', label: 'COOLING OUT', data_source: 'cooling_mv', position_x: 310, position_y: 495, width: 360, height: 30, normal_color: '#38bdf8' }),
-        add({ element_id: 'cooling_pump', element_type: 'pump', label: 'COOLING', data_source: 'cooling_mv', position_x: 450, position_y: 610, width: 92, height: 105, normal_color: '#38bdf8' }),
-        add({ element_id: 'drain_valve', element_type: 'valve', label: 'DRAIN', data_source: 'drain_open', position_x: 925, position_y: 265, width: 82, height: 98, normal_color: '#38bdf8' }),
-        add({ element_id: 'drain_pipe', element_type: 'pipe', label: 'DRAIN FLOW', data_source: 'drain_open', position_x: 940, position_y: 380, width: 150, height: 30, rotation: 90, normal_color: '#38bdf8' }),
+        // 5. Tabung SV (Kanan - Set Value / Target Suhu)
+        add({ element_id: 'sv_title', element_type: 'label', label: 'TABUNG SV (TARGET SUHU)', data_source: 'sv', position_x: 840, position_y: 150, width: 260, height: 40 }),
+        add({ element_id: 'tank_sv', element_type: 'tank', label: 'SV', data_source: 'sv', position_x: 870, position_y: 205, width: 200, height: 260, normal_color: '#10b981', warning_threshold: 125, critical_threshold: 135 }),
+        add({ element_id: 'target_temp', element_type: 'display', label: 'SV (TARGET SUHU)', data_source: 'sv', position_x: 870, position_y: 480, width: 200, height: 75, normal_color: '#34d399' }),
+
+        // 6. Drain Line (Ujung Kanan)
+        add({ element_id: 'drain_valve', element_type: 'valve', label: 'DRAIN VALVE', data_source: 'drain_open', position_x: 1080, position_y: 260, width: 85, height: 95, normal_color: '#38bdf8' }),
+        add({ element_id: 'drain_pipe', element_type: 'pipe', label: 'DRAIN OUT', data_source: 'drain_open', position_x: 1070, position_y: 395, width: 105, height: 26, rotation: 90, normal_color: '#38bdf8' }),
+
+        // 7. Bottom Utility & Process Info Bar
+        add({ element_id: 'gas_status', element_type: 'indicator', label: 'GAS', data_source: 'gas_ready', position_x: 100, position_y: 600, width: 110, height: 58, normal_color: '#fb923c' }),
+        add({ element_id: 'pilot_status', element_type: 'indicator', label: 'PEMATIK', data_source: 'pilot_flame', position_x: 225, position_y: 600, width: 110, height: 58, normal_color: '#fb923c' }),
+        add({ element_id: 'current_step', element_type: 'display', label: 'CURRENT STEP', data_source: 'step_current', position_x: 420, position_y: 595, width: 170, height: 68, normal_color: '#60a5fa' }),
+        add({ element_id: 'remaining_time', element_type: 'display', label: 'REMAINING TIME', data_source: 'rest_time', position_x: 610, position_y: 595, width: 170, height: 68, normal_color: '#a78bfa' }),
+        add({ element_id: 'heat_mv', element_type: 'display', label: 'HEATING MV', data_source: 'heating_mv', position_x: 870, position_y: 595, width: 200, height: 68, normal_color: '#f59e0b' }),
     ];
 }
 
@@ -143,7 +154,21 @@ export default function ScadaEditor({ controller, canvas: initialCanvas, mapping
     const [canvas, setCanvas] = useState<ScadaCanvasType | null>(initialCanvas);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [statusMessage, setStatusMessage] = useState<string>('');
     const nextId = useRef(-Date.now());
+
+    useEffect(() => {
+        if (initialMappings) {
+            setMappings(initialMappings);
+        }
+    }, [initialMappings]);
+
+    useEffect(() => {
+        if (initialCanvas) {
+            setCanvas(initialCanvas);
+        }
+    }, [initialCanvas]);
 
     const selectedMapping = useMemo(
         () => mappings.find((mapping) => mapping.id === selectedId) ?? null,
@@ -228,16 +253,44 @@ export default function ScadaEditor({ controller, canvas: initialCanvas, mapping
     const handleSave = useCallback(() => {
         if (!canvas) return;
         setIsSaving(true);
+        setSaveStatus('idle');
+
+        const serverMappings = mappings.map((mapping) => ({
+            ...mapping,
+            id: mapping.id > 0 ? mapping.id : undefined,
+        }));
+
         router.post(route('tn.scada.save', controller.id), {
-            canvas: canvas as any,
-            mappings: mappings.map((m) => ({ ...m, id: m.id < 0 ? null : m.id })) as any,
+            canvas: {
+                background_image_url: canvas.background_image_url,
+                width: canvas.width,
+                height: canvas.height,
+                grid_enabled: canvas.grid_enabled,
+                grid_size: canvas.grid_size,
+                snap_to_grid: canvas.snap_to_grid,
+            },
+            mappings: serverMappings,
         }, {
             preserveState: true,
             preserveScroll: true,
-            onFinish: () => setIsSaving(false),
-            onError: () => setIsSaving(false),
+            onSuccess: () => {
+                setIsSaving(false);
+                setSaveStatus('success');
+                setStatusMessage('Tersimpan!');
+                setTimeout(() => setSaveStatus('idle'), 3500);
+            },
+            onError: (errors) => {
+                setIsSaving(false);
+                setSaveStatus('error');
+                const firstError = Object.values(errors)[0] as string || 'Gagal menyimpan konfigurasi SCADA.';
+                setStatusMessage(firstError);
+                setTimeout(() => setSaveStatus('idle'), 5000);
+            },
+            onFinish: () => {
+                setIsSaving(false);
+            },
         });
-    }, [canvas, controller.id, isSaving, mappings]);
+    }, [canvas, controller.id, mappings]);
 
     const handleBackgroundUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -261,13 +314,23 @@ export default function ScadaEditor({ controller, canvas: initialCanvas, mapping
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5">
+                    {saveStatus === 'success' && (
+                        <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-100 px-3.5 py-2 text-xs font-black text-emerald-800 transition-all shadow-sm">
+                            ✓ {statusMessage}
+                        </span>
+                    )}
+                    {saveStatus === 'error' && (
+                        <span className="inline-flex items-center gap-1 rounded-xl bg-rose-100 px-3.5 py-2 text-xs font-black text-rose-800 transition-all shadow-sm">
+                            ✕ {statusMessage}
+                        </span>
+                    )}
                     <button type="button" onClick={handleApplyTemplate} className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-800 hover:bg-blue-100 shadow-sm transition-all">
                         Template Retort
                     </button>
                     <button type="button" onClick={handleSave} disabled={!canvas || isSaving} className="rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 px-5 py-2 text-xs font-black shadow-md border-none transition-all disabled:opacity-50">
                         {isSaving ? 'Menyimpan...' : 'Simpan'}
                     </button>
-                    <Link href={route('tn.monitor', controller.id)} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-800 hover:bg-slate-50 shadow-sm transition-all">
+                    <Link href={`${route('tn.monitor', controller.id)}?tab=scada`} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-800 hover:bg-slate-50 shadow-sm transition-all">
                         Selesai
                     </Link>
                 </div>
