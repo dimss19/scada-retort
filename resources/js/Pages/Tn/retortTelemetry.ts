@@ -73,8 +73,22 @@ export function buildRetortTelemetry(reading: any, isOnline: boolean): RetortTel
     const targetTemperature = toEngineeringValue(reading?.sv, decimalPoint);
     const heatingPercent = toOutputPercent(reading?.heating_mv);
     const coolingPercent = toOutputPercent(reading?.cooling_mv);
-    const isRunActive = reading && (reading.run_status === false || reading.run_status === 0 || reading.run_status === '0' || reading.run_status === 'false');
     const isAutoActive = reading && (reading.auto_manual === false || reading.auto_manual === 0 || reading.auto_manual === '0' || reading.auto_manual === 'false');
+
+    // In TN controller Modbus: Bit 8 of 301008 is STOP indicator (1: STOP, 0: RUN).
+    // Also if outputs are idle (0% MV, inactive relays, 0 process time), it is in idle/stopped state.
+    const isStopActive = Boolean(
+        reading?.run_status === true ||
+        reading?.run_status === 1 ||
+        reading?.run_status === '1' ||
+        reading?.run_status === 'true' ||
+        ((heatingPercent === null || heatingPercent === 0) &&
+         (coolingPercent === null || coolingPercent === 0) &&
+         !reading?.out1_active &&
+         !reading?.out2_active &&
+         (!reading?.process_time || reading?.process_time === 0))
+    );
+    const isRunActive = Boolean(reading && !isStopActive);
     const running = Boolean(isOnline && reading && isRunActive);
     const automatic = Boolean(reading && isAutoActive);
     const heatingActive = Boolean(running && (reading?.out1_active || (heatingPercent ?? 0) > 0));
