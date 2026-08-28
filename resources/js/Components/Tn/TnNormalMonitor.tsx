@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { RetortTelemetry, formatControllerTime } from '@/Pages/Tn/retortTelemetry';
-import TnGauge from './TnGauge';
+import { RetortTelemetry } from '@/Pages/Tn/retortTelemetry';
 import TnTrendChart from './TnTrendChart';
 import TnFaceplateDisplay from './TnFaceplateDisplay';
 
@@ -12,10 +11,6 @@ interface Props {
     isOnline: boolean;
 }
 
-const formatValue = (value: number | null, digits = 1) => value === null
-    ? undefined
-    : value.toLocaleString('id-ID', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-
 export default function TnNormalMonitor({ controllerModel = 'TNH', telemetry, history, isOnline }: Props) {
     const heatingLogs = useMemo(() => history
         .filter((item) => Number(item.heating_mv ?? 0) > 0)
@@ -24,44 +19,12 @@ export default function TnNormalMonitor({ controllerModel = 'TNH', telemetry, hi
 
     return (
         <div className="space-y-6">
-            {/* Status Banner (Royal Blue & Yellow Accent) */}
-            <div className="rounded-3xl border border-blue-900/40 bg-gradient-to-r from-blue-900 via-blue-950 to-slate-900 p-7 shadow-xl text-white">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p className="text-xs font-black uppercase tracking-wider text-yellow-400">Operation Status</p>
-                        <p className="mt-1 text-3xl font-black text-white">
-                            {telemetry.pattern !== null ? `PTN.${telemetry.pattern}` : 'NO PATTERN'}
-                            <span className="ml-3 text-slate-950 font-black bg-gradient-to-r from-amber-400 to-yellow-500 px-3.5 py-1 rounded-xl text-lg shadow-md">Step {telemetry.step ?? '--'}</span>
-                        </p>
-                    </div>
-                    <div className="flex gap-8">
-                        <div>
-                            <p className="text-xs font-extrabold uppercase text-blue-200">Process Time</p>
-                            <p className="font-mono text-2xl font-black text-white">{formatControllerTime(telemetry.processTime)}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-extrabold uppercase text-yellow-400">Rest Time</p>
-                            <p className="font-mono text-2xl font-black text-yellow-300">{formatControllerTime(telemetry.remainingTime)}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Gauges Grid (Fresh White Glass Cards) */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div className="flex flex-col items-center rounded-3xl border border-slate-200/90 bg-white/95 p-6 shadow-lg backdrop-blur-xl">
-                    <h2 className="mb-4 text-xs font-black uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">Present Value (PV)</h2>
-                    <TnGauge value={telemetry.actualTemperature ?? undefined} formattedValue={formatValue(telemetry.actualTemperature)} label="PV" unit="°C" color="#2563eb" max={200} />
-                </div>
-                <div className="flex flex-col items-center rounded-3xl border border-slate-200/90 bg-white/95 p-6 shadow-lg backdrop-blur-xl">
-                    <h2 className="mb-4 text-xs font-black uppercase tracking-wider text-amber-800 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200">Set Value (SV)</h2>
-                    <TnGauge value={telemetry.targetTemperature ?? undefined} formattedValue={formatValue(telemetry.targetTemperature)} label="SV" unit="°C" color="#eab308" max={200} />
-                </div>
-                <div className="flex flex-col items-center rounded-3xl border border-slate-200/90 bg-white/95 p-6 shadow-lg backdrop-blur-xl">
-                    <h2 className="mb-4 text-xs font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200">Heat MV</h2>
-                    <TnGauge value={telemetry.heatingPercent ?? undefined} formattedValue={formatValue(telemetry.heatingPercent)} label="MV" unit="%" color="#f59e0b" max={100} />
-                </div>
-            </div>
+            {/* Autonics Industrial Digital Faceplate Display (Mirroring Physical TNH-P Screen) */}
+            <TnFaceplateDisplay
+                telemetry={telemetry}
+                modelType={controllerModel}
+                isOnline={isOnline}
+            />
 
             {/* Temperature Trend Section */}
             <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-7 shadow-lg backdrop-blur-xl">
@@ -81,13 +44,6 @@ export default function TnNormalMonitor({ controllerModel = 'TNH', telemetry, hi
                 </div>
                 <div className="h-72 w-full"><TnTrendChart data={isOnline ? history : []} /></div>
             </section>
-
-            {/* Autonics Industrial Digital Faceplate Display (Mirroring Physical TNH-P Screen) */}
-            <TnFaceplateDisplay
-                telemetry={telemetry}
-                modelType={controllerModel}
-                isOnline={isOnline}
-            />
 
             {/* Process Logs Table */}
             <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-7 shadow-lg backdrop-blur-xl">
