@@ -1117,10 +1117,9 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                             type="button"
                             onClick={() => handleSubmitWithSync(true)}
                             disabled={processing}
-                            className="px-7 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all border-none disabled:opacity-50 flex items-center gap-2"
+                            className="px-7 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all border-none disabled:opacity-50"
                         >
-                            <span>⚡</span>
-                            <span>{isEditing ? 'Simpan & Tulis ke TN Controller' : 'Simpan & Tulis ke TN Controller'}</span>
+                            {isEditing ? 'Simpan & Tulis ke TN Controller' : 'Simpan & Tulis ke TN Controller'}
                         </button>
                     </div>
                 </form>

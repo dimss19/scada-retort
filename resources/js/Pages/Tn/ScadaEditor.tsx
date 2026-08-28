@@ -316,12 +316,12 @@ export default function ScadaEditor({ controller, canvas: initialCanvas, mapping
                 <div className="flex flex-wrap items-center gap-2.5">
                     {saveStatus === 'success' && (
                         <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-100 px-3.5 py-2 text-xs font-black text-emerald-800 transition-all shadow-sm">
-                            ✓ {statusMessage}
+                            {statusMessage}
                         </span>
                     )}
                     {saveStatus === 'error' && (
                         <span className="inline-flex items-center gap-1 rounded-xl bg-rose-100 px-3.5 py-2 text-xs font-black text-rose-800 transition-all shadow-sm">
-                            ✕ {statusMessage}
+                            {statusMessage}
                         </span>
                     )}
                     <button type="button" onClick={handleApplyTemplate} className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-800 hover:bg-blue-100 shadow-sm transition-all">
