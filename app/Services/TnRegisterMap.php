@@ -60,12 +60,16 @@ class TnRegisterMap
     public static function decodeStatusFlag($value)
     {
         return [
-            'run_status' => (bool)($value & (1 << 0)), // 0: RUN, 1: STOP
-            'auto_manual' => (bool)($value & (1 << 1)), // 0: AUTO, 1: MANUAL
-            'out1_active' => (bool)($value & (1 << 2)),
-            'out2_active' => (bool)($value & (1 << 3)),
-            'at_running' => (bool)($value & (1 << 4)),
-            // other bits based on Appendix...
+            'prog_status' => (bool)($value & (1 << 0)),  // Bit 0: 100017 PROG
+            'wait_status' => (bool)($value & (1 << 1)),  // Bit 1: 100018 WAIT
+            'hba1_active' => (bool)($value & (1 << 2)),  // Bit 2: 100019 HBA1
+            'hba2_active' => (bool)($value & (1 << 3)),  // Bit 3: 100020 HBA2
+            'out1_active' => (bool)($value & (1 << 4)),  // Bit 4: 100021 OUT1 (Heater)
+            'out2_active' => (bool)($value & (1 << 5)),  // Bit 5: 100022 OUT2 (Cooler)
+            'at_running'  => (bool)($value & (1 << 6)),  // Bit 6: 100023 AT
+            'auto_manual' => (bool)($value & (1 << 7)),  // Bit 7: 100024 MAN (0: AUTO, 1: MANUAL)
+            'run_status'  => (bool)($value & (1 << 8)),  // Bit 8: 100025 STOP indicator (1: STOP, 0: RUN)
+            'hold_status' => (bool)($value & (1 << 9)),  // Bit 9: 100026 HOLD
         ];
     }
 }
