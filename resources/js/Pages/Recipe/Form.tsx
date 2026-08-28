@@ -219,7 +219,7 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                             <div>
                                 <div className="flex items-center justify-between">
                                     <label className="block text-xs font-extrabold text-slate-700 uppercase">Pilih Pattern (0 – 9)</label>
-                                    <span className="text-[10px] font-mono font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">PTnN (400205)</span>
+                                    <span className="text-[10px] font-mono font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">PTnN</span>
                                 </div>
                                 <select
                                     value={data.pattern_number}
@@ -348,7 +348,7 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                                 <div className="flex items-center justify-between mb-4 border-b border-amber-100 pb-3">
                                     <div>
                                         <h3 className="text-base font-black text-slate-900 uppercase">Parameter Dasar PATN</h3>
-                                        <p className="text-xs font-semibold text-slate-500">Konfigurasi register Modbus `400201 – 400209` untuk pola sterilisasi.</p>
+                                        <p className="text-xs font-semibold text-slate-500">Konfigurasi parameter dasar untuk pola sterilisasi.</p>
                                     </div>
                                     <span className="text-xs font-black text-amber-900 bg-amber-200/80 px-3 py-1 rounded-xl">
                                         PATN CONFIG
