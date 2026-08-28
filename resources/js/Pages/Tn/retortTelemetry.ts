@@ -76,18 +76,27 @@ export function buildRetortTelemetry(reading: any, isOnline: boolean): RetortTel
     const isAutoActive = reading && (reading.auto_manual === false || reading.auto_manual === 0 || reading.auto_manual === '0' || reading.auto_manual === 'false');
 
     // In TN controller Modbus: Bit 8 of 301008 is STOP indicator (1: STOP, 0: RUN).
-    // Also if outputs are idle (0% MV, inactive relays, 0 process time), it is in idle/stopped state.
-    const isStopActive = Boolean(
-        reading?.run_status === true ||
-        reading?.run_status === 1 ||
-        reading?.run_status === '1' ||
-        reading?.run_status === 'true' ||
-        ((heatingPercent === null || heatingPercent === 0) &&
-         (coolingPercent === null || coolingPercent === 0) &&
-         !reading?.out1_active &&
-         !reading?.out2_active &&
-         (!reading?.process_time || reading?.process_time === 0))
-    );
+    // Bit 0 of 301008 is PROG indicator (1: Program RUN).
+    const isExplicitStop = reading?.run_status === true || reading?.run_status === 1 || reading?.run_status === '1' || reading?.run_status === 'true';
+    const isExplicitRun = reading?.run_status === false || reading?.run_status === 0 || reading?.run_status === '0' || reading?.run_status === 'false' || reading?.prog_status === true || reading?.prog_status === 1;
+
+    let isStopActive = false;
+    if (isExplicitRun) {
+        isStopActive = false;
+    } else if (isExplicitStop) {
+        isStopActive = true;
+    } else {
+        // Fallback only if no explicit status bit received from controller
+        isStopActive = Boolean(
+            !reading ||
+            ((heatingPercent === null || heatingPercent === 0) &&
+             (coolingPercent === null || coolingPercent === 0) &&
+             !reading?.out1_active &&
+             !reading?.out2_active &&
+             (!reading?.process_time || reading?.process_time === 0))
+        );
+    }
+
     const isRunActive = Boolean(reading && !isStopActive);
     const running = Boolean(isOnline && reading && isRunActive);
     const automatic = Boolean(reading && isAutoActive);

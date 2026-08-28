@@ -36,12 +36,14 @@ export default function TnFaceplateDisplay({ telemetry, modelType = 'TNH-P', isO
         : '--.-';
 
     // Format SV / Status
-    const isStopped = !telemetry.running || telemetry.phase === 'Waiting' || telemetry.phase === 'Offline';
+    // Blinking STOP only happens when the controller is STOP / IDLE.
+    // When RUNNING, svValueDisplay is ALWAYS steady targetSvFormatted and NEVER blinks!
+    const isStopped = !telemetry.running;
     const targetSvFormatted = telemetry.targetTemperature !== null && telemetry.targetTemperature !== undefined
         ? telemetry.targetTemperature.toFixed(1)
         : '25.0';
 
-    // Alternates between 'Stop' and target SV every 0.5s when in IDLE / STOP mode (identical to hardware)
+    // Alternates between 'Stop' and target SV every 0.5s ONLY when in STOP mode
     const svValueDisplay = isStopped
         ? (blinkToggle ? 'Stop' : targetSvFormatted)
         : targetSvFormatted;
