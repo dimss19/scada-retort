@@ -13,7 +13,7 @@ export default function TnFaceplateDisplay({ telemetry, modelType = 'TNH-P', isO
     useEffect(() => {
         const timer = setInterval(() => {
             setBlinkToggle(prev => !prev);
-        }, 1000);
+        }, 500); // Berganti setiap 0.5 detik (500ms)
         return () => clearInterval(timer);
     }, []);
 
