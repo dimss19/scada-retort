@@ -51,12 +51,6 @@ export default function TnCard({ controller }: { controller: any }) {
                         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                         HMI / SCADA
                     </Link>
-                    <Link
-                        href={route('tn.config.edit', controller.id)}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs leading-4 font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                        Config
-                    </Link>
                 </div>
             </div>
         </div>

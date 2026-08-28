@@ -58,9 +58,6 @@ export default function RetortMonitorShell(props: Props) {
                         isOnline={isOnline}
                         lastError={controller.last_error}
                     />
-                    <Link href={route('tn.config.edit', controller.id)} className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-800 hover:bg-amber-400 hover:text-slate-950 hover:border-amber-400 transition-all shadow-sm">
-                        Konfigurasi TN
-                    </Link>
                     <Link href={route('dashboard')} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
                         ← Dashboard
                     </Link>

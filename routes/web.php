@@ -88,12 +88,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/{tn}/port/select', [\App\Http\Controllers\TnPortController::class, 'select'])->name('tn.port.select');
         Route::get('/{tn}/port/status', [\App\Http\Controllers\TnPortController::class, 'status'])->name('tn.port.status');
 
-        // Config
-        Route::get('/{tn}/config', [\App\Http\Controllers\TnConfigController::class, 'edit'])->name('tn.config.edit');
-        Route::post('/{tn}/config/sync', [\App\Http\Controllers\TnConfigController::class, 'syncFromDevice'])->name('tn.config.sync');
-        Route::get('/{tn}/config/pattern/scan', [\App\Http\Controllers\TnConfigController::class, 'scanPattern'])->name('tn.config.pattern.scan');
-        Route::post('/{tn}/config/pattern/write', [\App\Http\Controllers\TnConfigController::class, 'writePattern'])->name('tn.config.pattern.write');
-        Route::put('/{tn}/config/{group}', [\App\Http\Controllers\TnConfigController::class, 'updateGroup'])->name('tn.config.update');
 
         // SCADA POV
         Route::get('/{tn}/scada/edit', [\App\Http\Controllers\ScadaController::class, 'edit'])->name('tn.scada.edit');

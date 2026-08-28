@@ -1,16 +1,18 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import axios from 'axios';
 
 export default function Index({ recipes = [], controllers = [] }: { recipes?: any[], controllers?: any[] }) {
-    const [selectedController, setSelectedController] = useState(controllers.length > 0 ? controllers[0].id : '');
+    const activeTnId = (usePage().props as any).ui?.active_tn_id;
+    const [selectedController, setSelectedController] = useState(activeTnId || (controllers.length > 0 ? controllers[0].id : ''));
     const [isScanning, setIsScanning] = useState(false);
     const [scanMessage, setScanMessage] = useState({ text: '', type: '' });
 
     const handleAutoScan = async () => {
-        if (!selectedController) {
-            setScanMessage({ text: 'Pilih controller terlebih dahulu.', type: 'error' });
+        const targetController = selectedController || activeTnId || (controllers.length > 0 ? controllers[0].id : '');
+        if (!targetController) {
+            setScanMessage({ text: 'Tidak ada controller yang tersedia.', type: 'error' });
             return;
         }
 
@@ -22,7 +24,7 @@ export default function Index({ recipes = [], controllers = [] }: { recipes?: an
         setScanMessage({ text: 'Proses pemindaian sedang berjalan... Harap tunggu hingga 15 detik.', type: 'info' });
 
         try {
-            const response = await axios.post(route('tn.recipes.scan-all'), { tn_id: selectedController });
+            const response = await axios.post(route('tn.recipes.scan-all'), { tn_id: targetController });
             setScanMessage({ text: response.data.message, type: 'success' });
             router.reload();
         } catch (error: any) {
@@ -38,24 +40,13 @@ export default function Index({ recipes = [], controllers = [] }: { recipes?: an
             header={
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between max-w-7xl mx-auto">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight text-slate-900">Manajemen Pattern & Resep</h1>
+                        <h1 className="text-2xl font-black tracking-tight text-slate-900">Manajemen Pattern</h1>
                         <p className="text-sm font-semibold text-slate-600">Kelola dan scan profil sterilisasi controller retort</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                        <select
-                            className="rounded-xl border-slate-300 bg-white font-bold text-slate-800 text-xs shadow-sm focus:border-blue-600 focus:ring-blue-600 py-2.5 px-3.5"
-                            value={selectedController}
-                            onChange={e => setSelectedController(e.target.value)}
-                            disabled={isScanning}
-                        >
-                            <option value="">Pilih Controller...</option>
-                            {controllers.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
                         <button
                             onClick={handleAutoScan}
-                            disabled={isScanning || !selectedController}
+                            disabled={isScanning || (!selectedController && !activeTnId && controllers.length === 0)}
                             className="inline-flex items-center rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 text-xs font-black px-5 py-2.5 shadow-md transition-all border-none disabled:opacity-50"
                         >
                             {isScanning ? (

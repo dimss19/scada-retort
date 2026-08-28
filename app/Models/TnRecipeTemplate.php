@@ -36,6 +36,7 @@ class TnRecipeTemplate extends Model
         'updated_by',
         'approved_by',
         'process_parameters',
+        'tn_config',
         'is_default',
         'archived_at',
     ];
@@ -43,6 +44,7 @@ class TnRecipeTemplate extends Model
     protected $casts = [
         'is_default' => 'boolean',
         'process_parameters' => 'array',
+        'tn_config' => 'array',
         'archived_at' => 'datetime',
     ];
 
