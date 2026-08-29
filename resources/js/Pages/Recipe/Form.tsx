@@ -1,11 +1,16 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, Link } from '@inertiajs/react';
+import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 
-export default function Form({ recipe, users = [] }: { recipe?: any; users?: any[] }) {
+export default function Form({ recipe, users = [], controllers = [] }: { recipe?: any; users?: any[]; controllers?: any[] }) {
     const isEditing = !!recipe;
     const [activeTab, setActiveTab] = useState<'PATN' | 'IN' | 'CNTL' | 'PIdC' | 'ALM' | 'COMM' | 'ETC'>('PATN');
     const [showAdvance, setShowAdvance] = useState(false);
+
+    const activeTnId = (usePage().props as any).ui?.active_tn_id;
+    const [selectedController, setSelectedController] = useState(
+        recipe?.process_parameters?.scanned_from || activeTnId || (controllers.length > 0 ? controllers[0].id : '')
+    );
 
     const defaultTnConfig = {
         IN: {
@@ -67,7 +72,7 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
     };
 
     const initialPNum = recipe?.pattern_number ?? 0;
-    const { data, setData, post, put, processing, errors } = useForm({
+    const { data, setData, post, put, processing, errors, transform } = useForm({
         recipe_code: recipe?.recipe_code || `P${initialPNum}-${Math.random().toString(36).substring(2, 8)}`,
         name: recipe?.name || `Pattern ${initialPNum}`,
         product_name: recipe?.product_name || 'N/A',
@@ -89,6 +94,7 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
         wait_width: recipe?.wait_width ?? 2,
         wait_time: recipe?.wait_time ?? 0,
         sync_to_tn: true,
+        tn_controller_id: activeTnId || (controllers.length > 0 ? controllers[0].id : ''),
         tn_config: recipe?.tn_config || defaultTnConfig,
         steps: recipe?.steps?.length > 0 ? recipe.steps : [
             { step_number: 1, step_name: 'Venting', target_sv: 100, duration: 300, end_action: 'CONT', event_link: null, pid_group: null, steam_enable: true, cooling_enable: false, drain_enable: false, alarm_enable: true },
@@ -111,18 +117,29 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
     };
 
     const handleSubmitWithSync = (sync: boolean) => {
-        setData('sync_to_tn', sync);
-        setTimeout(() => {
-            if (isEditing) {
-                put(route('tn.recipes.update', recipe.id));
-            } else {
-                post(route('tn.recipes.store'));
-            }
-        }, 50);
+        transform((form) => ({
+            ...form,
+            sync_to_tn: sync,
+            tn_controller_id: selectedController || form.tn_controller_id || undefined,
+            tn_id: selectedController || form.tn_controller_id || undefined,
+        }));
+
+        if (isEditing) {
+            put(route('tn.recipes.update', recipe.id));
+        } else {
+            post(route('tn.recipes.store'));
+        }
     };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+        transform((form) => ({
+            ...form,
+            sync_to_tn: true,
+            tn_controller_id: selectedController || form.tn_controller_id || undefined,
+            tn_id: selectedController || form.tn_controller_id || undefined,
+        }));
+
         if (isEditing) {
             put(route('tn.recipes.update', recipe.id));
         } else {
@@ -213,7 +230,30 @@ export default function Form({ recipe, users = [] }: { recipe?: any; users?: any
                         <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
                             <h3 className="text-lg font-black text-slate-900">Informasi Resep Sterilisasi</h3>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-extrabold text-slate-700 uppercase">Target Controller TN</label>
+                                    <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">DEVICE</span>
+                                </div>
+                                <select
+                                    value={selectedController}
+                                    onChange={e => {
+                                        setSelectedController(e.target.value);
+                                        setData('tn_controller_id', e.target.value);
+                                    }}
+                                    className="mt-1.5 block w-full rounded-xl border-slate-300 bg-slate-50 text-slate-900 font-bold focus:border-blue-600 focus:ring-blue-600 text-sm py-2 px-3"
+                                >
+                                    {controllers.map((c: any) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.name || `Controller #${c.id}`} ({c.model_type}) {c.is_online ? '• Online' : '• Offline'}
+                                        </option>
+                                    ))}
+                                    {controllers.length === 0 && (
+                                        <option value="">Controller Utama</option>
+                                    )}
+                                </select>
+                            </div>
                             <div>
                                 <div className="flex items-center justify-between">
                                     <label className="block text-xs font-extrabold text-slate-700 uppercase">Kode Pattern</label>

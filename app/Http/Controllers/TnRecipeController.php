@@ -9,7 +9,7 @@ use Inertia\Inertia;
 
 class TnRecipeController extends Controller {
     public function index() { return Inertia::render('Recipe/Index', ['recipes'=>TnRecipeTemplate::with(['steps','creator:id,name','approver:id,name'])->latest()->get(), 'controllers'=>\App\Models\TnController::all()]); }
-    public function create() { return Inertia::render('Recipe/Form', ['users'=>User::orderBy('name')->get(['id','name'])]); }
+    public function create() { return Inertia::render('Recipe/Form', ['users'=>User::orderBy('name')->get(['id','name']), 'controllers'=>\App\Models\TnController::all()]); }
     public function store(Request $request) {
         $data=$this->validateRecipe($request);
         $recipe = DB::transaction(function() use($data,$request){
@@ -20,7 +20,8 @@ class TnRecipeController extends Controller {
 
         $syncMsg = '';
         if ($request->boolean('sync_to_tn', true)) {
-            $writeRes = $this->writeRecipeToDevice($recipe);
+            $tnId = $request->input('tn_controller_id') ?? $request->input('tn_id');
+            $writeRes = $this->writeRecipeToDevice($recipe, $tnId);
             if ($writeRes['success']) {
                 $syncMsg = ' dan berhasil ditulis ke TN Controller (' . $writeRes['controller'] . ')';
             } else {
@@ -31,7 +32,7 @@ class TnRecipeController extends Controller {
         return redirect()->route('tn.recipes.index')->with('success', 'Pattern berhasil disimpan' . $syncMsg . '.');
     }
 
-    public function edit(TnRecipeTemplate $recipe) { return Inertia::render('Recipe/Form',['recipe'=>$recipe->load('steps'),'users'=>User::orderBy('name')->get(['id','name'])]); }
+    public function edit(TnRecipeTemplate $recipe) { return Inertia::render('Recipe/Form',['recipe'=>$recipe->load('steps'),'users'=>User::orderBy('name')->get(['id','name']), 'controllers'=>\App\Models\TnController::all()]); }
 
     public function update(Request $request,TnRecipeTemplate $recipe) {
         $data=$this->validateRecipe($request,$recipe);
@@ -43,7 +44,8 @@ class TnRecipeController extends Controller {
 
         $syncMsg = '';
         if ($request->boolean('sync_to_tn', true)) {
-            $writeRes = $this->writeRecipeToDevice($recipe);
+            $tnId = $request->input('tn_controller_id') ?? $request->input('tn_id');
+            $writeRes = $this->writeRecipeToDevice($recipe, $tnId);
             if ($writeRes['success']) {
                 $syncMsg = ' dan berhasil ditulis ke TN Controller (' . $writeRes['controller'] . ')';
             } else {

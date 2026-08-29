@@ -80,11 +80,24 @@ export function buildRetortTelemetry(reading: any, isOnline: boolean): RetortTel
     const isExplicitStop = reading?.run_status === true || reading?.run_status === 1 || reading?.run_status === '1' || reading?.run_status === 'true';
     const isExplicitRun = reading?.run_status === false || reading?.run_status === 0 || reading?.run_status === '0' || reading?.run_status === 'false' || reading?.prog_status === true || reading?.prog_status === 1;
 
+    // Check if MV is 100% or process is actively running (timer elapsed, heating output active)
+    const isMv100 = heatingPercent !== null && heatingPercent >= 100;
+    const isProcessActive = Boolean(
+        isMv100 ||
+        (typeof reading?.process_time === 'number' && reading.process_time > 0) ||
+        reading?.out1_active ||
+        reading?.out2_active ||
+        (heatingPercent !== null && heatingPercent > 0) ||
+        (coolingPercent !== null && coolingPercent > 0)
+    );
+
     let isStopActive = false;
-    if (isExplicitRun) {
+    if (isExplicitRun || isMv100) {
         isStopActive = false;
-    } else if (isExplicitStop) {
+    } else if (isExplicitStop && !isMv100 && (!reading?.process_time || reading?.process_time === 0)) {
         isStopActive = true;
+    } else if (isExplicitStop) {
+        isStopActive = !isProcessActive;
     } else {
         // Fallback only if no explicit status bit received from controller
         isStopActive = Boolean(
@@ -98,7 +111,7 @@ export function buildRetortTelemetry(reading: any, isOnline: boolean): RetortTel
     }
 
     const isRunActive = Boolean(reading && !isStopActive);
-    const running = Boolean(isOnline && reading && isRunActive);
+    const running = Boolean(isOnline && reading && (isRunActive || isMv100 || isProcessActive));
     const automatic = Boolean(reading && isAutoActive);
     const heatingActive = Boolean(running && (reading?.out1_active || (heatingPercent ?? 0) > 0));
     const coolingActive = Boolean(running && (reading?.out2_active || (coolingPercent ?? 0) > 0));
