@@ -13,7 +13,9 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-TARGET_BRANCH="integrasi-esp"
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+TARGET_BRANCH=${1:-${CURRENT_BRANCH}}
+if [ "$TARGET_BRANCH" = "HEAD" ]; then TARGET_BRANCH="main"; fi
 
 echo -e "${CYAN}${BOLD}=== Memperbarui SCADA Retort (Branch: ${TARGET_BRANCH}) ===${NC}"
 
