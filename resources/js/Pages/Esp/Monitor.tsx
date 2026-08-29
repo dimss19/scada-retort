@@ -4,6 +4,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { RetortTelemetry } from '@/Pages/Tn/retortTelemetry';
 import TnFaceplateDisplay from '@/Components/Tn/TnFaceplateDisplay';
 import RetortThermalChart from '@/Components/Tn/RetortThermalChart';
+import ProcessDetailView from '@/Components/History/ProcessDetailView';
 import { calculateLethality, EspTelemetryData } from '@/Components/Esp/EspMonitoringPanel';
 import { ShieldCheck, Flame, Wifi, WifiOff, AlertTriangle, X, Download, Eye, Trash2, MoreVertical, Calendar, Clock, FileText, CheckCircle2 } from 'lucide-react';
 
@@ -463,6 +464,11 @@ export default function EspMonitor({
                                 </div>
                             </section>
                         </div>
+                    ) : selectedBatch ? (
+                        <ProcessDetailView
+                            batch={selectedBatch}
+                            onBack={() => setSelectedBatch(null)}
+                        />
                     ) : (
                         /* Historian / Process History View */
                         <div className="space-y-6">
@@ -641,71 +647,6 @@ export default function EspMonitor({
                     )}
                 </div>
             </div>
-
-            {/* Batch Detail Modal */}
-            {selectedBatch && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
-                    <div className="relative w-full max-w-4xl max-h-[85vh] overflow-hidden rounded-3xl bg-white shadow-2xl flex flex-col">
-                        <div className="flex items-center justify-between border-b border-slate-100 p-6 bg-slate-50">
-                            <div>
-                                <h3 className="text-lg font-black text-slate-900">Detail Batch #{selectedBatch.id}</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Mulai: {new Date(selectedBatch.start_time).toLocaleString('id-ID')} · Selesai: {selectedBatch.end_time ? new Date(selectedBatch.end_time).toLocaleString('id-ID') : 'Sedang Berjalan'}
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => handleDownload(selectedBatch, 'csv')}
-                                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 transition-colors flex items-center gap-1.5"
-                                >
-                                    <Download size={14} /> Download CSV
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedBatch(null)}
-                                    className="rounded-xl p-2 text-slate-400 hover:bg-slate-200 transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="p-6 overflow-y-auto space-y-4">
-                            <div className="max-h-96 overflow-auto rounded-2xl border border-slate-200">
-                                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                                    <thead className="sticky top-0 bg-[#0f172a] text-left text-xs font-black uppercase tracking-wider text-white">
-                                        <tr>
-                                            <th className="px-5 py-3">Timestamp</th>
-                                            <th className="px-5 py-3">PV (°C)</th>
-                                            <th className="px-5 py-3">SV (°C)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 font-mono">
-                                        {(selectedBatch.log_data || []).length === 0 ? (
-                                            <tr>
-                                                <td colSpan={3} className="px-5 py-8 text-center text-slate-400 font-sans font-bold">
-                                                    Tidak ada data reading tersimpan pada batch ini.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            [...(selectedBatch.log_data || [])]
-                                                .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                                                .map((log: any, idx: number) => (
-                                                    <tr key={idx} className="hover:bg-slate-50">
-                                                        <td className="px-5 py-2.5 text-slate-600 font-bold">{new Date(log.created_at).toLocaleTimeString('id-ID')}</td>
-                                                        <td className="px-5 py-2.5 text-blue-700 font-extrabold">{Number(log.pv ?? 0).toFixed(1)}</td>
-                                                        <td className="px-5 py-2.5 text-amber-700 font-extrabold">{Number(log.sv ?? 0).toFixed(1)}</td>
-                                                    </tr>
-                                                ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </AuthenticatedLayout>
     );
 }

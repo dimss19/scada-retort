@@ -23,7 +23,7 @@ import {
     FileText,
     CheckCircle2,
 } from 'lucide-react';
-import React from 'react';
+import ProcessDetailView from '@/Components/History/ProcessDetailView';
 
 type Module = 'scada' | 'historian' | 'alarm' | 'notifications' | 'database';
 type Props = { module: Module; histories?: any[] };
@@ -217,6 +217,15 @@ function Historian({ histories = [] }: { histories?: any[] }) {
         window.addEventListener('click', closeMenu);
         return () => window.removeEventListener('click', closeMenu);
     }, []);
+
+    if (selectedBatch) {
+        return (
+            <ProcessDetailView
+                batch={selectedBatch}
+                onBack={() => setSelectedBatch(null)}
+            />
+        );
+    }
 
     return (
         <div className="space-y-6">
