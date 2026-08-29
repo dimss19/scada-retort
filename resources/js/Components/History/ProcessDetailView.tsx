@@ -29,8 +29,6 @@ interface Props {
 }
 
 export default function ProcessDetailView({ batch, onBack }: Props) {
-    const [viewMode, setViewMode] = useState<'all' | 'table'>('all');
-    const [exportMode, setExportMode] = useState<'both' | 'data' | 'chart'>('both');
     const [tablePage, setTablePage] = useState<number>(1);
     const [pageSize, setPageSize] = useState<number>(50);
 
@@ -183,55 +181,18 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
 
     return (
         <div className="space-y-6">
-            {/* Top Toolbar / Mode Switcher */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
-                    >
-                        <ChevronLeft size={16} />
-                        <span>Kembali ke Daftar</span>
-                    </button>
-
-                    <div className="flex items-center gap-1 rounded-2xl bg-slate-100 p-1 border border-slate-200">
-                        <button
-                            type="button"
-                            onClick={() => setViewMode('all')}
-                            className={`rounded-xl px-4 py-1.5 text-xs font-black transition-all ${
-                                viewMode === 'all'
-                                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-sm'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                            Daftar Proses & Grafik
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setViewMode('table')}
-                            className={`rounded-xl px-4 py-1.5 text-xs font-black transition-all ${
-                                viewMode === 'table'
-                                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-sm'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                            Tabel Data
-                        </button>
-                    </div>
-                </div>
+            {/* Top Toolbar */}
+            <div className="flex items-center justify-between gap-4">
+                <button
+                    type="button"
+                    onClick={onBack}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                >
+                    <ChevronLeft size={16} />
+                    <span>Kembali ke Daftar</span>
+                </button>
 
                 <div className="flex items-center gap-2.5">
-                    <select
-                        value={exportMode}
-                        onChange={(e) => setExportMode(e.target.value as any)}
-                        className="rounded-xl border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-sm focus:border-amber-500 focus:ring-amber-500 py-2 px-3"
-                    >
-                        <option value="both">Data + Grafik</option>
-                        <option value="data">Data saja</option>
-                        <option value="chart">Grafik saja</option>
-                    </select>
-
                     <button
                         type="button"
                         onClick={handleDownloadPDF}
@@ -278,46 +239,44 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
             </div>
 
             {/* Thermal Sterilization Profile Chart (Clean Retort Thermal Chart) */}
-            {(viewMode === 'all' || exportMode === 'chart') && (
-                <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-lg backdrop-blur-xl">
-                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                        <div>
-                            <div className="flex items-center gap-2.5">
-                                <h2 className="font-extrabold text-slate-900 text-xl tracking-tight">
-                                    Profil Termal Sterilisasi Retort
-                                </h2>
-                                <span className="bg-blue-100 text-blue-900 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-blue-200">
-                                    Thermal Profile
-                                </span>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1 font-medium">
-                                Kurva pemanasan riil dengan pembagian zona langkah (CUT, Holding Time & F₀, Cooling Time) berbasis waktu proses.
-                            </p>
+            <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-lg backdrop-blur-xl">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                        <div className="flex items-center gap-2.5">
+                            <h2 className="font-extrabold text-slate-900 text-xl tracking-tight">
+                                Profil Termal Sterilisasi Retort
+                            </h2>
+                            <span className="bg-blue-100 text-blue-900 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-blue-200">
+                                Thermal Profile
+                            </span>
                         </div>
-                        <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-black border ${
-                                batch.end_time
-                                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                                    : 'bg-amber-100 text-amber-900 border-amber-300'
-                            }`}
-                        >
-                            <span
-                                className={`h-2.5 w-2.5 rounded-full ${
-                                    batch.end_time ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
-                                }`}
-                            ></span>
-                            {batch.end_time ? 'SELESAI' : 'LIVE MONITOR'}
-                        </span>
+                        <p className="text-xs text-slate-500 mt-1 font-medium">
+                            Kurva pemanasan riil dengan pembagian zona langkah (CUT, Holding Time & F₀, Cooling Time) berbasis waktu proses.
+                        </p>
                     </div>
+                    <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-black border ${
+                            batch.end_time
+                                ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                : 'bg-amber-100 text-amber-900 border-amber-300'
+                        }`}
+                    >
+                        <span
+                            className={`h-2.5 w-2.5 rounded-full ${
+                                batch.end_time ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
+                            }`}
+                        ></span>
+                        {batch.end_time ? 'SELESAI' : 'LIVE MONITOR'}
+                    </span>
+                </div>
 
-                    <RetortThermalChart
-                        data={logs}
-                        targetSv={targetSv}
-                        height={380}
-                        isRunning={Boolean(batch.end_time === null)}
-                    />
-                </section>
-            )}
+                <RetortThermalChart
+                    data={logs}
+                    targetSv={targetSv}
+                    height={380}
+                    isRunning={Boolean(batch.end_time === null)}
+                />
+            </section>
 
             {/* Process Logs (Active Heating) Table */}
             <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-7 shadow-lg backdrop-blur-xl">
