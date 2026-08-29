@@ -24,7 +24,7 @@ export default function Authenticated({
 }: PropsWithChildren<{ header?: ReactNode; user?: unknown }>) {
     const user = usePage().props.auth.user;
     const hasActiveController = Boolean((usePage().props as any).ui?.active_tn_id);
-    const isDashboardPage = route().current('dashboard') || route().current('tn.index');
+    const isDashboardPage = route().current('dashboard') || route().current('tn.index') || route().current('esp.*');
 
     const visibleNavigation = navigation.filter((item) => {
         if (isDashboardPage) {
