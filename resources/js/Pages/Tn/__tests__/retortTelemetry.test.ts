@@ -47,6 +47,29 @@ describe('retort telemetry normalization', () => {
         expect(cooling.phase).toBe('Cooling');
     });
 
+    it('treats MV 100 or active process time/step as running', () => {
+        const mv100Telemetry = buildRetortTelemetry({
+            run_status: true,
+            heating_mv: 1000,
+            pv: 500,
+            sv: 1210,
+            decimal_point: 1,
+        }, true);
+        expect(mv100Telemetry.running).toBe(true);
+        expect(mv100Telemetry.heatingPercent).toBe(100);
+        expect(mv100Telemetry.phase).toBe('Heating');
+
+        const processActiveTelemetry = buildRetortTelemetry({
+            run_status: true,
+            process_time: 120,
+            step_current: 1,
+            pv: 600,
+            sv: 1210,
+            decimal_point: 1,
+        }, true);
+        expect(processActiveTelemetry.running).toBe(true);
+    });
+
     it('reports sensor faults as alarms without inventing physical alarm names', () => {
         const telemetry = buildRetortTelemetry({ pv: 31000, sv: 1210, decimal_point: 1 }, true);
         expect(telemetry.actualTemperature).toBeNull();
