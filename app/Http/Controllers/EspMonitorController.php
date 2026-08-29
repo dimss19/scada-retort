@@ -60,16 +60,26 @@ class EspMonitorController extends Controller
             ->get();
 
         // Default or cached pattern steps for this ESP logger
-        $pattern = Cache::get("esp_pattern_{$selectedCode}", [
-            'time_unit' => 'MM.SS',
-            'pattern_number' => 0,
-            'steps' => [
-                ['step_number' => 0, 'step_name' => 'Step 1', 'target_sv' => 1170, 'duration' => 2, 'end_action' => 'CONT'],
-                ['step_number' => 1, 'step_name' => 'Step 2', 'target_sv' => 1170, 'duration' => 35, 'end_action' => 'CONT'],
-                ['step_number' => 2, 'step_name' => 'Step 2', 'target_sv' => 1250, 'duration' => 3, 'end_action' => 'CONT'],
-                ['step_number' => 3, 'step_name' => 'Step 3', 'target_sv' => 1250, 'duration' => 100, 'end_action' => 'CONT'],
-            ]
-        ]);
+        $cachedPattern = Cache::get("esp_pattern_{$selectedCode}");
+        if ($cachedPattern && isset($cachedPattern['steps'])) {
+            foreach ($cachedPattern['steps'] as &$step) {
+                if (isset($step['target_sv']) && $step['target_sv'] > 300) {
+                    $step['target_sv'] = (float)($step['target_sv'] / 10);
+                }
+            }
+            $pattern = $cachedPattern;
+        } else {
+            $pattern = [
+                'time_unit' => 'MM.SS',
+                'pattern_number' => 0,
+                'steps' => [
+                    ['step_number' => 0, 'step_name' => 'Step 1', 'target_sv' => 117.0, 'duration' => 2, 'end_action' => 'CONT'],
+                    ['step_number' => 1, 'step_name' => 'Step 2', 'target_sv' => 117.0, 'duration' => 35, 'end_action' => 'CONT'],
+                    ['step_number' => 2, 'step_name' => 'Step 2', 'target_sv' => 125.0, 'duration' => 3, 'end_action' => 'CONT'],
+                    ['step_number' => 3, 'step_name' => 'Step 3', 'target_sv' => 125.0, 'duration' => 100, 'end_action' => 'CONT'],
+                ]
+            ];
+        }
 
         return Inertia::render('Esp/Monitor', [
             'device' => $device,

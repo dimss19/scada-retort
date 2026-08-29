@@ -561,9 +561,11 @@ export default function Form({ recipe, users = [], controllers = [] }: { recipe?
                                                             </span>
                                                             <input
                                                                 type="number"
-                                                                value={step.target_sv ?? 0}
-                                                                onChange={e => updateStep(index, 'target_sv', parseInt(e.target.value) || 0)}
+                                                                step="0.1"
+                                                                value={step.target_sv !== undefined && step.target_sv !== null ? (step.target_sv > 300 ? (step.target_sv / 10).toFixed(1) : step.target_sv) : ''}
+                                                                onChange={e => updateStep(index, 'target_sv', e.target.value === '' ? '' : parseFloat(e.target.value))}
                                                                 className="block w-full rounded-xl border-amber-300 bg-amber-50/50 pl-14 pr-7 font-mono font-bold text-slate-900 text-xs py-2 shadow-sm focus:border-amber-500 focus:ring-amber-500 text-right"
+                                                                placeholder="121.0"
                                                             />
                                                             <span className="absolute right-2.5 top-2.5 text-[10px] font-bold text-slate-500">°C</span>
                                                         </div>

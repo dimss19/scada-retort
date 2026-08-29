@@ -27,16 +27,22 @@ interface Props {
 
 export default function EspPatternEditor({ machineCode, initialPattern, isOnline, telemetry }: Props) {
     const [selectedPatternNum, setSelectedPatternNum] = useState<number>(initialPattern?.pattern_number ?? 0);
-    const [steps, setSteps] = useState<EspStep[]>(
-        initialPattern?.steps && initialPattern.steps.length > 0
+    const [steps, setSteps] = useState<EspStep[]>(() => {
+        const rawSteps = initialPattern?.steps && initialPattern.steps.length > 0
             ? initialPattern.steps
             : [
-                  { step_number: 0, step_name: 'Step 1', target_sv: 1170, duration: 2, end_action: 'CONT' },
-                  { step_number: 1, step_name: 'Step 2', target_sv: 1170, duration: 35, end_action: 'CONT' },
-                  { step_number: 2, step_name: 'Step 2', target_sv: 1250, duration: 3, end_action: 'CONT' },
-                  { step_number: 3, step_name: 'Step 3', target_sv: 1250, duration: 100, end_action: 'CONT' },
-              ]
-    );
+                  { step_number: 0, step_name: 'Step 1', target_sv: 117.0, duration: 2, end_action: 'CONT' },
+                  { step_number: 1, step_name: 'Step 2', target_sv: 117.0, duration: 35, end_action: 'CONT' },
+                  { step_number: 2, step_name: 'Step 2', target_sv: 125.0, duration: 3, end_action: 'CONT' },
+                  { step_number: 3, step_name: 'Step 3', target_sv: 125.0, duration: 100, end_action: 'CONT' },
+              ];
+        return rawSteps.map((s, idx) => ({
+            ...s,
+            step_number: idx,
+            target_sv: Number(s.target_sv) > 300 ? Number(s.target_sv) / 10 : Number(s.target_sv),
+            end_action: (s.end_action || 'CONT') as 'CONT' | 'HOLD' | 'STOP',
+        }));
+    });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -58,7 +64,7 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
             {
                 step_number: nextIdx,
                 step_name: `Step ${nextIdx + 1}`,
-                target_sv: lastStep ? lastStep.target_sv : 1210,
+                target_sv: lastStep ? lastStep.target_sv : 121.0,
                 duration: 30,
                 end_action: 'CONT',
             },
@@ -300,15 +306,17 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
                                                     </span>
                                                     <input
                                                         type="number"
-                                                        value={step.target_sv ?? 0}
+                                                        step="0.1"
+                                                        value={step.target_sv ?? ''}
                                                         onChange={(e) =>
                                                             handleUpdateStep(
                                                                 index,
                                                                 'target_sv',
-                                                                parseFloat(e.target.value) || 0
+                                                                e.target.value === '' ? '' : parseFloat(e.target.value)
                                                             )
                                                         }
                                                         className="block w-full rounded-xl border-amber-300 bg-amber-50/50 pl-14 pr-7 font-mono font-bold text-slate-900 text-xs py-2 shadow-sm focus:border-amber-500 focus:ring-amber-500 text-right"
+                                                        placeholder="121.0"
                                                     />
                                                     <span className="absolute right-2.5 top-2.5 text-[10px] font-bold text-slate-500">
                                                         °C
