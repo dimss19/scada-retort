@@ -130,4 +130,52 @@ class TnMonitorController extends Controller
         $history->delete();
         return back()->with('success', 'Process history deleted.');
     }
+
+    public function ingestReading(TnController $tn, Request $request)
+    {
+        $validated = $request->validate([
+            'pv' => 'required|numeric',
+            'decimal_point' => 'nullable|integer',
+            'sv' => 'nullable|numeric',
+            'heating_mv' => 'nullable|numeric',
+            'cooling_mv' => 'nullable|numeric',
+            'run_status' => 'nullable|string',
+            'auto_manual' => 'nullable|string',
+            'pattern_current' => 'nullable|integer',
+            'step_current' => 'nullable|integer',
+            'process_time' => 'nullable|integer',
+            'rest_time' => 'nullable|integer',
+            'raw_registers' => 'nullable|array',
+        ]);
+
+        $reading = TnReading::create([
+            'tn_controller_id' => $tn->id,
+            'pv' => $validated['pv'],
+            'decimal_point' => $validated['decimal_point'] ?? 0,
+            'sv' => $validated['sv'] ?? 0,
+            'heating_mv' => $validated['heating_mv'] ?? 0,
+            'cooling_mv' => $validated['cooling_mv'] ?? 0,
+            'run_status' => $validated['run_status'] ?? 'STOP',
+            'auto_manual' => $validated['auto_manual'] ?? 'AUTO',
+            'alarm1_status' => false,
+            'alarm2_status' => false,
+            'alarm3_status' => false,
+            'alarm4_status' => false,
+            'pattern_current' => $validated['pattern_current'] ?? 0,
+            'step_current' => $validated['step_current'] ?? 0,
+            'process_time' => $validated['process_time'] ?? 0,
+            'rest_time' => $validated['rest_time'] ?? 0,
+            'raw_registers' => $validated['raw_registers'] ?? [],
+        ]);
+
+        $tn->update([
+            'is_online' => true,
+            'last_seen_at' => now(),
+            'last_error' => null,
+            'current_pv' => $validated['pv'],
+            'current_sv' => $validated['sv'] ?? $tn->current_sv,
+        ]);
+
+        return response()->json(['success' => true, 'reading_id' => $reading->id]);
+    }
 }

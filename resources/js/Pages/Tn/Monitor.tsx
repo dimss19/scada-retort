@@ -140,6 +140,38 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             });
         });
 
+        const handleWebSerialEvent = (e: any) => {
+            if (!isMounted || !e.detail) return;
+            const decoded = e.detail;
+            const formattedReading = {
+                id: Date.now(),
+                tn_controller_id: controller.id,
+                pv: decoded.pv,
+                decimal_point: decoded.decimal_point,
+                sv: decoded.sv,
+                heating_mv: decoded.heating_mv,
+                cooling_mv: decoded.cooling_mv,
+                status_flag: decoded.status_flag,
+                alarm_status: decoded.alarm_status,
+                event_status: decoded.event_status,
+                ct1_current: decoded.ct1_current,
+                ct2_current: decoded.ct2_current,
+                pattern_current: decoded.pattern_current,
+                step_current: decoded.step_current,
+                process_time: decoded.process_time,
+                rest_time: decoded.rest_time,
+                run_status: decoded.run_status,
+                auto_manual: decoded.auto_manual,
+                created_at: decoded.timestamp,
+                timestamp: decoded.timestamp,
+            };
+            applyReading(formattedReading, true);
+        };
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener('tn-webserial-reading', handleWebSerialEvent);
+        }
+
         const refreshIntervalId = window.setInterval(() => loadReadings(), pollIntervalMs);
         const staleIntervalId = window.setInterval(() => {
             if (!isMounted) return;
@@ -152,6 +184,9 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             window.clearInterval(refreshIntervalId);
             window.clearInterval(staleIntervalId);
             channel?.stopListening('.tn.data');
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('tn-webserial-reading', handleWebSerialEvent);
+            }
         };
     }, [controller.id, controller.polling_interval, initialReading]);
 

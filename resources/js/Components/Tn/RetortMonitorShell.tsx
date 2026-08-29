@@ -58,6 +58,7 @@ export default function RetortMonitorShell(props: Props) {
                         currentPort={controller.serial_port}
                         isOnline={isOnline}
                         lastError={controller.last_error}
+                        slaveId={controller.slave_id ?? 1}
                     />
                     <Link href={route('dashboard')} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
                         ← Dashboard
