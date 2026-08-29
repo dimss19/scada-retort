@@ -70,7 +70,9 @@ static void mqttHandlePattern(const char* json) {
     } else {
       snprintf(gPatternSteps[count].name, sizeof(gPatternSteps[count].name), "Step %u", (unsigned)(count + 1));
     }
-    gPatternSteps[count].targetSv = s["target_sv"] | 121.0f;
+    float sv = s["target_sv"] | 121.0f;
+    if (sv > 300.0f) sv = sv / 10.0f;
+    gPatternSteps[count].targetSv = sv;
     gPatternSteps[count].duration = s["duration"] | 60;
 
     const char* endAct = s["end_action"] | "CONT";
