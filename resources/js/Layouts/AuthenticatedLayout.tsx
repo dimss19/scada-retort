@@ -20,8 +20,9 @@ const navigation: NavItem[] = [
 
 export default function Authenticated({
     header,
+    navContent,
     children,
-}: PropsWithChildren<{ header?: ReactNode; user?: unknown }>) {
+}: PropsWithChildren<{ header?: ReactNode; navContent?: ReactNode; user?: unknown }>) {
     const user = usePage().props.auth.user;
     const hasActiveController = Boolean((usePage().props as any).ui?.active_tn_id);
     const isDashboardPage = route().current('dashboard') || route().current('tn.index') || route().current('esp.*');
@@ -65,22 +66,26 @@ export default function Authenticated({
                     </Link>
 
                     <nav className="ml-6 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:ml-10">
-                        {visibleNavigation.map((item) => {
-                            const active = (route().current(item.activePattern) ?? false) && !(item.excludePattern && route().current(item.excludePattern));
-                            return (
-                                <Link
-                                    key={item.label}
-                                    href={route(item.routeName)}
-                                    className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
-                                        active
-                                            ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
-                                            : 'text-slate-200 hover:bg-blue-900/50 hover:text-white'
-                                    }`}
-                                >
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
+                        {navContent ? (
+                            navContent
+                        ) : (
+                            visibleNavigation.map((item) => {
+                                const active = (route().current(item.activePattern) ?? false) && !(item.excludePattern && route().current(item.excludePattern));
+                                return (
+                                    <Link
+                                        key={item.label}
+                                        href={route(item.routeName)}
+                                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
+                                            active
+                                                ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
+                                                : 'text-slate-200 hover:bg-blue-900/50 hover:text-white'
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </Link>
+                                );
+                            })
+                        )}
                     </nav>
 
                     <div className="ml-3 flex shrink-0 items-center gap-3 border-l border-blue-800/60 pl-4">

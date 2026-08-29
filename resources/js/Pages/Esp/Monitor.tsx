@@ -276,6 +276,33 @@ export default function EspMonitor({
 
     return (
         <AuthenticatedLayout
+            navContent={
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('monitor')}
+                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
+                            activeTab === 'monitor'
+                                ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
+                                : 'text-slate-200 hover:bg-blue-900/50 hover:text-white'
+                        }`}
+                    >
+                        Monitoring Dashboard
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('history')}
+                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 flex items-center gap-2 ${
+                            activeTab === 'history'
+                                ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
+                                : 'text-slate-200 hover:bg-blue-900/50 hover:text-white'
+                        }`}
+                    >
+                        <Clock size={16} />
+                        <span>Riwayat Proses & History</span>
+                    </button>
+                </div>
+            }
             header={
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between max-w-7xl mx-auto py-1">
                     <div>
@@ -316,32 +343,6 @@ export default function EspMonitor({
 
             <div className="py-8">
                 <div className="mx-auto max-w-[1600px] space-y-6 px-4 sm:px-6 lg:px-8">
-                    {/* Navigation Tabs */}
-                    <div className="flex items-center gap-3 border-b border-slate-200/80 pb-3">
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('monitor')}
-                            className={`rounded-xl px-5 py-2.5 text-xs font-black transition-all shadow-sm ${
-                                activeTab === 'monitor'
-                                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-md border-none'
-                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:text-blue-800'
-                            }`}
-                        >
-                            Monitoring Dashboard
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('history')}
-                            className={`rounded-xl px-5 py-2.5 text-xs font-black transition-all shadow-sm flex items-center gap-2 ${
-                                activeTab === 'history'
-                                    ? 'bg-blue-900 text-white shadow-md border-none'
-                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:text-blue-800'
-                            }`}
-                        >
-                            <Clock size={14} />
-                            <span>Riwayat Proses & History</span>
-                        </button>
-                    </div>
 
                     {/* Watchdog Alert Banner */}
                     {wdtAlert && (
