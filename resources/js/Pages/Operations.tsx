@@ -15,6 +15,13 @@ import {
     CheckCircle,
     AlertTriangle,
     XCircle,
+    Download,
+    Eye,
+    Trash2,
+    MoreVertical,
+    Clock,
+    FileText,
+    CheckCircle2,
 } from 'lucide-react';
 import React from 'react';
 
@@ -256,76 +263,138 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                 </div>
             </Panel>
 
-            <Panel title="Process Batches (Heating Logs)">
-                <div className="overflow-x-auto min-h-[280px]">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-[#0f172a] text-white">
-                            <tr>
-                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider rounded-tl-2xl">Mesin / Controller</th>
-                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider">Waktu Mulai</th>
-                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider">Waktu Selesai</th>
-                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider">Durasi</th>
-                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider">Data Points</th>
-                                <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider text-right rounded-tr-2xl">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white">
-                            {filteredHistories.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="px-4 py-12 text-center text-xs font-bold text-slate-400">
-                                        Tidak ada riwayat proses yang cocok dengan filter.
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredHistories.map((h: any) => {
-                                    const start = new Date(h.start_time);
-                                    const end = new Date(h.end_time);
-                                    const durationMins = ((end.getTime() - start.getTime()) / 60000).toFixed(1);
+            {/* Batch Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredHistories.length === 0 ? (
+                    <div className="col-span-full py-16 text-center text-slate-400 font-bold bg-white/95 rounded-3xl border border-slate-200 shadow-sm">
+                        <Clock className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                        Tidak ada riwayat proses yang cocok dengan filter.
+                    </div>
+                ) : (
+                    filteredHistories.map((h: any) => {
+                        const startTime = new Date(h.start_time);
+                        const endTime = h.end_time ? new Date(h.end_time) : null;
+                        const durationMinutes = endTime
+                            ? Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+                            : null;
+                        const logCount = h.log_data?.length || 0;
+                        const logs = h.log_data || [];
+                        const maxPv = logs.length > 0 ? Math.max(...logs.map((l: any) => Number(l.pv ?? 0))) : 0;
+                        const machineName = h.controller?.machine?.machine_name || h.controller?.model_type || `Controller #${h.tn_controller_id}`;
 
-                                    return (
-                                        <tr
-                                            key={h.id}
-                                            className="hover:bg-blue-50/50 transition-colors cursor-pointer"
-                                            onClick={() => setSelectedBatch(h)}
-                                        >
-                                            <td className="px-4 py-4 font-extrabold text-slate-900">
-                                                {h.controller?.machine?.machine_name || h.controller?.model_type || `Controller #${h.tn_controller_id}`}
-                                            </td>
-                                            <td className="px-4 py-4 text-xs font-semibold text-slate-600">{start.toLocaleString()}</td>
-                                            <td className="px-4 py-4 text-xs font-semibold text-slate-600">{end.toLocaleString()}</td>
-                                            <td className="px-4 py-4 font-mono font-bold text-slate-800 text-xs">{durationMins} min</td>
-                                            <td className="px-4 py-4">
-                                                <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-mono font-black text-xs inline-flex items-center gap-1">
-                                                    {h.log_data?.length || 0} baris
+                        return (
+                            <div key={h.id} className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-mono text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-lg">
+                                                Batch #{h.id}
+                                            </span>
+                                            {h.end_time ? (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                                    <CheckCircle2 size={12} /> Selesai
                                                 </span>
-                                            </td>
-                                            <td className="px-4 py-4 text-right relative">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === h.id ? null : h.id); }}
-                                                    className="text-slate-500 hover:text-slate-900 px-3 py-1.5 rounded-xl hover:bg-slate-100 font-bold transition-colors"
-                                                >
-                                                    &#8942;
-                                                </button>
-                                                {activeMenu === h.id && (
-                                                    <div className="absolute right-0 mt-2 w-48 rounded-2xl shadow-xl bg-white border border-slate-200 z-50 text-left overflow-hidden">
-                                                        <div className="p-1.5 space-y-0.5">
-                                                            <button onClick={(e) => { e.stopPropagation(); handleDownload(h, 'csv'); }} className="block w-full px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl text-left transition-colors">Download CSV</button>
-                                                            <button onClick={(e) => { e.stopPropagation(); handleDownload(h, 'excel'); }} className="block w-full px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl text-left transition-colors">Download Excel</button>
-                                                            <button onClick={(e) => { e.stopPropagation(); handleDownload(h, 'pdf'); }} className="block w-full px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl text-left transition-colors">Download PDF</button>
-                                                            <hr className="my-1 border-slate-100" />
-                                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="block w-full px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-xl text-left transition-colors">Hapus</button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </Panel>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md animate-pulse">
+                                                    Proses Berjalan
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Action Dropdown */}
+                                        <div className="relative">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === h.id ? null : h.id); }}
+                                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                                            >
+                                                <MoreVertical size={16} />
+                                            </button>
+                                            {activeMenu === h.id && (
+                                                <div className="absolute right-0 mt-1 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-slate-200 z-50 animate-in fade-in">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setSelectedBatch(h); setActiveMenu(null); }}
+                                                        className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left"
+                                                    >
+                                                        <Eye size={14} className="text-blue-600" /> Lihat Detail Log
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { handleDownload(h, 'csv'); setActiveMenu(null); }}
+                                                        className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left"
+                                                    >
+                                                        <Download size={14} className="text-emerald-600" /> Export CSV
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { handleDownload(h, 'pdf'); setActiveMenu(null); }}
+                                                        className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left"
+                                                    >
+                                                        <FileText size={14} className="text-amber-600" /> Cetak PDF
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { handleDelete(h.id); setActiveMenu(null); }}
+                                                        className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors text-left border-t border-slate-100 mt-1"
+                                                    >
+                                                        <Trash2 size={14} /> Hapus Log
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 text-xs">
+                                        <div className="flex items-center justify-between text-slate-600 font-semibold">
+                                            <span>Mesin / Controller:</span>
+                                            <span className="font-bold text-slate-900">{machineName}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-slate-600 font-semibold">
+                                            <span>Waktu Mulai:</span>
+                                            <span className="font-mono text-slate-900 font-bold">{startTime.toLocaleString('id-ID')}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-slate-600 font-semibold">
+                                            <span>Waktu Selesai:</span>
+                                            <span className="font-mono text-slate-900 font-bold">{endTime ? endTime.toLocaleString('id-ID') : 'Sedang Berjalan'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-slate-600 font-semibold">
+                                            <span>Durasi:</span>
+                                            <span className="font-mono text-blue-700 font-bold">{durationMinutes !== null ? `${durationMinutes} Menit` : '--'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-slate-600 font-semibold">
+                                            <span>Suhu Puncak (Max PV):</span>
+                                            <span className="font-mono text-rose-600 font-bold">{maxPv > 0 ? `${maxPv.toFixed(1)} °C` : '--'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-slate-600 font-semibold">
+                                            <span>Data Points:</span>
+                                            <span className="font-mono text-slate-700 font-bold">{logCount} points</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedBatch(h)}
+                                        className="flex-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black py-2.5 px-3 transition-colors text-center"
+                                    >
+                                        Lihat Detail
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDownload(h, 'csv')}
+                                        className="rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 p-2.5 transition-colors"
+                                        title="Export CSV"
+                                    >
+                                        <Download size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
 
             {/* Modal Detail Popup via createPortal */}
             {selectedBatch && typeof document !== 'undefined' && createPortal(
