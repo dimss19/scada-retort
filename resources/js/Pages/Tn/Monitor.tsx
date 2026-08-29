@@ -3,6 +3,7 @@ import { router } from '@inertiajs/react';
 import { PageProps, ScadaCanvas as ScadaCanvasType, ScadaMapping } from '@/types';
 import { TnController } from '@/types/tn';
 import RetortMonitorShell from '@/Components/Tn/RetortMonitorShell';
+import { webSerialDriver } from '@/Services/WebSerialModbus';
 import {
     buildRetortEvents,
     buildRetortTelemetry,
@@ -89,6 +90,8 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         };
 
         const loadReadings = async (replaceLatest = false) => {
+            if (webSerialDriver.isConnected()) return;
+
             try {
                 const response = await fetch(route('tn.readings', controller.id), {
                     headers: { Accept: 'application/json' },
@@ -96,7 +99,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
-                if (!isMounted || !Array.isArray(data)) return;
+                if (!isMounted || !Array.isArray(data) || webSerialDriver.isConnected()) return;
 
                 setHistory(data);
                 const latest = data[data.length - 1];
@@ -110,7 +113,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                     setReading(latest);
                 }
             } catch {
-                if (isMounted) setIsLiveOnline(false);
+                if (isMounted && !webSerialDriver.isConnected()) setIsLiveOnline(false);
             }
         };
 
@@ -119,6 +122,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         const echo = (window as any).Echo;
         const channel = echo?.channel(`tn.${controller.id}`);
         channel?.listen('.tn.data', (event: any) => {
+            if (webSerialDriver.isConnected()) return;
             applyReading({
                 pv: event.pv,
                 sv: event.sv,
@@ -165,6 +169,8 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 created_at: decoded.timestamp,
                 timestamp: decoded.timestamp,
             };
+            setIsLiveOnline(true);
+            lastSeenAtRef.current = Date.now();
             applyReading(formattedReading, true);
         };
 
@@ -172,9 +178,18 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             window.addEventListener('tn-webserial-reading', handleWebSerialEvent);
         }
 
-        const refreshIntervalId = window.setInterval(() => loadReadings(), pollIntervalMs);
+        const refreshIntervalId = window.setInterval(() => {
+            if (!webSerialDriver.isConnected()) {
+                loadReadings();
+            }
+        }, pollIntervalMs);
+
         const staleIntervalId = window.setInterval(() => {
             if (!isMounted) return;
+            if (webSerialDriver.isConnected()) {
+                setIsLiveOnline(true);
+                return;
+            }
             const lastSeenAt = lastSeenAtRef.current;
             setIsLiveOnline(lastSeenAt !== false && Date.now() - lastSeenAt <= staleAfterMs);
         }, 1000);

@@ -172,6 +172,7 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
             setLocalOnline(true);
             showStatus('success', `Berhasil terhubung ke USB RS485 (${serialBaud} bps, StopBits: ${serialStopBits}, Parity: ${serialParity})!`);
 
+            let lastIngestTime = 0;
             webSerialDriver.onReading = (decoded) => {
                 setLastWebSerialTime(new Date().toLocaleTimeString());
                 setLocalOnline(true);
@@ -183,15 +184,19 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
                     window.dispatchEvent(new CustomEvent('tn-webserial-reading', { detail: decoded }));
                 }
 
-                // Ingest to backend periodically
-                fetch(route('tn.ingest-reading', controllerId), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content || '',
-                    },
-                    body: JSON.stringify(decoded),
-                }).catch(() => {});
+                // Ingest to backend periodically (throttled to every 3 seconds)
+                const now = Date.now();
+                if (now - lastIngestTime > 3000) {
+                    lastIngestTime = now;
+                    fetch(`/tn/${controllerId}/ingest-reading`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content || '',
+                        },
+                        body: JSON.stringify(decoded),
+                    }).catch(() => {});
+                }
             };
 
             webSerialDriver.onError = (err) => {
