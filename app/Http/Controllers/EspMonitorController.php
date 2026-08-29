@@ -53,6 +53,11 @@ class EspMonitorController extends Controller
         $history = Cache::get("esp_telemetry_history_{$selectedCode}", []);
         $systemEvent = Cache::get("esp_latest_system_event_{$selectedCode}");
 
+        $processHistories = \App\Models\TnProcessHistory::with('controller.machine')
+            ->latest('start_time')
+            ->take(30)
+            ->get();
+
         return Inertia::render('Esp/Monitor', [
             'device' => $device,
             'devices' => $devices,
@@ -60,6 +65,7 @@ class EspMonitorController extends Controller
             'history' => $history,
             'isOnline' => (bool)$isOnline,
             'systemEvent' => $systemEvent,
+            'histories' => $processHistories,
         ]);
     }
 
