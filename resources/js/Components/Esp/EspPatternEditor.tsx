@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
-import { Plus, Trash2, Send, CheckCircle2, AlertTriangle, Layers, Play, Square, Clock, Activity } from 'lucide-react';
+import { Plus, Trash2, Send, CheckCircle2, AlertTriangle, Layers } from 'lucide-react';
 import { EspTelemetryData } from './EspMonitoringPanel';
 
 export interface EspStep {
@@ -134,49 +134,6 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
 
     return (
         <div className="space-y-6">
-            {/* Live Active Pattern & Step Status Card */}
-            <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-xl backdrop-blur-xl">
-                <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-10">
-                    <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-blue-700">
-                                <Activity size={13} className="text-blue-600" />
-                                STATUS OPERASI ESP32
-                            </span>
-                            <span
-                                className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-black border ${
-                                    isRunning
-                                        ? 'bg-amber-100 text-amber-950 border-amber-300'
-                                        : 'bg-slate-100 text-slate-700 border-slate-300'
-                                }`}
-                            >
-                                {isRunning ? (
-                                    <>
-                                        <Play size={12} className="text-amber-600 fill-amber-500 animate-pulse" />
-                                        <span>PROSES RUNNING ({telemetry?.phase || 'HEATING'})</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Square size={12} className="text-slate-500" />
-                                        <span>PROSES STOP / IDLE</span>
-                                    </>
-                                )}
-                            </span>
-                        </div>
-
-                        <div className="flex flex-wrap items-baseline gap-3 pt-1">
-                            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                                Pattern Aktif (Terbaca): <span className="text-blue-700">Pattern #{activeEspPattern}</span>
-                            </h2>
-                            <span className="text-sm font-bold text-slate-500">
-                                (Step Berjalan: <strong className="text-amber-700 font-mono">Step #{activeEspStep}</strong>)
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Pattern Configuration Form */}
             <form onSubmit={handleSavePattern} className="space-y-6">
                 <div className="rounded-3xl border-2 border-amber-300 bg-white p-6 sm:p-8 shadow-xl ring-4 ring-amber-400/10 backdrop-blur-xl">
