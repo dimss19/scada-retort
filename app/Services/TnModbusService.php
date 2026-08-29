@@ -14,7 +14,7 @@ class TnModbusService
     public function __construct()
     {
         $this->scriptPath = base_path('scripts/modbus_bridge.py');
-        $this->pythonPath = 'python';
+        $this->pythonPath = PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3';
     }
 
     protected function buildEnv(): array

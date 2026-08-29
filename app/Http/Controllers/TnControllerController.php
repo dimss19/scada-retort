@@ -65,7 +65,8 @@ class TnControllerController extends Controller
         if (!isset($env['SystemRoot'])) $env['SystemRoot'] = getenv('SystemRoot') ?: 'C:\\Windows';
 
         try {
-            $process = new Process(['python', $scriptPath, 'list_ports'], null, $env);
+            $python = PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3';
+            $process = new Process([$python, $scriptPath, 'list_ports'], null, $env);
             $process->setTimeout(10);
             $process->run();
 

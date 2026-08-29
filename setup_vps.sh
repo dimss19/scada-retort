@@ -70,8 +70,12 @@ EOF
     echo -e "${GREEN}✓ Mosquitto MQTT broker aktif di port 1883.${NC}"
 fi
 
-# Install Python modbus dependencies if available
+# Install Python modbus dependencies & set serial port permissions
 pip3 install pymodbus pyserial 2>/dev/null || pip install pymodbus pyserial 2>/dev/null || true
+sudo usermod -a -G dialout www-data 2>/dev/null || true
+sudo usermod -a -G dialout ${CURRENT_USER} 2>/dev/null || true
+sudo chmod 666 /dev/ttyUSB* 2>/dev/null || true
+sudo chmod 666 /dev/ttyACM* 2>/dev/null || true
 
 # 4. Git Branch Checkout & Pull
 echo -e "${YELLOW}[4/8] Sinkronisasi Git Repository (Branch: ${TARGET_BRANCH})...${NC}"

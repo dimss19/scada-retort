@@ -173,19 +173,37 @@ def toggle_pin(client, args):
     except Exception as e:
         return {"success": False, "error": f"Gagal trigger {args.channel}: {str(e)}"}
 
-def list_ports(args):
+def list_ports(args=None):
     import serial.tools.list_ports
-    ports = serial.tools.list_ports.comports()
+    import glob
+    ports = list(serial.tools.list_ports.comports())
+    existing_devs = {p.device for p in ports}
+
+    if os.name != 'nt':
+        for pattern in ['/dev/ttyUSB*', '/dev/ttyACM*', '/dev/ttyAMA*', '/dev/ttyS*']:
+            for dev in glob.glob(pattern):
+                if dev not in existing_devs:
+                    class _P:
+                        def __init__(self, d):
+                            self.device = d
+                            self.description = 'Serial Device (' + d + ')'
+                            self.hwid = d
+                            self.manufacturer = 'Generic'
+                            self.serial_number = None
+                            self.location = d
+                    ports.append(_P(dev))
+                    existing_devs.add(dev)
+
     return {
         "success": True,
         "ports": [
             {
                 "device": p.device,
                 "description": p.description,
-                "hwid": p.hwid,
-                "manufacturer": p.manufacturer,
-                "serial_number": p.serial_number,
-                "location": p.location,
+                "hwid": getattr(p, 'hwid', p.device),
+                "manufacturer": getattr(p, 'manufacturer', 'Generic'),
+                "serial_number": getattr(p, 'serial_number', None),
+                "location": getattr(p, 'location', p.device),
             }
             for p in ports
         ]
