@@ -287,19 +287,18 @@ export default function EspMonitor({
                                 : 'text-slate-200 hover:bg-blue-900/50 hover:text-white'
                         }`}
                     >
-                        Monitoring Dashboard
+                        Monitoring
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('history')}
-                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 flex items-center gap-2 ${
+                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
                             activeTab === 'history'
                                 ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
                                 : 'text-slate-200 hover:bg-blue-900/50 hover:text-white'
                         }`}
                     >
-                        <Clock size={16} />
-                        <span>Riwayat Proses & History</span>
+                        History
                     </button>
                 </div>
             }
