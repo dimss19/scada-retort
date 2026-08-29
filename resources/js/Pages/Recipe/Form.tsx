@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
+import { durationToMmSs, mmSsToDuration } from '@/Components/Esp/EspPatternEditor';
 
 export default function Form({ recipe, users = [], controllers = [] }: { recipe?: any; users?: any[]; controllers?: any[] }) {
     const isEditing = !!recipe;
@@ -561,28 +562,63 @@ export default function Form({ recipe, users = [], controllers = [] }: { recipe?
                                                             </span>
                                                             <input
                                                                 type="number"
-                                                                value={step.target_sv ?? 0}
-                                                                onChange={e => updateStep(index, 'target_sv', parseInt(e.target.value) || 0)}
+                                                                step="0.1"
+                                                                value={step.target_sv !== undefined && step.target_sv !== null ? (step.target_sv > 300 ? (step.target_sv / 10).toFixed(1) : step.target_sv) : ''}
+                                                                onChange={e => updateStep(index, 'target_sv', e.target.value === '' ? '' : parseFloat(e.target.value))}
                                                                 className="block w-full rounded-xl border-amber-300 bg-amber-50/50 pl-14 pr-7 font-mono font-bold text-slate-900 text-xs py-2 shadow-sm focus:border-amber-500 focus:ring-amber-500 text-right"
+                                                                placeholder="121.0"
                                                             />
                                                             <span className="absolute right-2.5 top-2.5 text-[10px] font-bold text-slate-500">°C</span>
                                                         </div>
                                                     </td>
 
-                                                    {/* Tm□ Input (Duration) */}
+                                                    {/* Tm□ Input (Stopwatch MM:SS) */}
                                                     <td className="whitespace-nowrap py-3 px-3">
-                                                        <div className="relative">
-                                                            <span className="absolute left-2.5 top-2 text-[10px] font-mono font-bold text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded">
+                                                        <div className="flex items-center gap-1 rounded-xl border border-blue-300 bg-blue-50/50 p-1 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-400/20">
+                                                            <span className="shrink-0 text-[10px] font-mono font-bold text-blue-800 bg-blue-100 px-1.5 py-1 rounded">
                                                                 Tm{index}
                                                             </span>
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                value={step.duration ?? 0}
-                                                                onChange={e => updateStep(index, 'duration', parseInt(e.target.value) || 0)}
-                                                                className="block w-full rounded-xl border-blue-300 bg-blue-50/40 pl-14 pr-3 font-mono font-bold text-slate-900 text-xs py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-right"
-                                                                title={`Durasi format ${data.time_unit} (Contoh: 1530 = 15:30)`}
-                                                            />
+                                                            <div className="flex items-center flex-1 justify-center gap-1 font-mono">
+                                                                {/* Minutes (MM) */}
+                                                                <div className="relative flex items-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        max="999"
+                                                                        value={durationToMmSs(step.duration).mm}
+                                                                        onChange={e => {
+                                                                            const newMm = Math.max(0, parseInt(e.target.value) || 0);
+                                                                            const currSs = durationToMmSs(step.duration).ss;
+                                                                            updateStep(index, 'duration', mmSsToDuration(newMm, currSs));
+                                                                        }}
+                                                                        className="w-12 text-center py-1 px-0.5 rounded-lg bg-white border border-blue-200 font-mono font-black text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-inner"
+                                                                        placeholder="00"
+                                                                    />
+                                                                    <span className="text-[9px] font-bold text-slate-400 ml-0.5">m</span>
+                                                                </div>
+
+                                                                <span className="font-mono font-black text-blue-600 text-xs">:</span>
+
+                                                                {/* Seconds (SS, max 59) */}
+                                                                <div className="relative flex items-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        max="59"
+                                                                        value={durationToMmSs(step.duration).ss.toString().padStart(2, '0')}
+                                                                        onChange={e => {
+                                                                            let newSs = parseInt(e.target.value) || 0;
+                                                                            if (newSs > 59) newSs = 59;
+                                                                            if (newSs < 0) newSs = 0;
+                                                                            const currMm = durationToMmSs(step.duration).mm;
+                                                                            updateStep(index, 'duration', mmSsToDuration(currMm, newSs));
+                                                                        }}
+                                                                        className="w-12 text-center py-1 px-0.5 rounded-lg bg-white border border-blue-200 font-mono font-black text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-inner"
+                                                                        placeholder="00"
+                                                                    />
+                                                                    <span className="text-[9px] font-bold text-slate-400 ml-0.5">s</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </td>
 

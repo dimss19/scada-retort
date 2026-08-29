@@ -144,6 +144,42 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [] }:
                         );
                     })}
                 </div>
+
+                {/* ESP32 Monitoring Logger Section (Below 3 Columns) */}
+                <div className="group relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-7 sm:p-8 text-left shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-amber-400 hover:shadow-2xl">
+                    <div className="absolute -right-14 -top-14 h-48 w-48 rounded-full bg-blue-100/60 transition-transform duration-500 group-hover:scale-150 pointer-events-none" />
+
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2.5">
+                                <span className="inline-block rounded-xl bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.2em] text-blue-700">
+                                    IOT GATEWAY LOGGER (ESP32)
+                                </span>
+                                <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> MQTT Telemetry
+                                </span>
+                            </div>
+
+                            <h3 className="text-3xl font-black tracking-tight text-slate-900 group-hover:text-blue-700 transition-colors">
+                                ESP Monitoring Logger
+                            </h3>
+
+                            <p className="text-sm leading-relaxed text-slate-600 max-w-3xl">
+                                Sistem pemantauan mandiri retort berbasis IoT ESP32 dengan integrasi telemetry MQTT, pembacaan suhu sterilisasi (PV/SV), serta pencatatan log proses otomatis.
+                            </p>
+                        </div>
+
+                        <div className="shrink-0">
+                            <Link
+                                href={route('esp.monitor')}
+                                className="flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 px-6 py-3.5 text-sm font-extrabold text-slate-950 shadow-md hover:from-yellow-300 hover:to-amber-400 transition-all cursor-pointer whitespace-nowrap"
+                            >
+                                <span>Buka Monitoring ESP</span>
+                                <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Modal Pin Test Interaktif */}

@@ -87,9 +87,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/{tn}/port/toggle-pin', [\App\Http\Controllers\TnPortController::class, 'togglePin'])->name('tn.port.toggle-pin');
         Route::post('/{tn}/port/select', [\App\Http\Controllers\TnPortController::class, 'select'])->name('tn.port.select');
         Route::get('/{tn}/port/status', [\App\Http\Controllers\TnPortController::class, 'status'])->name('tn.port.status');
+    });
 
+    // === ESP32 Monitoring Logger ===
+    Route::prefix('esp')->group(function () {
+        Route::get('/monitor', [\App\Http\Controllers\EspMonitorController::class, 'index'])->name('esp.monitor');
+        Route::post('/pattern', [\App\Http\Controllers\EspMonitorController::class, 'savePattern'])->name('esp.pattern.save');
+        Route::get('/live', [\App\Http\Controllers\EspMonitorController::class, 'liveData'])->name('esp.live');
+    });
 
-        // SCADA POV
+    // SCADA POV
+    Route::prefix('tn')->group(function () {
         Route::get('/{tn}/scada/edit', [\App\Http\Controllers\ScadaController::class, 'edit'])->name('tn.scada.edit');
         Route::post('/{tn}/scada/save', [\App\Http\Controllers\ScadaController::class, 'save'])->name('tn.scada.save');
         Route::post('/{tn}/scada/canvas', [\App\Http\Controllers\ScadaController::class, 'updateCanvas'])->name('tn.scada.canvas');
