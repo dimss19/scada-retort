@@ -139,16 +139,11 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
                 <div className="rounded-3xl border-2 border-amber-300 bg-white p-6 sm:p-8 shadow-xl ring-4 ring-amber-400/10 backdrop-blur-xl">
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-amber-200/80 pb-5 mb-6">
-                        <div>
-                            <div className="flex items-center gap-2.5">
-                                <span className="flex h-3 w-3 rounded-full bg-amber-500 animate-pulse"></span>
-                                <h3 className="text-xl font-black tracking-tight text-slate-900">
-                                    Langkah Operasi Sterilisasi (Pattern ESP32)
-                                </h3>
-                            </div>
-                            <p className="text-xs font-bold text-amber-900 mt-1">
-                                Menulis parameter step pada <strong className="font-mono bg-amber-100 px-1.5 py-0.5 rounded text-slate-900">Pattern #{activeEspPattern}</strong>: Target Suhu ( <code className="font-mono bg-amber-100 px-1.5 py-0.5 rounded text-slate-900">Ts0 .. Ts19</code> ), Durasi Waktu ( <code className="font-mono bg-amber-100 px-1.5 py-0.5 rounded text-slate-900">Tm0 .. Tm19</code> ), dan Aksi Akhir Tiap Langkah.
-                            </p>
+                        <div className="flex items-center gap-2.5">
+                            <span className="flex h-3 w-3 rounded-full bg-amber-500 animate-pulse"></span>
+                            <h3 className="text-xl font-black tracking-tight text-slate-900">
+                                Langkah Operasi Sterilisasi (Pattern ESP32)
+                            </h3>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3">
