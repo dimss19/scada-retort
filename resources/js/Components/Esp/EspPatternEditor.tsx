@@ -117,7 +117,7 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
                     setIsSubmitting(false);
                     setStatusMsg({
                         type: 'success',
-                        text: `Step Pattern #${activeEspPattern} berhasil disinkronkan ke ESP32 via MQTT!`,
+                        text: 'Step berhasil disinkronkan ke ESP32 via MQTT!',
                     });
                     setTimeout(() => setStatusMsg(null), 5000);
                 },
@@ -352,7 +352,7 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
                     <div className="mt-7 pt-5 border-t border-amber-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
                             <Layers size={16} className="text-amber-500" />
-                            <span>Total Step Aktif: <strong>{steps.length}</strong> langkah pada <strong>Pattern #{activeEspPattern}</strong>.</span>
+                            <span>Total Step Aktif: <strong>{steps.length}</strong> langkah.</span>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -379,7 +379,7 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
                                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black px-6 py-3 text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50 cursor-pointer"
                             >
                                 <Send size={16} className={isSubmitting ? 'animate-bounce' : ''} />
-                                <span>{isSubmitting ? 'Mengirim ke ESP via MQTT...' : `Kirim Step Pattern #${activeEspPattern} ke ESP`}</span>
+                                <span>{isSubmitting ? 'Mengirim Step ke ESP...' : 'Kirim Step ke ESP'}</span>
                             </button>
                         </div>
                     </div>
