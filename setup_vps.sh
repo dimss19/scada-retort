@@ -50,22 +50,65 @@ if ! command -v npm &> /dev/null; then
 fi
 echo -e "${GREEN}✓ Composer & NPM tersedia.${NC}"
 
-# 3. Git Branch Checkout & Pull
-echo -e "${YELLOW}[3/7] Sinkronisasi Git Repository (Branch: ${TARGET_BRANCH})...${NC}"
+# 3. Check / Install Mosquitto Broker & Python requirements
+echo -e "${YELLOW}[3/8] Memeriksa Mosquitto MQTT Broker & Python...${NC}"
+if ! command -v mosquitto &> /dev/null; then
+    echo -e "${YELLOW}Menginstall Mosquitto MQTT Broker...${NC}"
+    sudo apt-get update -y && sudo apt-get install -y mosquitto mosquitto-clients python3-pip || true
+fi
+
+# Configure Mosquitto to allow connections on port 1883
+if [ -d "/etc/mosquitto/conf.d" ]; then
+    sudo tee /etc/mosquitto/conf.d/scada.conf > /dev/null <<EOF
+listener 1883 0.0.0.0
+allow_anonymous true
+EOF
+    sudo systemctl restart mosquitto || true
+    sudo systemctl enable mosquitto || true
+    echo -e "${GREEN}✓ Mosquitto MQTT broker aktif di port 1883.${NC}"
+fi
+
+# Install Python modbus dependencies if available
+pip3 install pymodbus pyserial 2>/dev/null || pip install pymodbus pyserial 2>/dev/null || true
+
+# 4. Git Branch Checkout & Pull
+echo -e "${YELLOW}[4/8] Sinkronisasi Git Repository (Branch: ${TARGET_BRANCH})...${NC}"
 git fetch origin
 git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH} origin/${TARGET_BRANCH}
 git pull origin ${TARGET_BRANCH}
 echo -e "${GREEN}✓ Kode terbaru berhasil di-pull.${NC}"
 
-# 4. Dependency Installation & Asset Compilation
-echo -e "${YELLOW}[4/7] Menginstall Dependensi PHP & Build Frontend...${NC}"
+# 5. Dependency Installation & Asset Compilation
+echo -e "${YELLOW}[5/8] Menginstall Dependensi PHP & Build Frontend...${NC}"
 composer install --no-dev --optimize-autoloader --no-interaction
+
+# Check & ensure Reverb config in .env
+if [ -f ".env" ]; then
+    if ! grep -q "REVERB_APP_KEY=" .env || grep -q "REVERB_APP_KEY=$" .env; then
+        echo -e "${YELLOW}Menambahkan konfigurasi default Reverb & MQTT ke .env...${NC}"
+        echo "" >> .env
+        echo "BROADCAST_CONNECTION=reverb" >> .env
+        echo "REVERB_APP_ID=scada-retort" >> .env
+        echo "REVERB_APP_KEY=scadakey$(date +%s)" >> .env
+        echo "REVERB_APP_SECRET=scadasecret$(date +%s)" >> .env
+        echo "REVERB_HOST=127.0.0.1" >> .env
+        echo "REVERB_PORT=8080" >> .env
+        echo "REVERB_SCHEME=http" >> .env
+        echo "VITE_REVERB_APP_KEY=\${REVERB_APP_KEY}" >> .env
+        echo "VITE_REVERB_HOST=\${REVERB_HOST}" >> .env
+        echo "VITE_REVERB_PORT=\${REVERB_PORT}" >> .env
+        echo "VITE_REVERB_SCHEME=\${REVERB_SCHEME}" >> .env
+        echo "MQTT_HOST=127.0.0.1" >> .env
+        echo "MQTT_PORT=1883" >> .env
+    fi
+fi
+
 npm install
 npm run build
 echo -e "${GREEN}✓ Build asset frontend berhasil.${NC}"
 
-# 5. Database Migration & Cache Optimization
-echo -e "${YELLOW}[5/7] Menjalankan Database Migration & Optimasi Cache...${NC}"
+# 6. Database Migration & Cache Optimization
+echo -e "${YELLOW}[6/8] Menjalankan Database Migration & Optimasi Cache...${NC}"
 php artisan migrate --force
 php artisan optimize:clear
 php artisan config:cache
@@ -81,8 +124,8 @@ if [ "$EUID" -eq 0 ]; then
 fi
 echo -e "${GREEN}✓ Permisi dan cache selesai.${NC}"
 
-# 6. Setup Systemd Background Services (TN Poll, MQTT Subscribe, Reverb)
-echo -e "${YELLOW}[6/7] Mengatur Background Services (Systemd)...${NC}"
+# 7. Setup Systemd Background Services (TN Poll, MQTT Subscribe, Reverb)
+echo -e "${YELLOW}[7/8] Mengatur Background Services (Systemd)...${NC}"
 
 if [ "$EUID" -ne 0 ]; then
     echo -e "${YELLOW}Perhatian: Script tidak dijalankan sebagai root (sudo).${NC}"
@@ -155,8 +198,8 @@ WantedBy=multi-user.target
 EOF
 echo -e "${GREEN}✓ Service scada-reverb dibuat.${NC}"
 
-# 7. Reload & Start Services
-echo -e "${YELLOW}[7/7] Memuat ulang daemon & mengaktifkan services...${NC}"
+# 8. Reload & Start Services
+echo -e "${YELLOW}[8/8] Memuat ulang daemon & mengaktifkan services...${NC}"
 sudo systemctl daemon-reload
 
 sudo systemctl enable scada-tn-poll
