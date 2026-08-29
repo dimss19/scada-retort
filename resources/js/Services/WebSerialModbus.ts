@@ -260,22 +260,45 @@ export class WebSerialModbusDriver {
         this.onStatusChange?.('connecting', 'Membuka koneksi serial...');
 
         try {
-            if (!this.port) {
-                this.port = selectedPort || (await this.requestPort());
+            if (this.port) {
+                try {
+                    await this.disconnect();
+                } catch {}
             }
+
+            this.port = selectedPort || (await this.requestPort());
 
             if (!this.port) {
                 throw new Error('Tidak ada port serial yang dipilih.');
             }
 
-            // Autonics standard: 9600 bps, 8 data bits, 2 stop bits, parity None
-            await this.port.open({
-                baudRate: this.currentConfig.baudRate,
-                dataBits: this.currentConfig.dataBits,
-                stopBits: this.currentConfig.stopBits,
-                parity: this.currentConfig.parity,
-                bufferSize: 2048,
-            });
+            // Try opening with specified parameters, fallback to stopBits 1 if driver rejects stopBits 2
+            try {
+                await this.port.open({
+                    baudRate: this.currentConfig.baudRate,
+                    dataBits: this.currentConfig.dataBits,
+                    stopBits: this.currentConfig.stopBits,
+                    parity: this.currentConfig.parity,
+                    bufferSize: 2048,
+                });
+            } catch (openErr: any) {
+                if (this.currentConfig.stopBits === 2) {
+                    try {
+                        this.currentConfig.stopBits = 1;
+                        await this.port.open({
+                            baudRate: this.currentConfig.baudRate,
+                            dataBits: this.currentConfig.dataBits,
+                            stopBits: 1,
+                            parity: this.currentConfig.parity,
+                            bufferSize: 2048,
+                        });
+                    } catch {
+                        throw openErr;
+                    }
+                } else {
+                    throw openErr;
+                }
+            }
 
             this.rxBuffer = [];
             this.startStreamReader();
@@ -283,9 +306,12 @@ export class WebSerialModbusDriver {
             this.onStatusChange?.('connected', `Terhubung ke USB Serial (${this.currentConfig.baudRate} bps, StopBits: ${this.currentConfig.stopBits}, Parity: ${this.currentConfig.parity})`);
         } catch (err: any) {
             this.port = null;
-            const msg = err?.message || 'Gagal membuka port serial.';
+            let msg = err?.message || 'Gagal membuka port serial.';
+            if (msg.includes('Failed to open serial port') || msg.includes('Access denied')) {
+                msg = 'Port USB sedang dibuka oleh aplikasi lain (misal Arduino IDE, Serial Monitor, atau terminal lain). Tutup aplikasi tersebut lalu coba hubungkan lagi.';
+            }
             this.onStatusChange?.('error', msg);
-            throw err;
+            throw new Error(msg);
         }
     }
 
