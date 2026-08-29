@@ -374,30 +374,6 @@ export default function EspMonitor({
                                 isOnline={isOnline}
                             />
 
-                            {/* F0 Lethality Summary Bar */}
-                            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-5 shadow-lg backdrop-blur-xl flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex items-center gap-3.5">
-                                    <div className="flex items-center justify-center rounded-2xl w-12 h-12 bg-amber-500/15 text-amber-600 shrink-0">
-                                        <ShieldCheck size={26} strokeWidth={2.2} />
-                                    </div>
-                                    <div>
-                                        <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Akumulasi Nilai Sterilitas F₀</span>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-3xl font-black text-amber-600 font-mono">{f0.toFixed(2)}</span>
-                                            <span className="text-xs font-extrabold text-amber-500">menit ekuivalen (Tref 121.1°C, z = 10°C)</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-slate-500">Fase Saat Ini:</span>
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">
-                                        <Flame size={14} className="text-amber-500" />
-                                        {telemetry.phase || (mappedTelemetry.running ? 'STERILIZING' : 'STANDBY (IDLE)')}
-                                    </span>
-                                </div>
-                            </div>
-
                             {/* Industrial Thermal Sterilization Profile Chart */}
                             <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-lg backdrop-blur-xl">
                                 <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
