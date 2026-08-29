@@ -143,7 +143,6 @@ export function parseModbusResponse(response: Uint8Array, expectedSlave: number,
         const high = response[3 + i];
         const low = response[3 + i + 1];
         const raw = (high << 8) | low;
-        // Convert to signed 16-bit int if needed
         const signed = raw >= 0x8000 ? raw - 0x10000 : raw;
         registers.push(signed);
     }
@@ -201,25 +200,21 @@ export function decodeAutonicsTnReadings(reg: number[]): TnDecodedReading {
 export class WebSerialModbusDriver {
     private port: any = null;
     private reader: any = null;
-    private writer: any = null;
+    private isStreamReading = false;
+    private rxBuffer: number[] = [];
     private isPolling = false;
     private pollingTimer: any = null;
     private isBusy = false;
+    public currentConfig: ModbusPortConfig = { baudRate: 9600, dataBits: 8, stopBits: 2, parity: 'none' };
 
     public onReading?: (reading: TnDecodedReading) => void;
     public onStatusChange?: (status: 'disconnected' | 'connecting' | 'connected' | 'error', message?: string) => void;
     public onError?: (error: string) => void;
 
-    /**
-     * Checks if the Web Serial API is supported in current browser environment
-     */
     public static isSupported(): boolean {
         return typeof navigator !== 'undefined' && 'serial' in navigator;
     }
 
-    /**
-     * Request user to pick a serial port through Chrome native dialog
-     */
     public async requestPort(): Promise<any> {
         if (!WebSerialModbusDriver.isSupported()) {
             throw new Error('Web Serial API tidak didukung di browser ini. Gunakan Google Chrome atau Microsoft Edge.');
@@ -227,10 +222,41 @@ export class WebSerialModbusDriver {
         return await (navigator as any).serial.requestPort();
     }
 
-    /**
-     * Connect to the selected or provided serial port
-     */
-    public async connect(selectedPort?: any, config: ModbusPortConfig = { baudRate: 9600 }): Promise<void> {
+    private async startStreamReader(): Promise<void> {
+        this.isStreamReading = true;
+        while (this.port && this.isStreamReading && this.port.readable) {
+            try {
+                this.reader = this.port.readable.getReader();
+                while (this.isStreamReading) {
+                    const { value, done } = await this.reader.read();
+                    if (done) break;
+                    if (value && value.length > 0) {
+                        for (let i = 0; i < value.length; i++) {
+                            this.rxBuffer.push(value[i]);
+                        }
+                    }
+                }
+            } catch {
+                break;
+            } finally {
+                if (this.reader) {
+                    try {
+                        this.reader.releaseLock();
+                    } catch {}
+                    this.reader = null;
+                }
+            }
+        }
+    }
+
+    public async connect(selectedPort?: any, config?: Partial<ModbusPortConfig>): Promise<void> {
+        this.currentConfig = {
+            baudRate: config?.baudRate || 9600,
+            dataBits: config?.dataBits || 8,
+            stopBits: config?.stopBits || 2,
+            parity: config?.parity || 'none',
+        };
+
         this.onStatusChange?.('connecting', 'Membuka koneksi serial...');
 
         try {
@@ -242,16 +268,19 @@ export class WebSerialModbusDriver {
                 throw new Error('Tidak ada port serial yang dipilih.');
             }
 
-            // Open port with 9600 baud, 8 data bits, 1 stop bit, no parity (Autonics default)
+            // Autonics standard: 9600 bps, 8 data bits, 2 stop bits, parity None
             await this.port.open({
-                baudRate: config.baudRate || 9600,
-                dataBits: config.dataBits || 8,
-                stopBits: config.stopBits || 1,
-                parity: config.parity || 'none',
-                bufferSize: 1024,
+                baudRate: this.currentConfig.baudRate,
+                dataBits: this.currentConfig.dataBits,
+                stopBits: this.currentConfig.stopBits,
+                parity: this.currentConfig.parity,
+                bufferSize: 2048,
             });
 
-            this.onStatusChange?.('connected', `Terhubung ke USB Serial (${config.baudRate || 9600} bps)`);
+            this.rxBuffer = [];
+            this.startStreamReader();
+
+            this.onStatusChange?.('connected', `Terhubung ke USB Serial (${this.currentConfig.baudRate} bps, StopBits: ${this.currentConfig.stopBits}, Parity: ${this.currentConfig.parity})`);
         } catch (err: any) {
             this.port = null;
             const msg = err?.message || 'Gagal membuka port serial.';
@@ -260,24 +289,15 @@ export class WebSerialModbusDriver {
         }
     }
 
-    /**
-     * Disconnect and release port streams
-     */
     public async disconnect(): Promise<void> {
         this.stopPolling();
+        this.isStreamReading = false;
 
         try {
             if (this.reader) {
                 try {
                     await this.reader.cancel();
                 } catch {}
-                this.reader.releaseLock();
-                this.reader = null;
-            }
-
-            if (this.writer) {
-                this.writer.releaseLock();
-                this.writer = null;
             }
 
             if (this.port) {
@@ -285,6 +305,7 @@ export class WebSerialModbusDriver {
                 this.port = null;
             }
 
+            this.rxBuffer = [];
             this.onStatusChange?.('disconnected', 'Koneksi serial terputus');
         } catch (err: any) {
             this.onStatusChange?.('error', err?.message || 'Error saat menutup port');
@@ -292,12 +313,9 @@ export class WebSerialModbusDriver {
     }
 
     public isConnected(): boolean {
-        return Boolean(this.port && this.port.readable && this.port.writable);
+        return Boolean(this.port && this.isStreamReading);
     }
 
-    /**
-     * Sends a raw Modbus RTU frame and awaits response
-     */
     public async sendAndReceive(requestFrame: Uint8Array, expectedSlave: number, expectedFunc: number, timeoutMs = 800): Promise<number[]> {
         if (!this.isConnected()) {
             throw new Error('Port serial belum terhubung.');
@@ -308,78 +326,50 @@ export class WebSerialModbusDriver {
         }
 
         this.isBusy = true;
+        this.rxBuffer = [];
 
         try {
             const writer = this.port.writable.getWriter();
             await writer.write(requestFrame);
             writer.releaseLock();
 
-            // Read response bytes with timeout
-            const reader = this.port.readable.getReader();
-            const chunks: number[] = [];
-            const startTime = Date.now();
+            const deadline = Date.now() + timeoutMs;
+            let responseFound = false;
 
-            try {
-                while (Date.now() - startTime < timeoutMs) {
-                    // Read with short chunk polling
-                    const { value, done } = await Promise.race([
-                        reader.read(),
-                        new Promise<{ value: undefined; done: boolean }>((res) =>
-                            setTimeout(() => res({ value: undefined, done: false }), 200)
-                        ),
-                    ]);
-
-                    if (done) break;
-
-                    if (value) {
-                        for (let i = 0; i < value.length; i++) {
-                            chunks.push(value[i]);
-                        }
-
-                        // Check if we received enough bytes
-                        if (chunks.length >= 5) {
-                            const expectedBytes = chunks[2] + 5; // slave + func + count + data + 2 crc
-                            if (chunks.length >= expectedBytes) {
-                                break;
-                            }
-                        }
+            while (Date.now() < deadline) {
+                if (this.rxBuffer.length >= 5) {
+                    const byteCount = this.rxBuffer[2];
+                    const expectedTotal = byteCount + 5; // slave + func + byteCount + data + 2 crc
+                    if (this.rxBuffer.length >= expectedTotal) {
+                        responseFound = true;
+                        break;
                     }
                 }
-            } finally {
-                reader.releaseLock();
+                await new Promise((r) => setTimeout(r, 25));
             }
 
-            if (chunks.length === 0) {
-                throw new Error('No response from controller (Timeout). Cek kabel RS485 A/B dan Slave ID.');
+            if (!responseFound || this.rxBuffer.length === 0) {
+                throw new Error(`Timeout: Tidak ada respons dari Slave ${expectedSlave}. Pastikan Kabel RS485 A/B tidak terbalik dan Baudrate (${this.currentConfig.baudRate}) / StopBits (${this.currentConfig.stopBits}) sesuai di Autonics.`);
             }
 
-            const responseArray = new Uint8Array(chunks);
+            const responseArray = new Uint8Array(this.rxBuffer);
             return parseModbusResponse(responseArray, expectedSlave, expectedFunc);
         } finally {
             this.isBusy = false;
         }
     }
 
-    /**
-     * Reads standard monitoring registers (1000..1026) from Autonics TN controller
-     */
     public async readMonitoringRegisters(slaveId = 1): Promise<TnDecodedReading> {
         const request = buildReadInputRegisters(slaveId, 1000, 27);
         const registers = await this.sendAndReceive(request, slaveId, 0x04, 1000);
         return decodeAutonicsTnReadings(registers);
     }
 
-    /**
-     * Writes single holding register (e.g. Set SV or RUN/STOP)
-     */
     public async writeHoldingRegister(slaveId: number, address: number, value: number): Promise<void> {
         const request = buildWriteSingleRegister(slaveId, address, value);
         await this.sendAndReceive(request, slaveId, 0x06, 1200);
     }
 
-    /**
-     * Starts continuous background polling loop
-     */
     public startPolling(slaveId = 1, intervalMs = 1000): void {
         if (this.isPolling) return;
         this.isPolling = true;
@@ -402,9 +392,6 @@ export class WebSerialModbusDriver {
         pollStep();
     }
 
-    /**
-     * Stops polling loop
-     */
     public stopPolling(): void {
         this.isPolling = false;
         if (this.pollingTimer) {
@@ -414,5 +401,4 @@ export class WebSerialModbusDriver {
     }
 }
 
-// Singleton global driver instance
 export const webSerialDriver = new WebSerialModbusDriver();

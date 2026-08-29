@@ -38,6 +38,10 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
     const [isWebSerialActive, setIsWebSerialActive] = useState(webSerialDriver.isConnected());
     const [webSerialConnecting, setWebSerialConnecting] = useState(false);
     const [lastWebSerialTime, setLastWebSerialTime] = useState<string | null>(null);
+    const [serialBaud, setSerialBaud] = useState<number>(9600);
+    const [serialStopBits, setSerialStopBits] = useState<1 | 2>(2);
+    const [serialParity, setSerialParity] = useState<'none' | 'even' | 'odd'>('none');
+    const [serialSlaveId, setSerialSlaveId] = useState<number>(slaveId || 1);
 
     useEffect(() => {
         setLocalOnline(isOnline);
@@ -158,12 +162,16 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
         setStatusMsg(null);
 
         try {
-            await webSerialDriver.connect(undefined, { baudRate: 9600 });
+            await webSerialDriver.connect(undefined, {
+                baudRate: serialBaud,
+                stopBits: serialStopBits,
+                parity: serialParity,
+                dataBits: 8,
+            });
             setIsWebSerialActive(true);
             setLocalOnline(true);
-            showStatus('success', 'Berhasil terhubung ke USB RS485 melalui Web Serial API (Chrome/Edge)!');
+            showStatus('success', `Berhasil terhubung ke USB RS485 (${serialBaud} bps, StopBits: ${serialStopBits}, Parity: ${serialParity})!`);
 
-            // Wire reading callback
             webSerialDriver.onReading = (decoded) => {
                 setLastWebSerialTime(new Date().toLocaleTimeString());
                 setLocalOnline(true);
@@ -190,7 +198,7 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
                 showStatus('error', err);
             };
 
-            webSerialDriver.startPolling(slaveId, 1000);
+            webSerialDriver.startPolling(serialSlaveId, 1000);
         } catch (err: any) {
             setIsWebSerialActive(false);
             showStatus('error', err?.message || 'Gagal membuka port serial.');
@@ -300,10 +308,58 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="space-y-3 pt-1">
-                                        <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                                            Klik tombol di bawah untuk memilih port converter USB RS485 yang tertancap di PC Anda:
-                                        </p>
+                                    <div className="space-y-4 pt-1">
+                                        {/* Serial Settings Parameter Grids */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white/90 p-3 rounded-2xl border border-slate-200 text-xs">
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Slave ID</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="247"
+                                                    value={serialSlaveId}
+                                                    onChange={(e) => setSerialSlaveId(Math.max(1, parseInt(e.target.value) || 1))}
+                                                    className="w-full rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs font-black text-slate-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Baudrate</label>
+                                                <select
+                                                    value={serialBaud}
+                                                    onChange={(e) => setSerialBaud(parseInt(e.target.value))}
+                                                    className="w-full rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-400"
+                                                >
+                                                    <option value="9600">9600 bps (Default)</option>
+                                                    <option value="19200">19200 bps</option>
+                                                    <option value="4800">4800 bps</option>
+                                                    <option value="115200">115200 bps</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Stop Bits</label>
+                                                <select
+                                                    value={serialStopBits}
+                                                    onChange={(e) => setSerialStopBits(parseInt(e.target.value) as 1 | 2)}
+                                                    className="w-full rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-400"
+                                                >
+                                                    <option value="2">2 (Autonics)</option>
+                                                    <option value="1">1</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Parity</label>
+                                                <select
+                                                    value={serialParity}
+                                                    onChange={(e) => setSerialParity(e.target.value as any)}
+                                                    className="w-full rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-400"
+                                                >
+                                                    <option value="none">None (Default)</option>
+                                                    <option value="even">Even</option>
+                                                    <option value="odd">Odd</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         <button
                                             type="button"
                                             onClick={handleWebSerialConnect}
