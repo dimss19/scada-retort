@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Device;
+use App\Services\MqttService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
@@ -58,6 +59,18 @@ class EspMonitorController extends Controller
             ->take(30)
             ->get();
 
+        // Default or cached pattern steps for this ESP logger
+        $pattern = Cache::get("esp_pattern_{$selectedCode}", [
+            'time_unit' => 'MM.SS',
+            'pattern_number' => 0,
+            'steps' => [
+                ['step_number' => 0, 'step_name' => 'Step 1', 'target_sv' => 1170, 'duration' => 2, 'end_action' => 'CONT'],
+                ['step_number' => 1, 'step_name' => 'Step 2', 'target_sv' => 1170, 'duration' => 35, 'end_action' => 'CONT'],
+                ['step_number' => 2, 'step_name' => 'Step 2', 'target_sv' => 1250, 'duration' => 3, 'end_action' => 'CONT'],
+                ['step_number' => 3, 'step_name' => 'Step 3', 'target_sv' => 1250, 'duration' => 100, 'end_action' => 'CONT'],
+            ]
+        ]);
+
         return Inertia::render('Esp/Monitor', [
             'device' => $device,
             'devices' => $devices,
@@ -66,7 +79,57 @@ class EspMonitorController extends Controller
             'isOnline' => (bool)$isOnline,
             'systemEvent' => $systemEvent,
             'histories' => $processHistories,
+            'initialPattern' => $pattern,
         ]);
+    }
+
+    /**
+     * Save Pattern steps and sync to ESP32 via MQTT.
+     */
+    public function savePattern(Request $request, MqttService $mqttService)
+    {
+        $validated = $request->validate([
+            'machine_code' => ['required', 'string'],
+            'time_unit' => ['nullable', 'string', 'in:MM.SS,HH.MM'],
+            'pattern_number' => ['nullable', 'integer', 'min:0', 'max:9'],
+            'steps' => ['required', 'array', 'min:1', 'max:20'],
+            'steps.*.step_name' => ['nullable', 'string', 'max:50'],
+            'steps.*.target_sv' => ['required', 'numeric'],
+            'steps.*.duration' => ['required', 'numeric', 'min:0'],
+            'steps.*.end_action' => ['nullable', 'string', 'in:CONT,HOLD,STOP'],
+        ]);
+
+        $machineCode = $validated['machine_code'];
+        $steps = [];
+
+        foreach ($validated['steps'] as $idx => $s) {
+            $steps[] = [
+                'step_number' => $idx,
+                'step_name' => $s['step_name'] ?? "Step " . ($idx + 1),
+                'target_sv' => (float)$s['target_sv'],
+                'duration' => (int)$s['duration'],
+                'end_action' => $s['end_action'] ?? 'CONT',
+            ];
+        }
+
+        $patternData = [
+            'machine_code' => $machineCode,
+            'time_unit' => $validated['time_unit'] ?? 'MM.SS',
+            'pattern_number' => $validated['pattern_number'] ?? 0,
+            'steps' => $steps,
+            'updated_at' => now()->toIso8601String(),
+        ];
+
+        // Store in cache
+        Cache::put("esp_pattern_{$machineCode}", $patternData, now()->addDays(30));
+
+        // Publish via MQTT
+        $device = Device::where('machine_code', $machineCode)->first() ?? (object)['machine_code' => $machineCode];
+        $mqttPublished = $mqttService->publishPattern($device, $patternData);
+
+        return back()->with('success', $mqttPublished
+            ? 'Pattern berhasil disimpan dan disinkronkan ke ESP via MQTT!'
+            : 'Pattern berhasil disimpan (MQTT gagal dikirim, periksa koneksi broker).');
     }
 
     /**

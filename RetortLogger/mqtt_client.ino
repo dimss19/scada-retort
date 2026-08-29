@@ -34,6 +34,10 @@ static unsigned long mqttReconIntervalMs() {
   return (mqttFailStreak >= MQTT_FAIL_TO_MED) ? MQTT_RECON_MED_MS : MQTT_RECON_FAST_MS;
 }
 
+void savePatternSteps(const PatternStep* steps, uint8_t count);
+extern PatternStep gPatternSteps[20];
+extern uint8_t     gPatternStepCount;
+
 static void mqttHandleAck(const char* json) {
   StaticJsonDocument<256> doc;
   if (deserializeJson(doc, json) != DeserializationError::Ok) return;
@@ -46,14 +50,59 @@ static void mqttHandleAck(const char* json) {
   forwardOnAck(filename, transferId, status, message);
 }
 
+static void mqttHandlePattern(const char* json) {
+  DynamicJsonDocument doc(2048);
+  if (deserializeJson(doc, json) != DeserializationError::Ok) return;
+
+  const char* target = doc["machine_id"] | "";
+  if (target[0] != '\0' && strcasecmp(target, cfg.machineId) != 0) return;
+
+  JsonArray steps = doc["steps"];
+  if (steps.isNull()) return;
+
+  uint8_t count = 0;
+  for (JsonObject s : steps) {
+    if (count >= 20) break;
+    gPatternSteps[count].stepNumber = s["step_number"] | count;
+    const char* sName = s["step_name"] | "";
+    if (sName[0] != '\0') {
+      strncpy(gPatternSteps[count].name, sName, sizeof(gPatternSteps[count].name) - 1);
+    } else {
+      snprintf(gPatternSteps[count].name, sizeof(gPatternSteps[count].name), "Step %u", (unsigned)(count + 1));
+    }
+    gPatternSteps[count].targetSv = s["target_sv"] | 121.0f;
+    gPatternSteps[count].duration = s["duration"] | 60;
+
+    const char* endAct = s["end_action"] | "CONT";
+    if (strcasecmp(endAct, "HOLD") == 0) gPatternSteps[count].endAction = 1;
+    else if (strcasecmp(endAct, "STOP") == 0) gPatternSteps[count].endAction = 2;
+    else gPatternSteps[count].endAction = 0;
+
+    count++;
+  }
+
+  savePatternSteps(gPatternSteps, count);
+  Serial.printf("[MQTT] Pattern steps updated (%u steps) for machine %s\n", (unsigned)count, cfg.machineId);
+
+  // Publish ACK
+  char ackBuf[128];
+  snprintf(ackBuf, sizeof(ackBuf), "{\"id\":\"%s\",\"event\":\"pattern_sync_ok\",\"count\":%u}", cfg.machineId, (unsigned)count);
+  mqtt.publish("retort/system", ackBuf, false);
+}
+
 static void mqttCb(char* topic, byte* payload, unsigned int len) {
-  if (len == 0 || len > 320) return;
-  char buf[321];
+  if (len == 0 || len > 1024) return;
+  char buf[1025];
   memcpy(buf, payload, len);
   buf[len] = '\0';
 
   if (strcmp(topic, MQTT_ACK_TOPIC) == 0) {
     mqttHandleAck(buf);
+    return;
+  }
+
+  if (strstr(topic, "pattern/push") != NULL || strstr(topic, "pattern/set") != NULL) {
+    mqttHandlePattern(buf);
     return;
   }
 
@@ -104,9 +153,15 @@ static bool mqttRecon() {
     mqttFailStreak = 0;
     mqtt.subscribe(cfg.mqttCmdTopic);
     mqtt.subscribe(MQTT_ACK_TOPIC);
+
+    char patnTopic[80];
+    snprintf(patnTopic, sizeof(patnTopic), "retort/%s/pattern/push", cfg.machineId);
+    mqtt.subscribe(patnTopic);
+    mqtt.subscribe("retort/pattern/push");
+
     state.mqttConnected = true;
     gLastMqttState = 0;
-    Serial.printf("[MQTT] Connected. Sub: %s + %s\n", cfg.mqttCmdTopic, MQTT_ACK_TOPIC);
+    Serial.printf("[MQTT] Connected. Sub: %s + %s + %s\n", cfg.mqttCmdTopic, MQTT_ACK_TOPIC, patnTopic);
 
     mqttPublishWatchdogEvent();
   } else {

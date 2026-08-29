@@ -92,6 +92,7 @@ Route::middleware('auth')->group(function () {
     // === ESP32 Monitoring Logger ===
     Route::prefix('esp')->group(function () {
         Route::get('/monitor', [\App\Http\Controllers\EspMonitorController::class, 'index'])->name('esp.monitor');
+        Route::post('/pattern', [\App\Http\Controllers\EspMonitorController::class, 'savePattern'])->name('esp.pattern.save');
         Route::get('/live', [\App\Http\Controllers\EspMonitorController::class, 'liveData'])->name('esp.live');
     });
 

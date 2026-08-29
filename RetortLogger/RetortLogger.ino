@@ -112,12 +112,23 @@ struct RetortState {
   bool logging;       // true = sesi perekaman CSV aktif (auto-trigger)
 };
 
+struct PatternStep {
+  uint8_t  stepNumber;
+  char     name[24];
+  float    targetSv;
+  uint32_t duration;
+  uint8_t  endAction; // 0=CONT, 1=HOLD, 2=STOP
+};
+
 // --- Globals ---
 AppConfig   cfg;
 RetortState state;
 Preferences prefs;
 DNSServer   dnsServer;
 AsyncWebServer server(80);
+
+PatternStep gPatternSteps[20];
+uint8_t     gPatternStepCount = 0;
 
 char sessionToken[65]      = {0};
 unsigned long sessionStart = 0;

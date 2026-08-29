@@ -65,6 +65,8 @@ void loadConfig() {
 
   prefs.end();
 
+  loadPatternSteps(gPatternSteps, 20);
+
   Serial.printf("[CFG] Machine=%s  SSID=%s  MQTT=%s:%d\n",
                 cfg.machineId, cfg.wifiSSID, cfg.mqttBroker, cfg.mqttPort);
 }
@@ -120,3 +122,56 @@ bool loadWatchdogPending() {
   prefs.end();
   return v;
 }
+
+// --- Pattern Step Configuration Load/Save ---
+#define PREF_PATN_NS  "retort_patn"
+
+void loadPatternSteps(PatternStep* steps, uint8_t maxCount) {
+  prefs.begin(PREF_PATN_NS, true);
+  gPatternStepCount = prefs.getUChar("step_count", 0);
+  if (gPatternStepCount > maxCount) gPatternStepCount = maxCount;
+
+  for (uint8_t i = 0; i < gPatternStepCount; i++) {
+    char key[16];
+    snprintf(key, sizeof(key), "s%u_name", (unsigned)i);
+    prefs.getString(key, steps[i].name, sizeof(steps[i].name));
+
+    snprintf(key, sizeof(key), "s%u_ts", (unsigned)i);
+    steps[i].targetSv = prefs.getFloat(key, 121.0f);
+
+    snprintf(key, sizeof(key), "s%u_tm", (unsigned)i);
+    steps[i].duration = prefs.getUInt(key, 60);
+
+    snprintf(key, sizeof(key), "s%u_end", (unsigned)i);
+    steps[i].endAction = prefs.getUChar(key, 0);
+
+    steps[i].stepNumber = i;
+  }
+  prefs.end();
+  Serial.printf("[CFG] Loaded %u pattern steps from NVS.\n", (unsigned)gPatternStepCount);
+}
+
+void savePatternSteps(const PatternStep* steps, uint8_t count) {
+  if (count > 20) count = 20;
+  prefs.begin(PREF_PATN_NS, false);
+  prefs.putUChar("step_count", count);
+
+  for (uint8_t i = 0; i < count; i++) {
+    char key[16];
+    snprintf(key, sizeof(key), "s%u_name", (unsigned)i);
+    prefs.putString(key, steps[i].name);
+
+    snprintf(key, sizeof(key), "s%u_ts", (unsigned)i);
+    prefs.putFloat(key, steps[i].targetSv);
+
+    snprintf(key, sizeof(key), "s%u_tm", (unsigned)i);
+    prefs.putUInt(key, steps[i].duration);
+
+    snprintf(key, sizeof(key), "s%u_end", (unsigned)i);
+    prefs.putUChar(key, steps[i].endAction);
+  }
+  prefs.end();
+  gPatternStepCount = count;
+  Serial.printf("[CFG] Saved %u pattern steps to NVS.\n", (unsigned)count);
+}
+

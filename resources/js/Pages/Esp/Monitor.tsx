@@ -5,6 +5,7 @@ import { RetortTelemetry } from '@/Pages/Tn/retortTelemetry';
 import TnFaceplateDisplay from '@/Components/Tn/TnFaceplateDisplay';
 import RetortThermalChart from '@/Components/Tn/RetortThermalChart';
 import ProcessDetailView from '@/Components/History/ProcessDetailView';
+import EspPatternEditor from '@/Components/Esp/EspPatternEditor';
 import { calculateLethality, EspTelemetryData } from '@/Components/Esp/EspMonitoringPanel';
 import { ShieldCheck, Flame, Wifi, WifiOff, AlertTriangle, X, Download, Eye, Trash2, MoreVertical, Calendar, Clock, FileText, CheckCircle2 } from 'lucide-react';
 
@@ -31,6 +32,7 @@ interface Props {
         ts?: string;
     } | null;
     histories?: any[];
+    initialPattern?: any;
 }
 
 export default function EspMonitor({
@@ -41,8 +43,9 @@ export default function EspMonitor({
     isOnline: initialIsOnline,
     systemEvent,
     histories = [],
+    initialPattern,
 }: Props) {
-    const [activeTab, setActiveTab] = useState<'monitor' | 'history'>('monitor');
+    const [activeTab, setActiveTab] = useState<'monitor' | 'pattern' | 'history'>('monitor');
     const [telemetry, setTelemetry] = useState<EspTelemetryData>(initialTelemetry);
     const [history, setHistory] = useState<any[]>(initialHistory);
     const [isOnline, setIsOnline] = useState<boolean>(initialIsOnline);
@@ -281,7 +284,7 @@ export default function EspMonitor({
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={() => setActiveTab('monitor')}
+                        onClick={() => { setActiveTab('monitor'); setSelectedBatch(null); }}
                         className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
                             activeTab === 'monitor'
                                 ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
@@ -292,7 +295,18 @@ export default function EspMonitor({
                     </button>
                     <button
                         type="button"
-                        onClick={() => setActiveTab('history')}
+                        onClick={() => { setActiveTab('pattern'); setSelectedBatch(null); }}
+                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
+                            activeTab === 'pattern'
+                                ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
+                                : 'text-slate-200 hover:bg-blue-900/50 hover:text-white'
+                        }`}
+                    >
+                        Pattern
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { setActiveTab('history'); setSelectedBatch(null); }}
                         className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
                             activeTab === 'history'
                                 ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
@@ -464,6 +478,12 @@ export default function EspMonitor({
                                 </div>
                             </section>
                         </div>
+                    ) : activeTab === 'pattern' ? (
+                        <EspPatternEditor
+                            machineCode={device.machine_code}
+                            initialPattern={initialPattern}
+                            isOnline={isOnline}
+                        />
                     ) : selectedBatch ? (
                         <ProcessDetailView
                             batch={selectedBatch}
