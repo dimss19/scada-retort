@@ -483,6 +483,7 @@ export default function EspMonitor({
                             machineCode={device.machine_code}
                             initialPattern={initialPattern}
                             isOnline={isOnline}
+                            telemetry={telemetry}
                         />
                     ) : selectedBatch ? (
                         <ProcessDetailView
