@@ -35,16 +35,59 @@ class MqttSubscribeCommand extends Command
         // Topic: retort/data (sensor data)
         $mqtt->subscribe('retort/data', function (string $topic, string $message) {
             $payload = json_decode($message, true);
-            if (isset($payload['machine_code'])) {
-                $machineCode = $payload['machine_code'];
-                broadcast(new SensorDataReceived($machineCode, $payload));
+            if (!is_array($payload)) return;
 
-                // Cache RUN status (Rule 2) and timestamp (Rule 4)
-                if (isset($payload['run'])) {
-                    \Illuminate\Support\Facades\Cache::put("device.{$machineCode}.run", $payload['run'], now()->addMinutes(5));
-                }
-                \Illuminate\Support\Facades\Cache::put("device.{$machineCode}.last_seen", now()->timestamp, now()->addMinutes(5));
+            $machineCode = $payload['machine_code'] ?? $payload['id'] ?? 'RT-001';
+
+            // Normalize payload fields for unified consumption
+            $normalized = [
+                'machine_code' => $machineCode,
+                'id' => $machineCode,
+                'pv' => isset($payload['actual']) ? (float)$payload['actual'] : (isset($payload['pv']) ? (float)$payload['pv'] : null),
+                'sv' => isset($payload['setting']) ? (float)$payload['setting'] : (isset($payload['sv']) ? (float)$payload['sv'] : null),
+                'actual' => isset($payload['actual']) ? (float)$payload['actual'] : (isset($payload['pv']) ? (float)$payload['pv'] : null),
+                'setting' => isset($payload['setting']) ? (float)$payload['setting'] : (isset($payload['sv']) ? (float)$payload['sv'] : null),
+                'mv' => isset($payload['mv']) ? (float)$payload['mv'] : 0.0,
+                'phase' => $payload['phase'] ?? 'IDLE',
+                'ps' => $payload['ps'] ?? '00.00',
+                'tot' => $payload['tot'] ?? '00:00',
+                'stp' => $payload['stp'] ?? '00:00',
+                'pattern' => $payload['pattern'] ?? 0,
+                'step' => $payload['step'] ?? 0,
+                'run' => filter_var($payload['run'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'logging' => filter_var($payload['logging'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'ts' => $payload['ts'] ?? now()->toDateTimeString(),
+                'iso' => $payload['iso'] ?? now()->toIso8601String(),
+                'recorded_at' => now()->toDateTimeString(),
+            ];
+
+            // Broadcast to private websocket channel
+            broadcast(new SensorDataReceived($machineCode, $normalized));
+
+            // Cache device state and recent ESP telemetry
+            \Illuminate\Support\Facades\Cache::put("device.{$machineCode}.run", $normalized['run'], now()->addMinutes(5));
+            \Illuminate\Support\Facades\Cache::put("device.{$machineCode}.last_seen", now()->timestamp, now()->addMinutes(5));
+            \Illuminate\Support\Facades\Cache::put("esp_latest_telemetry_{$machineCode}", $normalized, now()->addMinutes(15));
+
+            // Keep rolling buffer of last 60 telemetry points for live chart initialization
+            $historyKey = "esp_telemetry_history_{$machineCode}";
+            $history = \Illuminate\Support\Facades\Cache::get($historyKey, []);
+            if (!is_array($history)) $history = [];
+            $history[] = $normalized;
+            if (count($history) > 120) {
+                $history = array_slice($history, -120);
             }
+            \Illuminate\Support\Facades\Cache::put($historyKey, $history, now()->addHours(2));
+        });
+
+        // Topic: retort/system (Watchdog / Boot Events from ESP32)
+        $mqtt->subscribe('retort/system', function (string $topic, string $message) {
+            $payload = json_decode($message, true);
+            if (!is_array($payload)) return;
+
+            $machineCode = $payload['id'] ?? $payload['machine_code'] ?? 'RT-001';
+            $this->info("Received system event for {$machineCode}: " . $message);
+            \Illuminate\Support\Facades\Cache::put("esp_latest_system_event_{$machineCode}", $payload, now()->addHours(6));
         });
 
         // Topic: retort/{machine_code}/ota/status

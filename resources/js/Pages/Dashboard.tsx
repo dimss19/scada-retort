@@ -144,6 +144,44 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [] }:
                         );
                     })}
                 </div>
+
+                {/* ESP32 Monitoring Logger Section (Below 3 Columns) */}
+                <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-7 sm:p-8 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-amber-400 hover:shadow-2xl">
+                    <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
+                    <div className="absolute -left-16 -bottom-16 h-52 w-52 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-10">
+                        <div className="space-y-3 max-w-3xl">
+                            <div className="flex flex-wrap items-center gap-2.5">
+                                <span className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 px-3.5 py-1 text-xs font-black uppercase tracking-[0.2em] text-white shadow-sm">
+                                    <Activity size={13} className="text-amber-400" />
+                                    IOT GATEWAY LOGGER (ESP32)
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    MQTT Telemetry Live
+                                </span>
+                            </div>
+
+                            <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                                ESP Monitoring Logger
+                            </h3>
+                            <p className="text-sm leading-relaxed text-slate-600 font-medium">
+                                Pemantauan telemetri IoT mandiri dari modul <b>ESP32 RetortLogger</b> via broker MQTT. Menampilkan visualisasi suhu aktual (PV), target (SV), status katup pemanas (MV), timer proses (TOT/STP), akumulasi nilai sterilisasi <b>$F_0$ (Lethality Rate)</b>, dan kurva termal real-time.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row lg:flex-col shrink-0 gap-3">
+                            <Link
+                                href={route('esp.monitor')}
+                                className="inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 px-6 py-4 text-sm font-black text-slate-950 shadow-lg hover:from-yellow-300 hover:to-amber-400 transition-all cursor-pointer"
+                            >
+                                <span>Buka Monitoring ESP Logger</span>
+                                <ArrowRight size={18} />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Modal Pin Test Interaktif */}
