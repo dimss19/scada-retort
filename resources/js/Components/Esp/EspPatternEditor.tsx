@@ -18,6 +18,22 @@ export interface EspPatternData {
     steps: EspStep[];
 }
 
+export function durationToMmSs(val: number): { mm: number; ss: number } {
+    const num = Math.max(0, Math.floor(Number(val) || 0));
+    if (num >= 100) {
+        const mm = Math.floor(num / 100);
+        const ss = Math.min(59, num % 100);
+        return { mm, ss };
+    }
+    return { mm: 0, ss: Math.min(59, num) };
+}
+
+export function mmSsToDuration(mm: number, ss: number): number {
+    const validMm = Math.max(0, Math.min(999, Math.floor(Number(mm) || 0)));
+    const validSs = Math.max(0, Math.min(59, Math.floor(Number(ss) || 0)));
+    return (validMm * 100) + validSs;
+}
+
 interface Props {
     machineCode: string;
     initialPattern?: EspPatternData;
@@ -324,25 +340,53 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
                                                 </div>
                                             </td>
 
-                                            {/* Tm Input (Duration MM.SS) */}
+                                            {/* Tm Input (Stopwatch MM:SS) */}
                                             <td className="whitespace-nowrap py-3 px-4">
-                                                <div className="relative">
-                                                    <span className="absolute left-2.5 top-2 text-[10px] font-mono font-bold text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded">
+                                                <div className="flex items-center gap-1 rounded-xl border border-blue-300 bg-blue-50/50 p-1 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-400/20">
+                                                    <span className="shrink-0 text-[10px] font-mono font-bold text-blue-800 bg-blue-100 px-1.5 py-1 rounded">
                                                         Tm{index}
                                                     </span>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        value={step.duration ?? 0}
-                                                        onChange={(e) =>
-                                                            handleUpdateStep(
-                                                                index,
-                                                                'duration',
-                                                                parseInt(e.target.value) || 0
-                                                            )
-                                                        }
-                                                        className="block w-full rounded-xl border-blue-300 bg-blue-50/50 pl-14 pr-3 font-mono font-bold text-slate-900 text-xs py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-right"
-                                                    />
+                                                    <div className="flex items-center flex-1 justify-center gap-1 font-mono">
+                                                        {/* Minutes (MM) */}
+                                                        <div className="relative flex items-center">
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max="999"
+                                                                value={durationToMmSs(step.duration).mm}
+                                                                onChange={(e) => {
+                                                                    const newMm = Math.max(0, parseInt(e.target.value) || 0);
+                                                                    const currSs = durationToMmSs(step.duration).ss;
+                                                                    handleUpdateStep(index, 'duration', mmSsToDuration(newMm, currSs));
+                                                                }}
+                                                                className="w-12 text-center py-1 px-0.5 rounded-lg bg-white border border-blue-200 font-mono font-black text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-inner"
+                                                                placeholder="00"
+                                                            />
+                                                            <span className="text-[9px] font-bold text-slate-400 ml-0.5">m</span>
+                                                        </div>
+
+                                                        <span className="font-mono font-black text-blue-600 text-xs">:</span>
+
+                                                        {/* Seconds (SS, max 59) */}
+                                                        <div className="relative flex items-center">
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max="59"
+                                                                value={durationToMmSs(step.duration).ss.toString().padStart(2, '0')}
+                                                                onChange={(e) => {
+                                                                    let newSs = parseInt(e.target.value) || 0;
+                                                                    if (newSs > 59) newSs = 59;
+                                                                    if (newSs < 0) newSs = 0;
+                                                                    const currMm = durationToMmSs(step.duration).mm;
+                                                                    handleUpdateStep(index, 'duration', mmSsToDuration(currMm, newSs));
+                                                                }}
+                                                                className="w-12 text-center py-1 px-0.5 rounded-lg bg-white border border-blue-200 font-mono font-black text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-inner"
+                                                                placeholder="00"
+                                                            />
+                                                            <span className="text-[9px] font-bold text-slate-400 ml-0.5">s</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
 
