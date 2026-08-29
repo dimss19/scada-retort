@@ -67,9 +67,6 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
     const activeEspPattern = telemetry?.pattern ?? 0;
     const activeEspStep = telemetry?.step ?? 0;
     const isRunning = Boolean(telemetry?.run || (telemetry as any)?.running || (telemetry?.phase && telemetry.phase !== 'IDLE' && telemetry.phase !== 'Offline' && telemetry.phase !== 'Waiting'));
-    const psText = telemetry?.ps || `${activeEspPattern}-${activeEspStep.toString().padStart(2, '0')}`;
-    const totText = telemetry?.tot || '00:00';
-    const stpText = telemetry?.stp || '00:00';
 
     const handleAddStep = () => {
         if (steps.length >= 20) return;
@@ -176,22 +173,6 @@ export default function EspPatternEditor({ machineCode, initialPattern, isOnline
                             <span className="text-sm font-bold text-slate-500">
                                 (Step Aktif: <strong className="text-amber-700 font-mono">Step #{activeEspStep}</strong>)
                             </span>
-                        </div>
-                    </div>
-
-                    {/* Quick Telemetry Indicators */}
-                    <div className="grid grid-cols-3 gap-3 shrink-0">
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 text-center min-w-[100px]">
-                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">P / S</p>
-                            <p className="mt-1 font-mono text-lg font-black text-blue-700">{psText}</p>
-                        </div>
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 text-center min-w-[100px]">
-                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">STP (SISA)</p>
-                            <p className="mt-1 font-mono text-lg font-black text-amber-700">{stpText}</p>
-                        </div>
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 text-center min-w-[100px]">
-                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">TOT (TOTAL)</p>
-                            <p className="mt-1 font-mono text-lg font-black text-slate-800">{totText}</p>
                         </div>
                     </div>
                 </div>
