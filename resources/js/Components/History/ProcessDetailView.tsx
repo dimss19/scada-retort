@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     ChevronLeft,
+    ChevronDown,
     Download,
     FileText,
+    FileSpreadsheet,
     CheckCircle2,
     Clock,
 } from 'lucide-react';
@@ -31,6 +33,13 @@ interface Props {
 export default function ProcessDetailView({ batch, onBack }: Props) {
     const [tablePage, setTablePage] = useState<number>(1);
     const [pageSize, setPageSize] = useState<number>(50);
+    const [showDownloadMenu, setShowDownloadMenu] = useState<boolean>(false);
+
+    useEffect(() => {
+        const closeMenu = () => setShowDownloadMenu(false);
+        window.addEventListener('click', closeMenu);
+        return () => window.removeEventListener('click', closeMenu);
+    }, []);
 
     const logs = useMemo(() => {
         return [...(batch.log_data || [])].sort(
@@ -192,24 +201,50 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                     <span>Kembali ke Daftar</span>
                 </button>
 
-                <div className="flex items-center gap-2.5">
+                {/* Download Dropdown */}
+                <div className="relative">
                     <button
                         type="button"
-                        onClick={handleDownloadPDF}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDownloadMenu((prev) => !prev);
+                        }}
                         className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black px-4 py-2.5 shadow-md transition-all"
                     >
                         <Download size={14} />
-                        <span>Download PDF</span>
+                        <span>Download Log</span>
+                        <ChevronDown size={14} className={`transition-transform duration-200 ${showDownloadMenu ? 'rotate-180' : ''}`} />
                     </button>
-                    <button
-                        type="button"
-                        onClick={handleDownloadCSV}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-black px-3.5 py-2.5 shadow-sm transition-all"
-                        title="Download CSV"
-                    >
-                        <FileText size={14} className="text-emerald-600" />
-                        <span>CSV</span>
-                    </button>
+
+                    {showDownloadMenu && (
+                        <div
+                            className="absolute right-0 mt-2 w-48 rounded-2xl bg-white p-1.5 shadow-2xl border border-slate-200 z-50 animate-in fade-in"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleDownloadPDF();
+                                    setShowDownloadMenu(false);
+                                }}
+                                className="w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left"
+                            >
+                                <FileText size={15} className="text-blue-600" />
+                                <span>Download PDF</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleDownloadCSV();
+                                    setShowDownloadMenu(false);
+                                }}
+                                className="w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left"
+                            >
+                                <FileSpreadsheet size={15} className="text-emerald-600" />
+                                <span>Download CSV</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
