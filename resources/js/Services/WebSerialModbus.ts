@@ -386,9 +386,16 @@ export class WebSerialModbusDriver {
     }
 
     public async readMonitoringRegisters(slaveId = 1): Promise<TnDecodedReading> {
-        const request = buildReadInputRegisters(slaveId, 1000, 27);
-        const registers = await this.sendAndReceive(request, slaveId, 0x04, 1000);
-        return decodeAutonicsTnReadings(registers);
+        try {
+            const request = buildReadInputRegisters(slaveId, 1000, 27);
+            const registers = await this.sendAndReceive(request, slaveId, 0x04, 1000);
+            return decodeAutonicsTnReadings(registers);
+        } catch (err: any) {
+            // If error occurred with 27 registers, try 6 registers (standard PV & SV)
+            const request6 = buildReadInputRegisters(slaveId, 1000, 6);
+            const registers6 = await this.sendAndReceive(request6, slaveId, 0x04, 1000);
+            return decodeAutonicsTnReadings(registers6);
+        }
     }
 
     public async writeHoldingRegister(slaveId: number, address: number, value: number): Promise<void> {

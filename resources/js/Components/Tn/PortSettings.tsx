@@ -287,47 +287,48 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
                                     <div className="rounded-2xl bg-amber-100/70 border border-amber-300 p-3 text-xs text-amber-900 font-semibold">
                                         Browser Anda tidak mendukung Web Serial API. Gunakan <strong>Google Chrome</strong> atau <strong>Microsoft Edge</strong> di PC Anda untuk koneksi langsung.
                                     </div>
-                                ) : isWebSerialActive ? (
-                                    <div className="space-y-3 pt-2">
-                                        <div className="flex items-center justify-between text-xs font-semibold bg-white/80 border border-emerald-200 rounded-2xl p-3">
-                                            <div className="flex items-center gap-2 text-emerald-800 font-bold">
-                                                <CheckCircle size={15} />
-                                                <span>Terhubung & Streaming Data Modbus RTU (9600 bps)</span>
-                                            </div>
-                                            {lastWebSerialTime && (
-                                                <span className="text-[11px] text-slate-500 font-mono">Sync: {lastWebSerialTime}</span>
-                                            )}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleWebSerialDisconnect}
-                                            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black py-2.5 text-xs shadow-md transition-all cursor-pointer"
-                                        >
-                                            <Power size={14} />
-                                            <span>Putuskan Koneksi USB Browser</span>
-                                        </button>
-                                    </div>
                                 ) : (
                                     <div className="space-y-4 pt-1">
+                                        {isWebSerialActive && (
+                                            <div className="flex items-center justify-between text-xs font-semibold bg-white/90 border border-emerald-300 rounded-2xl p-3 shadow-sm">
+                                                <div className="flex items-center gap-2 text-emerald-800 font-bold">
+                                                    <CheckCircle size={15} />
+                                                    <span>USB Terhubung (Baud: {serialBaud}, Stop: {serialStopBits}, Parity: {serialParity})</span>
+                                                </div>
+                                                {lastWebSerialTime && (
+                                                    <span className="text-[11px] text-slate-500 font-mono">Sync: {lastWebSerialTime}</span>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {/* Serial Settings Parameter Grids */}
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white/90 p-3 rounded-2xl border border-slate-200 text-xs">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white/90 p-3 rounded-2xl border border-slate-200 text-xs shadow-xs">
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Slave ID</label>
+                                                <label className="block text-[10px] font-black uppercase text-slate-600 mb-1">Slave ID Controller</label>
                                                 <input
                                                     type="number"
                                                     min="1"
                                                     max="247"
                                                     value={serialSlaveId}
-                                                    onChange={(e) => setSerialSlaveId(Math.max(1, parseInt(e.target.value) || 1))}
-                                                    className="w-full rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs font-black text-slate-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                                                    onChange={(e) => {
+                                                        const newId = Math.max(1, parseInt(e.target.value) || 1);
+                                                        setSerialSlaveId(newId);
+                                                        if (isWebSerialActive) {
+                                                            webSerialDriver.stopPolling();
+                                                            webSerialDriver.startPolling(newId, 1000);
+                                                            showStatus('info', `Target polling diubah ke Slave ID: ${newId}`);
+                                                        }
+                                                    }}
+                                                    className="w-full rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs font-black text-slate-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-amber-50/40"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Baudrate</label>
+                                                <label className="block text-[10px] font-black uppercase text-slate-600 mb-1">Baudrate</label>
                                                 <select
                                                     value={serialBaud}
                                                     onChange={(e) => setSerialBaud(parseInt(e.target.value))}
-                                                    className="w-full rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-400"
+                                                    disabled={isWebSerialActive}
+                                                    className="w-full rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-400 disabled:opacity-60"
                                                 >
                                                     <option value="9600">9600 bps (Default)</option>
                                                     <option value="19200">19200 bps</option>
@@ -336,22 +337,24 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Stop Bits</label>
+                                                <label className="block text-[10px] font-black uppercase text-slate-600 mb-1">Stop Bits</label>
                                                 <select
                                                     value={serialStopBits}
                                                     onChange={(e) => setSerialStopBits(parseInt(e.target.value) as 1 | 2)}
-                                                    className="w-full rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-400"
+                                                    disabled={isWebSerialActive}
+                                                    className="w-full rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-400 disabled:opacity-60"
                                                 >
                                                     <option value="2">2 (Autonics)</option>
                                                     <option value="1">1</option>
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Parity</label>
+                                                <label className="block text-[10px] font-black uppercase text-slate-600 mb-1">Parity</label>
                                                 <select
                                                     value={serialParity}
                                                     onChange={(e) => setSerialParity(e.target.value as any)}
-                                                    className="w-full rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-400"
+                                                    disabled={isWebSerialActive}
+                                                    className="w-full rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-400 disabled:opacity-60"
                                                 >
                                                     <option value="none">None (Default)</option>
                                                     <option value="even">Even</option>
@@ -360,15 +363,41 @@ export default function PortSettings({ controllerId, currentPort, isOnline, last
                                             </div>
                                         </div>
 
-                                        <button
-                                            type="button"
-                                            onClick={handleWebSerialConnect}
-                                            disabled={webSerialConnecting}
-                                            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black py-3 text-xs shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
-                                        >
-                                            <Usb size={15} className={webSerialConnecting ? 'animate-spin' : ''} />
-                                            <span>{webSerialConnecting ? 'Membuka Port Serial...' : 'Pilih & Hubungkan USB RS485 (Web Serial)'}</span>
-                                        </button>
+                                        {isWebSerialActive ? (
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const targetId = serialSlaveId === 1 ? 2 : 1;
+                                                        setSerialSlaveId(targetId);
+                                                        webSerialDriver.stopPolling();
+                                                        webSerialDriver.startPolling(targetId, 1000);
+                                                        showStatus('info', `Mencoba polling ke Slave ID ${targetId}...`);
+                                                    }}
+                                                    className="flex-1 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black py-2.5 text-xs shadow-sm transition-all cursor-pointer"
+                                                >
+                                                    🔄 Coba Polling Slave {serialSlaveId === 1 ? '2' : '1'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleWebSerialDisconnect}
+                                                    className="flex-1 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black py-2.5 text-xs shadow-sm transition-all cursor-pointer"
+                                                >
+                                                    <Power size={14} className="inline mr-1" />
+                                                    Putuskan USB
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={handleWebSerialConnect}
+                                                disabled={webSerialConnecting}
+                                                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black py-3 text-xs shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
+                                            >
+                                                <Usb size={15} className={webSerialConnecting ? 'animate-spin' : ''} />
+                                                <span>{webSerialConnecting ? 'Membuka Port Serial...' : 'Pilih & Hubungkan USB RS485 (Web Serial)'}</span>
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
