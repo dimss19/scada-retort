@@ -52,6 +52,23 @@ export default function RetortMonitorShell(props: Props) {
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5">
+                    <div className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
+                        {(['TNS', 'TNH', 'TNL'] as const).map((m) => (
+                            <Link
+                                key={m}
+                                href={route('tn.quick-start', m)}
+                                method="post"
+                                as="button"
+                                className={`px-3 py-1 rounded-lg text-xs font-black transition-all ${
+                                    controller.model_type?.toUpperCase() === m
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                                }`}
+                            >
+                                {m}
+                            </Link>
+                        ))}
+                    </div>
                     <Link href={route('dashboard')} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
                         Dashboard
                     </Link>

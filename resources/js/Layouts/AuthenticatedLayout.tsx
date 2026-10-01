@@ -5,17 +5,16 @@ import { PropsWithChildren, ReactNode } from 'react';
 type NavItem = {
     label: string;
     routeName: string;
+    routeParam?: any;
     activePattern: string;
     excludePattern?: string;
-    requiresController?: boolean;
-    hideWhenControllerActive?: boolean;
 };
 
 const navigation: NavItem[] = [
-    { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard', hideWhenControllerActive: true },
-    { label: 'Monitoring', routeName: 'tn.index', activePattern: 'tn.*', excludePattern: 'tn.recipes.*', requiresController: true },
-    { label: 'Pattern', routeName: 'tn.recipes.index', activePattern: 'tn.recipes.*', requiresController: true },
-    { label: 'History', routeName: 'historian.index', activePattern: 'historian.*', requiresController: true },
+    { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard' },
+    { label: 'Monitoring', routeName: 'tn.index', activePattern: 'tn.*', excludePattern: 'tn.recipes.*' },
+    { label: 'Pattern', routeName: 'tn.recipes.index', activePattern: 'tn.recipes.*' },
+    { label: 'History', routeName: 'historian.index', activePattern: 'historian.*' },
 ];
 
 export default function Authenticated({
@@ -24,23 +23,17 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<{ header?: ReactNode; navContent?: ReactNode; user?: unknown }>) {
     const user = usePage().props.auth.user;
-    const hasActiveController = Boolean((usePage().props as any).ui?.active_tn_id);
-    const isDashboardPage = route().current('dashboard') || route().current('tn.index') || route().current('esp.*');
+    const activeTnId = (usePage().props as any).ui?.active_tn_id;
 
-    const visibleNavigation = navigation.filter((item) => {
-        if (isDashboardPage) {
-            return false;
+    const visibleNavigation: NavItem[] = navigation.map((item) => {
+        if (item.label === 'Monitoring' && activeTnId) {
+            return {
+                ...item,
+                routeName: 'tn.monitor',
+                routeParam: activeTnId,
+            };
         }
-
-        if (hasActiveController && item.hideWhenControllerActive) {
-            return false;
-        }
-
-        if (!hasActiveController && item.requiresController) {
-            return false;
-        }
-
-        return true;
+        return item;
     });
 
     return (
@@ -74,7 +67,7 @@ export default function Authenticated({
                                 return (
                                     <Link
                                         key={item.label}
-                                        href={route(item.routeName)}
+                                        href={item.routeParam ? route(item.routeName, item.routeParam) : route(item.routeName)}
                                         className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
                                             active
                                                 ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'

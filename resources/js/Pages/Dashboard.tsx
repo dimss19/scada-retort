@@ -50,15 +50,20 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
         };
     }, []);
 
+    const [selectedModel, setSelectedModel] = useState<'TNH' | 'TNS' | 'TNL'>('TNH');
+
     const pageUi = (auth as any)?.ui || {};
-    const rs485Controller = controllers.find(c => c.id === pageUi.active_tn_id) || controllers[0] || {
-        id: 1,
-        name: 'USB RS-485 Controller',
-        model_type: 'RS-485',
-        serial_port: 'COM3',
-        is_online: false,
-        slave_id: 1,
-    };
+    const rs485Controller = controllers.find(c => c.model_type?.toUpperCase() === selectedModel) 
+        || controllers.find(c => c.id === pageUi.active_tn_id) 
+        || controllers[0] 
+        || {
+            id: 2,
+            name: `${selectedModel} Controller`,
+            model_type: selectedModel,
+            serial_port: 'COM5',
+            is_online: false,
+            slave_id: selectedModel === 'TNS' ? 1 : (selectedModel === 'TNH' ? 2 : 3),
+        };
 
     const [selectedTestController, setSelectedTestController] = useState<{
         id: number;
@@ -107,14 +112,32 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                 </div>
 
                                 <h3 className="mt-4 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 group-hover:text-blue-700 transition-colors">
-                                    USB RS-485
+                                    USB RS-485 ({selectedModel})
                                 </h3>
                                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
                                     Komunikasi serial kabel langsung via Modbus RTU ke digital temperature controller untuk monitoring dan kontrol sterilisasi retort presisi tinggi.
                                 </p>
 
+                                {/* Controller Model Selector Pills */}
+                                <div className="mt-4 flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200">
+                                    {(['TNH', 'TNS', 'TNL'] as const).map((m) => (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => setSelectedModel(m)}
+                                            className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all ${
+                                                selectedModel === m
+                                                    ? 'bg-blue-600 text-white shadow-sm'
+                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                            }`}
+                                        >
+                                            {m} Controller
+                                        </button>
+                                    ))}
+                                </div>
+
                                 {/* Info Box Spesifikasi RS-485 */}
-                                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-3.5">
+                                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-3.5">
                                     <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
                                         <span className="text-xs font-semibold text-slate-500">Protokol Serial</span>
                                         <span className="text-xs font-mono font-bold text-blue-700">Modbus RTU (Baudrate 9600)</span>
@@ -125,7 +148,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-semibold text-slate-500">Tipe Hardware</span>
-                                        <span className="text-xs font-bold text-emerald-700">Industrial Temperature Controller</span>
+                                        <span className="text-xs font-bold text-emerald-700">Autonics {selectedModel} Industrial</span>
                                     </div>
                                 </div>
                             </div>
@@ -133,10 +156,12 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                             {/* Action Buttons */}
                             <div className="mt-7 space-y-2.5">
                                 <Link
-                                    href={rs485Controller?.id ? route('tn.monitor', rs485Controller.id) : route('tn.index')}
+                                    href={route('tn.quick-start', selectedModel)}
+                                    method="post"
+                                    as="button"
                                     className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 px-5 py-3.5 text-sm font-extrabold text-slate-950 shadow-md hover:from-yellow-300 hover:to-amber-400 transition-all cursor-pointer"
                                 >
-                                    <span>Buka Monitoring USB RS-485</span>
+                                    <span>Buka Monitoring {selectedModel}</span>
                                     <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                                 </Link>
 
@@ -146,7 +171,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                         e.preventDefault();
                                         setSelectedTestController({
                                             id: rs485Controller.id,
-                                            model: rs485Controller.model_type || 'RS485',
+                                            model: selectedModel,
                                             serialPort: rs485Controller.serial_port,
                                             isOnline: rs485Controller.is_online,
                                         });
@@ -154,8 +179,15 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                     className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white hover:bg-blue-50/70 hover:border-blue-300 px-4 py-2.5 text-xs font-black text-slate-800 transition-all shadow-sm cursor-pointer"
                                 >
                                     <Wrench size={14} className="text-blue-600" />
-                                    <span>Test Pin & Relay RS-485</span>
+                                    <span>Test Pin & Relay {selectedModel}</span>
                                 </button>
+
+                                <Link
+                                    href={route('tn.index')}
+                                    className="pt-1 text-center text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline block"
+                                >
+                                    Lihat Seluruh Halaman Pilihan Controller (TNS, TNH, TNL) →
+                                </Link>
                             </div>
                         </div>
                     </div>
