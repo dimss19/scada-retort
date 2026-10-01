@@ -233,7 +233,7 @@ export function calculateF0(temperatures: number[], intervalSeconds: number = 1)
     const dtMinutes = intervalSeconds / 60;
     for (const temp of temperatures) {
         if (temp >= 100) {
-            f0 += dtMinutes * Math.pow(10, (temp - 121.11) / 10);
+            f0 += dtMinutes * Math.pow(10, (temp - 121.1) / 10);
         }
     }
     return Math.round(f0 * 100) / 100;

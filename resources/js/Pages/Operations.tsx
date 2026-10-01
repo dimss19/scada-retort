@@ -24,6 +24,7 @@ import {
     CheckCircle2,
 } from 'lucide-react';
 import ProcessDetailView from '@/Components/History/ProcessDetailView';
+import { calculateF0 } from '@/Pages/Tn/retortTelemetry';
 
 type Module = 'scada' | 'historian' | 'alarm' | 'notifications' | 'database';
 type Props = { module: Module; histories?: any[] };
@@ -288,7 +289,26 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                             : null;
                         const logCount = h.log_data?.length || 0;
                         const logs = h.log_data || [];
-                        const maxPv = logs.length > 0 ? Math.max(...logs.map((l: any) => Number(l.pv ?? 0))) : 0;
+                        const temps = logs.map((l: any) => {
+                            let pv = Number(l.pv ?? 0);
+                            const dp = Number(l.decimal_point ?? 0);
+                            if (dp > 0) pv = pv / Math.pow(10, dp);
+                            else if (pv > 300) pv = pv / 10;
+                            return pv;
+                        }).filter((pv: number) => pv > 0);
+
+                        let intervalSeconds = 1;
+                        if (logs.length >= 2 && logs[0].created_at && logs[1].created_at) {
+                            const diff = Math.abs(new Date(logs[0].created_at).getTime() - new Date(logs[1].created_at).getTime()) / 1000;
+                            if (diff > 0 && diff <= 60) intervalSeconds = diff;
+                        }
+
+                        const calculatedF0 = calculateF0(temps, intervalSeconds);
+                        const f0Value = h.min_f0_achieved !== null && h.min_f0_achieved !== undefined
+                            ? Number(h.min_f0_achieved)
+                            : calculatedF0;
+
+                        const maxPv = temps.length > 0 ? Math.max(...temps) : 0;
                         const machineName = h.controller?.machine?.machine_name || h.controller?.model_type || `Controller #${h.tn_controller_id}`;
 
                         return (
@@ -356,8 +376,10 @@ function Historian({ histories = [] }: { histories?: any[] }) {
 
                                     <div className="space-y-2 text-xs">
                                         <div className="flex items-center justify-between text-slate-600 font-semibold">
-                                            <span>Mesin / Controller:</span>
-                                            <span className="font-bold text-slate-900">{machineName}</span>
+                                            <span>F0:</span>
+                                            <span className="font-mono text-emerald-600 font-black text-sm">
+                                                {endTime ? `${f0Value.toFixed(2)} Menit` : 'Sedang Berjalan...'}
+                                            </span>
                                         </div>
                                         <div className="flex items-center justify-between text-slate-600 font-semibold">
                                             <span>Waktu Mulai:</span>
