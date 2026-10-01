@@ -15,13 +15,31 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
+    $selectedCode = 'RT-001';
+    $lastSeen = \Illuminate\Support\Facades\Cache::get("device.{$selectedCode}.last_seen");
+    $isEspOnline = $lastSeen && (now()->timestamp - $lastSeen < 30);
+    $espIp = \Illuminate\Support\Facades\Cache::get("device.{$selectedCode}.ip");
+
     return Inertia::render('Dashboard', [
         'tnCount' => \App\Models\TnController::count(),
         'tnOnline' => \App\Models\TnController::where('is_online', true)->count(),
         'recipeCount' => \App\Models\TnRecipeTemplate::count(),
         'controllers' => \App\Models\TnController::all(),
+        'espOnline' => (bool)$isEspOnline,
+        'espIp' => $espIp,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/esp/status', function () {
+    $selectedCode = 'RT-001';
+    $lastSeen = \Illuminate\Support\Facades\Cache::get("device.{$selectedCode}.last_seen");
+    $isOnline = $lastSeen && (now()->timestamp - $lastSeen < 30);
+    $ip = \Illuminate\Support\Facades\Cache::get("device.{$selectedCode}.ip");
+    return response()->json([
+        'is_online' => (bool)$isOnline,
+        'ip' => $ip,
+    ]);
+})->name('esp.status');
 
 Route::get('/test-lock', function () {
     $lock = \Illuminate\Support\Facades\Cache::lock('modbus_port_' . md5('COM6'), 5);
