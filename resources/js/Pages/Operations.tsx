@@ -378,7 +378,7 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                                         <div className="flex items-center justify-between text-slate-600 font-semibold">
                                             <span>F0:</span>
                                             <span className="font-mono text-emerald-600 font-black text-sm">
-                                                {endTime ? `${f0Value.toFixed(2)} Menit` : 'Sedang Berjalan...'}
+                                                {endTime ? f0Value.toFixed(2) : 'Sedang Berjalan...'}
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between text-slate-600 font-semibold">
