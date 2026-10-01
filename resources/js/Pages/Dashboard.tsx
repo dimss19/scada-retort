@@ -195,13 +195,6 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                     <Wrench size={14} className="text-blue-600" />
                                     <span>Test Pin & Relay {selectedModel}</span>
                                 </button>
-
-                                <Link
-                                    href={route('tn.index')}
-                                    className="pt-1 text-center text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline block"
-                                >
-                                    Lihat Seluruh Halaman Pilihan Controller (TNS, TNH, TNL) →
-                                </Link>
                             </div>
                         </div>
                     </div>
