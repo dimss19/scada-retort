@@ -14,10 +14,25 @@ class TnControllerController extends Controller
         $controllerId = request()->session()->get('active_tn_id');
 
         if ($controllerId && $controller = TnController::find($controllerId)) {
+            request()->session()->put([
+                'active_mode' => 'tn',
+                'active_tn_id' => $controller->id,
+                'active_tn_model' => $controller->model_type,
+            ]);
             return redirect()->route('tn.monitor', $controller->id);
         }
 
-        return redirect()->route('dashboard')->with('info', 'Pilih tipe controller terlebih dahulu.');
+        $controller = TnController::first();
+        if ($controller) {
+            request()->session()->put([
+                'active_mode' => 'tn',
+                'active_tn_id' => $controller->id,
+                'active_tn_model' => $controller->model_type,
+            ]);
+            return redirect()->route('tn.monitor', $controller->id);
+        }
+
+        return $this->quickStart('TNS');
     }
 
     public function quickStart(string $model)
@@ -31,14 +46,33 @@ class TnControllerController extends Controller
             ->first();
 
         if (!$controller) {
-            return redirect()->route('tn.index')->with(
-                'error',
-                "Profil {$model} belum tersedia. Jalankan database seeder terlebih dahulu."
+            $machine = \App\Models\Machine::firstOrCreate(
+                ['machine_code' => "RT-{$model}"],
+                ['machine_name' => "Retort {$model}", 'description' => "Production retort machine ({$model})", 'location' => 'Production Area', 'status' => 'Active']
             );
+
+            $slaveId = $model === 'TNS' ? 1 : ($model === 'TNH' ? 2 : 3);
+            $controller = TnController::create([
+                'machine_id' => $machine->id,
+                'name' => "{$model} Controller",
+                'model_type' => $model,
+                'slave_id' => $slaveId,
+                'control_model' => 'program',
+                'serial_port' => config('tn.serial_port', 'COM3'),
+                'baudrate' => config('tn.baudrate', 9600),
+                'parity' => config('tn.parity', 'N'),
+                'stopbits' => config('tn.stopbits', 2),
+                'communication' => 'RS485',
+                'is_online' => true,
+            ]);
         }
 
-        $controller->update(['serial_port' => $this->detectSerialPort()]);
+        if (empty($controller->serial_port)) {
+            $controller->update(['serial_port' => config('tn.serial_port', 'COM3')]);
+        }
+
         request()->session()->put([
+            'active_mode' => 'tn',
             'active_tn_id' => $controller->id,
             'active_tn_model' => $controller->model_type,
         ]);

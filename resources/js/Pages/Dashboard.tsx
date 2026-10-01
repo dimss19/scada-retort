@@ -133,7 +133,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                             {/* Action Buttons */}
                             <div className="mt-7 space-y-2.5">
                                 <Link
-                                    href={route('tn.index')}
+                                    href={rs485Controller?.id ? route('tn.monitor', rs485Controller.id) : route('tn.index')}
                                     className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 px-5 py-3.5 text-sm font-extrabold text-slate-950 shadow-md hover:from-yellow-300 hover:to-amber-400 transition-all cursor-pointer"
                                 >
                                     <span>Buka Monitoring USB RS-485</span>
