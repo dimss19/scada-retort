@@ -48,6 +48,14 @@ Route::get('/test-lock', function () {
     return response()->json(['acquired' => $acquired, 'driver' => config('cache.default')]);
 });
 
+Route::post('/system-mode', function (\Illuminate\Http\Request $request) {
+    $mode = $request->input('mode');
+    if (in_array($mode, ['esp', 'tn'])) {
+        $request->session()->put('active_mode', $mode);
+    }
+    return response()->json(['success' => true, 'mode' => $mode]);
+})->name('system.mode');
+
 Route::middleware('auth')->group(function () {
     Route::get('/scada', fn () => redirect()->route('tn.index'))->name('scada.index');
     Route::get('/historian', function () {

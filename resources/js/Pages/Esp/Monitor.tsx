@@ -33,6 +33,7 @@ interface Props {
     } | null;
     histories?: any[];
     initialPattern?: any;
+    initialTab?: 'monitor' | 'pattern' | 'history';
 }
 
 export default function EspMonitor({
@@ -44,8 +45,35 @@ export default function EspMonitor({
     systemEvent,
     histories = [],
     initialPattern,
+    initialTab = 'monitor',
 }: Props) {
-    const [activeTab, setActiveTab] = useState<'monitor' | 'pattern' | 'history'>('monitor');
+    const getInitialTab = (): 'monitor' | 'pattern' | 'history' => {
+        if (typeof window !== 'undefined') {
+            const urlTab = new URLSearchParams(window.location.search).get('tab');
+            if (urlTab === 'pattern' || urlTab === 'history' || urlTab === 'monitor') {
+                return urlTab;
+            }
+        }
+        return initialTab;
+    };
+
+    const [activeTab, setActiveTab] = useState<'monitor' | 'pattern' | 'history'>(getInitialTab);
+
+    const handleSwitchTab = (tab: 'monitor' | 'pattern' | 'history') => {
+        setActiveTab(tab);
+        setSelectedBatch(null);
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tab);
+            window.history.replaceState({}, '', url.toString());
+        }
+    };
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('scada_active_mode', 'esp');
+        }
+    }, []);
     const [telemetry, setTelemetry] = useState<EspTelemetryData>(initialTelemetry);
     const [history, setHistory] = useState<any[]>(initialHistory);
     const [isOnline, setIsOnline] = useState<boolean>(initialIsOnline);
@@ -329,9 +357,15 @@ export default function EspMonitor({
         <AuthenticatedLayout
             navContent={
                 <div className="flex items-center gap-2">
+                    <Link
+                        href={route('dashboard')}
+                        className="shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold text-slate-200 hover:bg-blue-900/50 hover:text-white transition-all duration-200"
+                    >
+                        Dashboard
+                    </Link>
                     <button
                         type="button"
-                        onClick={() => { setActiveTab('monitor'); setSelectedBatch(null); }}
+                        onClick={() => handleSwitchTab('monitor')}
                         className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
                             activeTab === 'monitor'
                                 ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
@@ -342,7 +376,7 @@ export default function EspMonitor({
                     </button>
                     <button
                         type="button"
-                        onClick={() => { setActiveTab('pattern'); setSelectedBatch(null); }}
+                        onClick={() => handleSwitchTab('pattern')}
                         className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
                             activeTab === 'pattern'
                                 ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
@@ -353,7 +387,7 @@ export default function EspMonitor({
                     </button>
                     <button
                         type="button"
-                        onClick={() => { setActiveTab('history'); setSelectedBatch(null); }}
+                        onClick={() => handleSwitchTab('history')}
                         className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
                             activeTab === 'history'
                                 ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'

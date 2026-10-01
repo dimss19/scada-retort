@@ -1,6 +1,6 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode } from 'react';
+import { PropsWithChildren, ReactNode, useEffect, useState } from 'react';
 
 type NavItem = {
     label: string;
@@ -8,14 +8,8 @@ type NavItem = {
     routeParam?: any;
     activePattern: string;
     excludePattern?: string;
+    tabParam?: string;
 };
-
-const navigation: NavItem[] = [
-    { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard' },
-    { label: 'Monitoring', routeName: 'tn.index', activePattern: 'tn.*', excludePattern: 'tn.recipes.*' },
-    { label: 'Pattern', routeName: 'tn.recipes.index', activePattern: 'tn.recipes.*' },
-    { label: 'History', routeName: 'historian.index', activePattern: 'historian.*' },
-];
 
 export default function Authenticated({
     header,
@@ -23,18 +17,78 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<{ header?: ReactNode; navContent?: ReactNode; user?: unknown }>) {
     const user = usePage().props.auth.user;
-    const activeTnId = (usePage().props as any).ui?.active_tn_id;
+    const ui = (usePage().props as any).ui || {};
+    const serverActiveMode = ui.active_mode;
+    const activeTnId = ui.active_tn_id;
 
-    const visibleNavigation: NavItem[] = navigation.map((item) => {
-        if (item.label === 'Monitoring' && activeTnId) {
-            return {
-                ...item,
-                routeName: 'tn.monitor',
-                routeParam: activeTnId,
-            };
+    const isEspRoute = route().current('esp.*') ?? false;
+    const isTnRoute = (route().current('tn.*') || route().current('historian.*')) ?? false;
+
+    const [activeMode, setActiveMode] = useState<'esp' | 'tn'>(() => {
+        if (isEspRoute) return 'esp';
+        if (isTnRoute) return 'tn';
+        if (serverActiveMode === 'esp' || serverActiveMode === 'tn') return serverActiveMode;
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('scada_active_mode');
+            if (saved === 'esp' || saved === 'tn') return saved;
         }
-        return item;
+        return 'tn';
     });
+
+    useEffect(() => {
+        if (isEspRoute) {
+            setActiveMode('esp');
+            localStorage.setItem('scada_active_mode', 'esp');
+        } else if (isTnRoute) {
+            setActiveMode('tn');
+            localStorage.setItem('scada_active_mode', 'tn');
+        } else if (serverActiveMode) {
+            setActiveMode(serverActiveMode);
+            localStorage.setItem('scada_active_mode', serverActiveMode);
+        }
+    }, [isEspRoute, isTnRoute, serverActiveMode]);
+
+    let visibleNavigation: NavItem[] = [];
+
+    if (activeMode === 'esp') {
+        visibleNavigation = [
+            { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard' },
+            { label: 'Monitoring', routeName: 'esp.monitor', routeParam: { tab: 'monitor' }, activePattern: 'esp.monitor', tabParam: 'monitor' },
+            { label: 'Pattern', routeName: 'esp.monitor', routeParam: { tab: 'pattern' }, activePattern: 'esp.monitor', tabParam: 'pattern' },
+            { label: 'History', routeName: 'esp.monitor', routeParam: { tab: 'history' }, activePattern: 'esp.monitor', tabParam: 'history' },
+        ];
+    } else {
+        visibleNavigation = [
+            { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard' },
+            {
+                label: 'Monitoring',
+                routeName: activeTnId ? 'tn.monitor' : 'tn.index',
+                routeParam: activeTnId,
+                activePattern: 'tn.*',
+                excludePattern: 'tn.recipes.*',
+            },
+            { label: 'Pattern', routeName: 'tn.recipes.index', activePattern: 'tn.recipes.*' },
+            { label: 'History', routeName: 'historian.index', activePattern: 'historian.*' },
+        ];
+    }
+
+    const isItemActive = (item: NavItem) => {
+        if (item.activePattern === 'dashboard') {
+            return route().current('dashboard') ?? false;
+        }
+
+        if (activeMode === 'esp') {
+            if (!route().current('esp.*')) return false;
+            if (typeof window !== 'undefined' && item.tabParam) {
+                const currentTab = new URLSearchParams(window.location.search).get('tab') || 'monitor';
+                return currentTab === item.tabParam;
+            }
+            return true;
+        }
+
+        const matches = (route().current(item.activePattern) ?? false) && !(item.excludePattern && route().current(item.excludePattern));
+        return matches;
+    };
 
     return (
         <div className="relative min-h-screen bg-[#f0f4f9] font-sans text-slate-800 selection:bg-yellow-400 selection:text-slate-950">
@@ -63,7 +117,7 @@ export default function Authenticated({
                             navContent
                         ) : (
                             visibleNavigation.map((item) => {
-                                const active = (route().current(item.activePattern) ?? false) && !(item.excludePattern && route().current(item.excludePattern));
+                                const active = isItemActive(item);
                                 return (
                                     <Link
                                         key={item.label}

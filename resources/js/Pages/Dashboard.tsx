@@ -124,7 +124,18 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                         <button
                                             key={m}
                                             type="button"
-                                            onClick={() => setSelectedModel(m)}
+                                            onClick={() => {
+                                                setSelectedModel(m);
+                                                localStorage.setItem('scada_active_mode', 'tn');
+                                                fetch('/system-mode', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                                                    },
+                                                    body: JSON.stringify({ mode: 'tn' }),
+                                                }).catch(() => {});
+                                            }}
                                             className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all ${
                                                 selectedModel === m
                                                     ? 'bg-blue-600 text-white shadow-sm'
@@ -159,6 +170,9 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                     href={route('tn.quick-start', selectedModel)}
                                     method="post"
                                     as="button"
+                                    onClick={() => {
+                                        localStorage.setItem('scada_active_mode', 'tn');
+                                    }}
                                     className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 px-5 py-3.5 text-sm font-extrabold text-slate-950 shadow-md hover:from-yellow-300 hover:to-amber-400 transition-all cursor-pointer"
                                 >
                                     <span>Buka Monitoring {selectedModel}</span>
@@ -245,6 +259,9 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                             <div className="mt-7">
                                 <Link
                                     href={route('esp.monitor')}
+                                    onClick={() => {
+                                        localStorage.setItem('scada_active_mode', 'esp');
+                                    }}
                                     className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 px-5 py-3.5 text-sm font-extrabold text-slate-950 shadow-md hover:from-yellow-300 hover:to-amber-400 transition-all cursor-pointer"
                                 >
                                     <span>Buka Monitoring ESP Logger</span>

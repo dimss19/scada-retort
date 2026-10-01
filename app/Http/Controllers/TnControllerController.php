@@ -11,6 +11,7 @@ class TnControllerController extends Controller
 {
     public function index()
     {
+        request()->session()->put('active_mode', 'tn');
         return Inertia::render('Tn/Index');
     }
 

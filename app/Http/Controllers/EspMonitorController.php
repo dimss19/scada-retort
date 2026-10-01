@@ -15,6 +15,9 @@ class EspMonitorController extends Controller
      */
     public function index(Request $request)
     {
+        $request->session()->put('active_mode', 'esp');
+
+        $tab = $request->query('tab', 'monitor');
         $devices = Device::all();
         $selectedCode = $request->query('machine_code', $devices->first()?->machine_code ?? 'RT-001');
 
@@ -82,6 +85,7 @@ class EspMonitorController extends Controller
         }
 
         return Inertia::render('Esp/Monitor', [
+            'initialTab' => in_array($tab, ['monitor', 'pattern', 'history']) ? $tab : 'monitor',
             'device' => $device,
             'devices' => $devices,
             'initialTelemetry' => $latest,
