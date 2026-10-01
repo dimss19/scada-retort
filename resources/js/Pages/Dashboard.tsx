@@ -123,10 +123,6 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                         <span className="text-xs font-semibold text-slate-500">Serial Port</span>
                                         <span className="text-xs font-mono font-black text-slate-800">{rs485Controller.serial_port || 'COM Serial Port'}</span>
                                     </div>
-                                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
-                                        <span className="text-xs font-semibold text-slate-500">Fitur Kontrol</span>
-                                        <span className="text-xs font-bold text-slate-700">Sterilisasi, Alarm Relay & Pattern Recipe</span>
-                                    </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-semibold text-slate-500">Tipe Hardware</span>
                                         <span className="text-xs font-bold text-emerald-700">Industrial Temperature Controller</span>
@@ -202,10 +198,6 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                     <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
                                         <span className="text-xs font-semibold text-slate-500">Protokol Jaringan</span>
                                         <span className="text-xs font-mono font-bold text-blue-700">MQTT Broker (Port 1883)</span>
-                                    </div>
-                                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
-                                        <span className="text-xs font-semibold text-slate-500">Sensor Suhu</span>
-                                        <span className="text-xs font-bold text-slate-700">Dual Channel (PV1 / PV2 & F₀ Sterilisasi)</span>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-semibold text-slate-500">IP Jaringan ESP</span>
