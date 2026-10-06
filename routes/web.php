@@ -59,7 +59,7 @@ Route::post('/system-mode', function (\Illuminate\Http\Request $request) {
 Route::middleware('auth')->group(function () {
     Route::get('/scada', fn () => redirect()->route('tn.index'))->name('scada.index');
     Route::get('/historian', function () {
-        $histories = \App\Models\TnProcessHistory::with('controller.machine')->orderBy('start_time')->get();
+        $histories = \App\Models\TnProcessHistory::with('controller.machine')->latest('start_time')->get();
         return Inertia::render('Operations', ['module' => 'historian', 'histories' => $histories]);
     })->name('historian.index');
     Route::get('/database', fn () => Inertia::render('Operations', ['module' => 'database']))->name('database.index');

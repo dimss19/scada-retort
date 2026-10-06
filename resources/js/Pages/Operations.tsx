@@ -108,25 +108,40 @@ function Historian({ histories = [] }: { histories?: any[] }) {
 
     const filteredHistories = useMemo(() => {
         return histories.filter((h) => {
-            const startTime = new Date(h.start_time).getTime();
-            if (isNaN(startTime)) return true;
+            const rawDate = h.start_time || h.created_at;
+            if (!rawDate) return period === 'Semua' && !customDate;
 
+            const dateStr = typeof rawDate === 'string' ? rawDate.replace(' ', 'T') : rawDate;
+            const itemDate = new Date(dateStr);
+            if (isNaN(itemDate.getTime())) return period === 'Semua' && !customDate;
+
+            const itemTime = itemDate.getTime();
+            const itemYmd = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}`;
+
+            // 1. Filter Tanggal Kustom (format YYYY-MM-DD dari input type="date")
             if (customDate) {
-                const targetDateStr = new Date(customDate).toDateString();
-                const itemDateStr = new Date(h.start_time).toDateString();
-                return targetDateStr === itemDateStr;
+                return itemYmd === customDate;
             }
 
-            const now = Date.now();
+            // 2. Filter Periode
+            if (period === 'Semua') {
+                return true;
+            }
+
+            const now = new Date();
             if (period === 'Hari') {
-                const oneDayAgo = now - 24 * 60 * 60 * 1000;
-                return startTime >= oneDayAgo;
+                // Hari ini (mulai dari jam 00:00:00 hari ini) ATAU dalam 24 jam terakhir
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).getTime();
+                const oneDayAgo = now.getTime() - 24 * 60 * 60 * 1000;
+                return itemTime >= Math.min(startOfToday, oneDayAgo);
             } else if (period === 'Minggu') {
-                const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
-                return startTime >= oneWeekAgo;
+                // 7 hari terakhir
+                const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0).getTime();
+                return itemTime >= sevenDaysAgo;
             } else if (period === 'Bulan') {
-                const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
-                return startTime >= oneMonthAgo;
+                // 30 hari terakhir
+                const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30, 0, 0, 0).getTime();
+                return itemTime >= thirtyDaysAgo;
             }
 
             return true;
@@ -238,11 +253,12 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                             {['Semua', 'Hari', 'Minggu', 'Bulan'].map((x) => (
                                 <button
                                     key={x}
+                                    type="button"
                                     onClick={() => { setPeriod(x as any); setCustomDate(''); }}
                                     className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${
                                         period === x && !customDate
                                             ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-sm'
-                                            : 'text-slate-600 hover:text-slate-900'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                                     }`}
                                 >
                                     {x}
@@ -256,14 +272,17 @@ function Historian({ histories = [] }: { histories?: any[] }) {
                             <input
                                 type="date"
                                 value={customDate}
-                                onChange={(e) => setCustomDate(e.target.value)}
+                                onChange={(e) => {
+                                    setCustomDate(e.target.value);
+                                    if (e.target.value) setPeriod('Semua');
+                                }}
                                 className="rounded-xl border-slate-300 bg-slate-50 text-xs font-bold text-slate-800 shadow-sm focus:border-blue-600 focus:ring-blue-600 py-2 px-3"
                             />
                         </div>
                         {customDate && (
                             <button
                                 type="button"
-                                onClick={() => setCustomDate('')}
+                                onClick={() => { setCustomDate(''); setPeriod('Semua'); }}
                                 className="mt-6 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
                             >
                                 Reset
@@ -276,14 +295,30 @@ function Historian({ histories = [] }: { histories?: any[] }) {
             {/* Batch Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredHistories.length === 0 ? (
-                    <div className="col-span-full py-16 text-center text-slate-400 font-bold bg-white/95 rounded-3xl border border-slate-200 shadow-sm">
-                        <Clock className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                        Tidak ada riwayat proses yang cocok dengan filter.
+                    <div className="col-span-full py-16 text-center text-slate-500 font-medium bg-white/95 rounded-3xl border border-slate-200 shadow-sm">
+                        <Clock className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                        <p className="text-base font-bold text-slate-700">Tidak ada riwayat proses yang cocok</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                            {customDate 
+                                ? `Tidak ditemukan data proses pada tanggal ${customDate}`
+                                : `Tidak ada data proses untuk filter periode ${period}`}
+                        </p>
+                        {(period !== 'Semua' || customDate) && (
+                            <button
+                                type="button"
+                                onClick={() => { setPeriod('Semua'); setCustomDate(''); }}
+                                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors"
+                            >
+                                Tampilkan Semua Data
+                            </button>
+                        )}
                     </div>
                 ) : (
                     filteredHistories.map((h: any) => {
-                        const startTime = new Date(h.start_time);
-                        const endTime = h.end_time ? new Date(h.end_time) : null;
+                        const rawStart = h.start_time || h.created_at;
+                        const startTime = rawStart ? new Date(typeof rawStart === 'string' ? rawStart.replace(' ', 'T') : rawStart) : new Date();
+                        const rawEnd = h.end_time;
+                        const endTime = rawEnd ? new Date(typeof rawEnd === 'string' ? rawEnd.replace(' ', 'T') : rawEnd) : null;
                         const durationMinutes = endTime
                             ? Math.round((endTime.getTime() - startTime.getTime()) / 60000)
                             : null;
