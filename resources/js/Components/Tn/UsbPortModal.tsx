@@ -257,7 +257,7 @@ export default function UsbPortModal({
                                         </span>
                                     </div>
                                     <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
-                                        Scan port converter USB RS-485 yang dicolokkan ke <strong>laptop ini</strong> (seperti <code className="font-mono bg-amber-100 font-bold px-1 rounded text-slate-900">COM6</code>) melalui browser Chrome/Edge.
+                                        Scan port converter USB RS-485 yang terhubung ke <strong>laptop Anda</strong> (bebas port apa saja: <code className="font-mono bg-amber-100 font-bold px-1 rounded text-slate-900">COM1, COM3, COM4, COM6, dll.</code>) langsung melalui pop-up browser Chrome/Edge.
                                     </p>
                                     {isWebSerialConnected && (
                                         <div className="mt-2 flex items-center gap-2">
