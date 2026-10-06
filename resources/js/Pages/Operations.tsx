@@ -107,41 +107,82 @@ function Historian({ histories = [] }: { histories?: any[] }) {
     const [activeMenu, setActiveMenu] = useState<number | null>(null);
 
     const filteredHistories = useMemo(() => {
+        if (!histories || histories.length === 0) return [];
+
+        // 1. Filter Tanggal Kustom (format YYYY-MM-DD dari input type="date")
+        if (customDate) {
+            return histories.filter((h) => {
+                const rawDate = h.start_time || h.created_at;
+                if (!rawDate) return false;
+                const d = new Date(typeof rawDate === 'string' ? rawDate.replace(' ', 'T') : rawDate);
+                if (isNaN(d.getTime())) return false;
+                const itemYmd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                return itemYmd === customDate;
+            });
+        }
+
+        // 2. Filter Periode 'Semua'
+        if (period === 'Semua') {
+            return histories;
+        }
+
+        // Cari referensi waktu yang relevan:
+        // Jika ada data dalam 30 hari terakhir dari hari ini, gunakan 'now'.
+        // Jika semua data merupakan data lama/lampau, gunakan tanggal batch paling akhir sebagai acuan agar tombol langsung menyaring.
+        const now = new Date();
+        const nowTime = now.getTime();
+        let maxItemTime = 0;
+        let hasRecentData = false;
+
+        for (const h of histories) {
+            const raw = h.start_time || h.created_at;
+            if (raw) {
+                const t = new Date(typeof raw === 'string' ? raw.replace(' ', 'T') : raw).getTime();
+                if (!isNaN(t)) {
+                    if (t > maxItemTime) maxItemTime = t;
+                    if (t >= nowTime - 30 * 24 * 60 * 60 * 1000) {
+                        hasRecentData = true;
+                    }
+                }
+            }
+        }
+
+        const refDate = hasRecentData ? now : (maxItemTime > 0 ? new Date(maxItemTime) : now);
+        const refTime = refDate.getTime();
+
         return histories.filter((h) => {
             const rawDate = h.start_time || h.created_at;
-            if (!rawDate) return period === 'Semua' && !customDate;
+            if (!rawDate) return false;
 
             const dateStr = typeof rawDate === 'string' ? rawDate.replace(' ', 'T') : rawDate;
             const itemDate = new Date(dateStr);
-            if (isNaN(itemDate.getTime())) return period === 'Semua' && !customDate;
+            if (isNaN(itemDate.getTime())) return false;
 
             const itemTime = itemDate.getTime();
-            const itemYmd = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}`;
 
-            // 1. Filter Tanggal Kustom (format YYYY-MM-DD dari input type="date")
-            if (customDate) {
-                return itemYmd === customDate;
-            }
-
-            // 2. Filter Periode
-            if (period === 'Semua') {
-                return true;
-            }
-
-            const now = new Date();
             if (period === 'Hari') {
-                // Hari ini (mulai dari jam 00:00:00 hari ini) ATAU dalam 24 jam terakhir
-                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).getTime();
-                const oneDayAgo = now.getTime() - 24 * 60 * 60 * 1000;
-                return itemTime >= Math.min(startOfToday, oneDayAgo);
-            } else if (period === 'Minggu') {
-                // 7 hari terakhir
-                const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0).getTime();
-                return itemTime >= sevenDaysAgo;
-            } else if (period === 'Bulan') {
-                // 30 hari terakhir
-                const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30, 0, 0, 0).getTime();
-                return itemTime >= thirtyDaysAgo;
+                // Hari kalender yang sama dengan refDate ATAU 24 jam terakhir dari refDate
+                const isSameCalendarDay =
+                    itemDate.getFullYear() === refDate.getFullYear() &&
+                    itemDate.getMonth() === refDate.getMonth() &&
+                    itemDate.getDate() === refDate.getDate();
+                const within24h = itemTime >= refTime - 24 * 60 * 60 * 1000 && itemTime <= refTime + 60 * 60 * 1000;
+                return isSameCalendarDay || within24h;
+            }
+
+            if (period === 'Minggu') {
+                // 7 hari terakhir dari refDate
+                const sevenDaysAgo = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate() - 7, 0, 0, 0).getTime();
+                return itemTime >= sevenDaysAgo && itemTime <= refTime + 24 * 60 * 60 * 1000;
+            }
+
+            if (period === 'Bulan') {
+                // Bulan kalender yang sama dengan refDate ATAU 30 hari terakhir dari refDate
+                const isSameMonth =
+                    itemDate.getFullYear() === refDate.getFullYear() &&
+                    itemDate.getMonth() === refDate.getMonth();
+                const thirtyDaysAgo = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate() - 30, 0, 0, 0).getTime();
+                return isSameMonth || (itemTime >= thirtyDaysAgo && itemTime <= refTime + 24 * 60 * 60 * 1000);
             }
 
             return true;
