@@ -98,7 +98,24 @@ class TnMonitorController extends Controller
     {
         $limit = request('limit', 1800); // 30 minutes of data at 1Hz
         $readings = $tn->readings()->latest()->limit($limit)->get()->reverse()->values();
-        return response()->json($readings);
+
+        $unverifiedCount = rescue(function () {
+            return \App\Models\TnProcessHistory::whereNotNull('end_time')
+                ->where(function ($q) {
+                    $q->whereNull('verification_status')
+                      ->orWhere('verification_status', '!=', 'verified');
+                })
+                ->count();
+        }, 0, false) ?: 0;
+
+        return response()->json([
+            'is_online' => (bool) $tn->is_online,
+            'serial_port' => $tn->serial_port ?? 'AUTO',
+            'last_seen_at' => $tn->last_seen_at,
+            'last_error' => $tn->last_error,
+            'unverified_count' => $unverifiedCount,
+            'readings' => $readings,
+        ]);
     }
 
     public function saveHistory(TnController $tn, Request $request)

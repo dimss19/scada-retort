@@ -96,10 +96,22 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
-                if (!isMounted || !Array.isArray(data)) return;
+                if (!isMounted) return;
 
-                setHistory(data);
-                const latest = data[data.length - 1];
+                let readingsList: any[] = [];
+                if (Array.isArray(data)) {
+                    readingsList = data;
+                } else if (data && typeof data === 'object') {
+                    readingsList = Array.isArray(data.readings) ? data.readings : [];
+                    if (typeof data.unverified_count === 'number') {
+                        window.dispatchEvent(new CustomEvent('unverified-count-update', { detail: data.unverified_count }));
+                    }
+                }
+
+                if (readingsList.length === 0 && !Array.isArray(data)) return;
+
+                setHistory(readingsList);
+                const latest = readingsList[readingsList.length - 1];
 
                 if (latest) {
                     const timestamp = getReadingTimestamp(latest);

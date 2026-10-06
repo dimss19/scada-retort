@@ -20,6 +20,22 @@ export default function Authenticated({
     const ui = (usePage().props as any).ui || {};
     const serverActiveMode = ui.active_mode;
     const activeTnId = ui.active_tn_id;
+    const initialUnverified = Number(ui?.unverified_count ?? 0);
+    const [unverifiedCount, setUnverifiedCount] = useState<number>(initialUnverified);
+
+    useEffect(() => {
+        setUnverifiedCount(Number(ui?.unverified_count ?? 0));
+    }, [ui?.unverified_count]);
+
+    useEffect(() => {
+        const handleUpdate = (e: any) => {
+            if (typeof e.detail === 'number') {
+                setUnverifiedCount(e.detail);
+            }
+        };
+        window.addEventListener('unverified-count-update', handleUpdate);
+        return () => window.removeEventListener('unverified-count-update', handleUpdate);
+    }, []);
 
     const isEspRoute = route().current('esp.*') ?? false;
     const isTnRoute = (route().current('tn.*') || route().current('historian.*')) ?? false;
@@ -112,23 +128,33 @@ export default function Authenticated({
                         </div>
                     </Link>
 
-                    <nav className="ml-6 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:ml-10">
+                    <nav className="ml-6 flex min-w-0 flex-1 items-center gap-2 overflow-visible py-1 xl:ml-10">
                         {navContent ? (
                             navContent
                         ) : (
                             visibleNavigation.map((item) => {
                                 const active = isItemActive(item);
+                                const hasUnverifiedWarning = item.label === 'History' && unverifiedCount > 0;
                                 return (
                                     <Link
                                         key={item.label}
                                         href={item.routeParam ? route(item.routeName, item.routeParam) : route(item.routeName)}
-                                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
+                                        className={`relative shrink-0 rounded-xl px-4 py-2 text-sm font-extrabold transition-all duration-200 ${
                                             active
                                                 ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
                                                 : 'text-slate-200 hover:bg-blue-900/50 hover:text-white'
                                         }`}
                                     >
-                                        {item.label}
+                                        <span>{item.label}</span>
+                                        {hasUnverifiedWarning && (
+                                            <span
+                                                title={`${unverifiedCount} batch proses belum diverifikasi! Segera lengkapi di menu History.`}
+                                                className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5"
+                                            >
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 duration-1000"></span>
+                                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600 ring-2 ring-white shadow-sm"></span>
+                                            </span>
+                                        )}
                                     </Link>
                                 );
                             })
