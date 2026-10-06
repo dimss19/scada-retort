@@ -5,6 +5,7 @@ import { PageProps, ScadaCanvas as ScadaCanvasType, ScadaMapping } from '@/types
 import { TnController } from '@/types/tn';
 import RetortMonitorShell from '@/Components/Tn/RetortMonitorShell';
 import UsbPortModal from '@/Components/Tn/UsbPortModal';
+import { webSerialDriver, WebSerialModbusDriver } from '@/Services/WebSerialModbus';
 import {
     buildRetortEvents,
     buildRetortTelemetry,
@@ -74,32 +75,37 @@ export default function Monitor({ controller, latestReading: initialReading }: P
     } | null>(null);
     const [showPortModal, setShowPortModal] = useState<boolean>(false);
 
+    // Web Serial (Laptop Browser Native Connection)
+    const [isWebSerialConnected, setIsWebSerialConnected] = useState<boolean>(() => webSerialDriver.isConnected());
+    const [webSerialPortLabel, setWebSerialPortLabel] = useState<string | null>(() => webSerialDriver.isConnected() ? 'USB Serial Laptop' : null);
+
+    const isMountedRef = useRef<boolean>(true);
     const lastReadingTimestampRef = useRef<any>(getReadingTimestamp(initialReading));
     const lastSeenAtRef = useRef<number | false>(timestampToMs(getReadingTimestamp(initialReading)));
     const loadReadingsRef = useRef<((replaceLatest?: boolean) => Promise<void>) | null>(null);
 
+    const applyReading = React.useCallback((newReading: any, appendHistory = true) => {
+        if (!isMountedRef.current || !newReading) return;
+
+        const timestamp = getReadingTimestamp(newReading);
+        const timestampMs = timestampToMs(timestamp);
+        lastSeenAtRef.current = timestampMs !== false ? timestampMs : Date.now();
+        setIsLiveOnline(timestampMs === false || Date.now() - (timestampMs || Date.now()) <= staleAfterMs);
+        lastReadingTimestampRef.current = timestamp;
+        setReading(newReading);
+
+        if (appendHistory) {
+            setHistory((previous) => {
+                const next = [...previous, newReading];
+                return next.length > 1800 ? next.slice(next.length - 1800) : next;
+            });
+        }
+    }, [staleAfterMs]);
+
     useEffect(() => {
-        let isMounted = true;
+        isMountedRef.current = true;
         lastReadingTimestampRef.current = getReadingTimestamp(initialReading);
         lastSeenAtRef.current = timestampToMs(getReadingTimestamp(initialReading));
-
-        const applyReading = (newReading: any, appendHistory = true) => {
-            if (!isMounted || !newReading) return;
-
-            const timestamp = getReadingTimestamp(newReading);
-            const timestampMs = timestampToMs(timestamp);
-            lastSeenAtRef.current = timestampMs !== false ? timestampMs : Date.now();
-            setIsLiveOnline(timestampMs === false || Date.now() - (timestampMs || Date.now()) <= staleAfterMs);
-            lastReadingTimestampRef.current = timestamp;
-            setReading(newReading);
-
-            if (appendHistory) {
-                setHistory((previous) => {
-                    const next = [...previous, newReading];
-                    return next.length > 1800 ? next.slice(next.length - 1800) : next;
-                });
-            }
-        };
 
         const loadReadings = async (replaceLatest = false) => {
             try {
@@ -109,7 +115,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
-                if (!isMounted) return;
+                if (!isMountedRef.current) return;
 
                 let readingsList: any[] = [];
                 if (Array.isArray(data)) {
@@ -141,7 +147,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                     setReading(latest);
                 }
             } catch {
-                if (isMounted) setIsLiveOnline(false);
+                if (isMountedRef.current) setIsLiveOnline(false);
             }
         };
 
@@ -177,19 +183,82 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         }, pollIntervalMs);
 
         const staleIntervalId = window.setInterval(() => {
-            if (!isMounted) return;
+            if (!isMountedRef.current) return;
             const lastSeenAt = lastSeenAtRef.current;
             setIsLiveOnline(lastSeenAt !== false && Date.now() - lastSeenAt <= staleAfterMs);
         }, 1000);
 
         return () => {
-            isMounted = false;
+            isMountedRef.current = false;
             loadReadingsRef.current = null;
             window.clearInterval(refreshIntervalId);
             window.clearInterval(staleIntervalId);
             channel?.stopListening('.tn.data');
         };
-    }, [controller.id, controller.polling_interval, initialReading]);
+    }, [controller.id, controller.polling_interval, initialReading, applyReading]);
+
+    // Listen to real-time data directly from Laptop's USB RS-485 via Web Serial
+    useEffect(() => {
+        let lastIngestTime = 0;
+
+        webSerialDriver.onReading = (decoded) => {
+            applyReading({
+                pv: decoded.pv,
+                sv: decoded.sv,
+                heating_mv: decoded.heating_mv,
+                cooling_mv: decoded.cooling_mv,
+                run_status: decoded.run_status,
+                auto_manual: decoded.auto_manual,
+                at_running: false,
+                out1_active: decoded.heating_mv > 0,
+                out2_active: decoded.cooling_mv > 0,
+                alarms: [],
+                alarm_bits: decoded.alarm_status,
+                pattern_current: decoded.pattern_current,
+                step_current: decoded.step_current,
+                process_time: decoded.process_time,
+                rest_time: decoded.rest_time,
+                created_at: decoded.timestamp,
+                decimal_point: decoded.decimal_point,
+            });
+            setIsLiveOnline(true);
+            lastSeenAtRef.current = Date.now();
+
+            // Synchronize telemetry with VPS database every 3s
+            const now = Date.now();
+            if (now - lastIngestTime >= 3000) {
+                lastIngestTime = now;
+                axios.post(route('tn.ingest-reading', controller.id), {
+                    pv: decoded.pv,
+                    decimal_point: decoded.decimal_point,
+                    sv: decoded.sv,
+                    heating_mv: decoded.heating_mv,
+                    cooling_mv: decoded.cooling_mv,
+                    run_status: decoded.run_status,
+                    auto_manual: decoded.auto_manual,
+                    pattern_current: decoded.pattern_current,
+                    step_current: decoded.step_current,
+                    process_time: decoded.process_time,
+                    rest_time: decoded.rest_time,
+                    raw_registers: decoded.raw_registers,
+                }).catch(() => {});
+            }
+        };
+
+        webSerialDriver.onStatusChange = (status) => {
+            if (status === 'disconnected') {
+                setIsWebSerialConnected(false);
+                setWebSerialPortLabel(null);
+            } else if (status === 'connected') {
+                setIsWebSerialConnected(true);
+                setWebSerialPortLabel('USB Serial Laptop');
+            }
+        };
+
+        webSerialDriver.onError = (errMsg) => {
+            console.warn('Web Serial modbus warning:', errMsg);
+        };
+    }, [controller.id, applyReading]);
 
     const isOnline = isLiveOnline;
     const telemetry = useMemo(() => buildRetortTelemetry(reading, isOnline), [isOnline, reading]);
@@ -228,9 +297,24 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         target_temperature: telemetry.targetTemperature,
     } : undefined;
 
-    const sendCommand = (kind: 'run' | 'stop' | 'reset') => {
+    const sendCommand = async (kind: 'run' | 'stop' | 'reset') => {
         if (commandPending || !isOnline) return;
         setCommandPending(kind);
+
+        // If connected directly via laptop's Web Serial, send Modbus command directly
+        if (isWebSerialConnected) {
+            try {
+                const slaveId = controller.slave_id || 1;
+                if (kind === 'run') {
+                    // Autonics TN coil 0: 0 for RUN, 1 for STOP
+                    await webSerialDriver.writeSingleCoil(slaveId, 0, false);
+                } else if (kind === 'stop') {
+                    await webSerialDriver.writeSingleCoil(slaveId, 0, true);
+                }
+            } catch (err: any) {
+                console.error('Gagal mengirim perintah via Web Serial:', err);
+            }
+        }
 
         const routeName = kind === 'reset' ? 'tn.cmd.alarmreset' : 'tn.cmd.runstop';
         const payload = kind === 'reset' ? {} : { run: kind === 'run' };
@@ -241,50 +325,78 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         });
     };
 
-    const handleQuickScan = async () => {
-        if (isScanningPort) return;
-        setIsScanningPort(true);
-        setScanStatus({
-            loading: true,
-            message: 'Sedang memindai port serial/USB di sistem VPS...',
-        });
-
-        try {
-            const res = await axios.post(route('tn.port.scan', controller.id));
-            const data = res.data;
-
-            if (data.success && data.port) {
-                setCurrentSerialPort(data.port);
-                setIsLiveOnline(true);
-                setScanStatus({
-                    loading: false,
-                    success: true,
-                    message: data.message || `Port ${data.port} ditemukan dan berhasil terhubung!`,
-                });
-                loadReadingsRef.current?.(true);
-                setTimeout(() => {
-                    setScanStatus((prev) => (prev?.success ? null : prev));
-                }, 6000);
-            } else {
-                const availPorts = Array.isArray(data.available_ports) && data.available_ports.length > 0
-                    ? ` (Tersedia di VPS: ${data.available_ports.join(', ')})`
-                    : '';
-                setScanStatus({
-                    loading: false,
-                    success: false,
-                    message: (data.message || 'Tidak ada port Modbus yang merespons.') + availPorts,
-                    available_ports: data.available_ports || [],
-                });
-            }
-        } catch (err: any) {
+    /**
+     * Triggers Google Chrome native serial device picker dialog on the laptop
+     * This opens the exact dialog shown in the user's reference image
+     */
+    const handleScanLaptopPort = async () => {
+        if (!WebSerialModbusDriver.isSupported()) {
             setScanStatus({
                 loading: false,
                 success: false,
-                message: err.response?.data?.message || err.message || 'Gagal memindai port serial USB.',
+                message: 'Browser Anda tidak mendukung Web Serial API. Gunakan Google Chrome atau Microsoft Edge di laptop Anda.',
             });
+            return;
+        }
+
+        setIsScanningPort(true);
+        setScanStatus({
+            loading: true,
+            message: 'Silakan pilih port USB serial laptop Anda di jendela browser pop-up...',
+        });
+
+        try {
+            // This invokes navigator.serial.requestPort() immediately
+            await webSerialDriver.connect();
+            setIsWebSerialConnected(true);
+            setWebSerialPortLabel('USB Serial Laptop');
+            setCurrentSerialPort('USB Serial (Laptop)');
+            setIsLiveOnline(true);
+            lastSeenAtRef.current = Date.now();
+
+            setScanStatus({
+                loading: false,
+                success: true,
+                message: 'Port USB Serial Laptop berhasil dihubungkan! Mulai membaca data sensor...',
+            });
+
+            const slaveId = controller.slave_id || 1;
+            webSerialDriver.startPolling(slaveId, 1000);
+
+            setTimeout(() => {
+                setScanStatus(null);
+            }, 5000);
+        } catch (err: any) {
+            console.error('Web Serial connect error:', err);
+            if (err?.name === 'NotFoundError' || err?.message?.includes('No port selected') || err?.message?.includes('cancel')) {
+                setScanStatus({
+                    loading: false,
+                    success: false,
+                    message: 'Pemilihan port USB serial laptop dibatalkan.',
+                });
+            } else {
+                setScanStatus({
+                    loading: false,
+                    success: false,
+                    message: 'Gagal menghubungkan ke port USB serial laptop: ' + (err?.message || 'Error tidak diketahui'),
+                });
+            }
         } finally {
             setIsScanningPort(false);
         }
+    };
+
+    const handleDisconnectLaptopPort = async () => {
+        await webSerialDriver.disconnect();
+        setIsWebSerialConnected(false);
+        setWebSerialPortLabel(null);
+        setCurrentSerialPort(controller.serial_port || 'AUTO');
+        setScanStatus({
+            loading: false,
+            success: true,
+            message: 'Koneksi USB Serial Laptop telah diputuskan.',
+        });
+        setTimeout(() => setScanStatus(null), 3000);
     };
 
     const lastUpdate = telemetry.timestamp
@@ -312,9 +424,12 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 onResetAlarm={() => sendCommand('reset')}
                 isScanningPort={isScanningPort}
                 scanStatus={scanStatus}
-                onScanPort={handleQuickScan}
+                onScanPort={handleScanLaptopPort}
                 onOpenPortModal={() => setShowPortModal(true)}
                 onCloseScanStatus={() => setScanStatus(null)}
+                isWebSerialConnected={isWebSerialConnected}
+                webSerialPortLabel={webSerialPortLabel}
+                onDisconnectWebSerial={handleDisconnectLaptopPort}
             />
 
             {showPortModal && (
@@ -322,6 +437,10 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                     controllerId={controller.id}
                     activePort={currentSerialPort}
                     isOnline={isOnline}
+                    isWebSerialConnected={isWebSerialConnected}
+                    webSerialPortLabel={webSerialPortLabel}
+                    onConnectWebSerial={handleScanLaptopPort}
+                    onDisconnectWebSerial={handleDisconnectLaptopPort}
                     onPortChanged={(newPort) => {
                         setCurrentSerialPort(newPort);
                         loadReadingsRef.current?.(true);

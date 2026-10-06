@@ -10,7 +10,7 @@ import {
     Activity,
     Check,
     Cpu,
-    HelpCircle
+    Laptop,
 } from 'lucide-react';
 
 interface SystemPort {
@@ -26,6 +26,10 @@ interface Props {
     isOnline: boolean;
     onClose: () => void;
     onPortChanged: (newPort: string) => void;
+    isWebSerialConnected?: boolean;
+    webSerialPortLabel?: string | null;
+    onConnectWebSerial?: () => Promise<void>;
+    onDisconnectWebSerial?: () => Promise<void>;
 }
 
 export default function UsbPortModal({
@@ -34,6 +38,10 @@ export default function UsbPortModal({
     isOnline,
     onClose,
     onPortChanged,
+    isWebSerialConnected,
+    webSerialPortLabel,
+    onConnectWebSerial,
+    onDisconnectWebSerial,
 }: Props) {
     const [ports, setPorts] = useState<SystemPort[]>([]);
     const [loadingPorts, setLoadingPorts] = useState<boolean>(true);
@@ -234,6 +242,63 @@ export default function UsbPortModal({
 
                 {/* Body Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                    {/* Card Port USB Laptop (Browser Web Serial API) */}
+                    <div className="rounded-2xl border-2 border-amber-400 bg-amber-50/80 p-5 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-start gap-3.5">
+                                <div className="h-11 w-11 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0">
+                                    <Laptop size={22} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-base font-black text-slate-900">Port USB Serial Laptop</h3>
+                                        <span className="bg-amber-400 text-slate-950 font-black text-[10px] uppercase px-2 py-0.5 rounded-full">
+                                            Rekomendasi
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
+                                        Scan port converter USB RS-485 yang dicolokkan ke <strong>laptop ini</strong> (seperti <code className="font-mono bg-amber-100 font-bold px-1 rounded text-slate-900">COM6</code>) melalui browser Chrome/Edge.
+                                    </p>
+                                    {isWebSerialConnected && (
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-600 text-white shadow-sm">
+                                                <Check size={12} /> Terhubung: {webSerialPortLabel || 'USB Serial Laptop'}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="shrink-0 self-end sm:self-center">
+                                {isWebSerialConnected ? (
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (onDisconnectWebSerial) await onDisconnectWebSerial();
+                                        }}
+                                        className="rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 px-4 py-2.5 text-xs font-black shadow-sm transition-all cursor-pointer"
+                                    >
+                                        Putuskan USB Laptop
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            onClose();
+                                            if (onConnectWebSerial) {
+                                                await onConnectWebSerial();
+                                            }
+                                        }}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-400 hover:to-amber-500 text-slate-950 px-5 py-2.5 text-xs font-black shadow-md active:scale-95 transition-all cursor-pointer"
+                                    >
+                                        <RefreshCw size={14} />
+                                        <span>Scan Port USB Laptop</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Status Port Aktif Bar */}
                     <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>

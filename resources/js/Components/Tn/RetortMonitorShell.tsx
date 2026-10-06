@@ -35,10 +35,13 @@ interface Props {
     onScanPort?: () => void;
     onOpenPortModal?: () => void;
     onCloseScanStatus?: () => void;
+    isWebSerialConnected?: boolean;
+    webSerialPortLabel?: string | null;
+    onDisconnectWebSerial?: () => void;
 }
 
 export default function RetortMonitorShell(props: Props) {
-    const { controller, telemetry, isOnline, serialPort } = props;
+    const { controller, telemetry, isOnline, serialPort, isWebSerialConnected, webSerialPortLabel } = props;
     const rawControllerName = controller.name || `Controller #${controller.id}`;
     const controllerName = rawControllerName.replace(/Retort TNS/gi, 'Retort TN').replace(/TNS Controller/gi, 'TN Controller');
     const rawMachineName = controller.machine?.machine_name;
@@ -46,7 +49,9 @@ export default function RetortMonitorShell(props: Props) {
     const displayName = (machineName?.toLowerCase().includes('retort') || controllerName?.toLowerCase().includes('tn'))
         ? 'Retort TN Controller'
         : (machineName ? `${machineName} (${controllerName})` : controllerName);
-    const activePortDisplay = serialPort || controller.serial_port || 'AUTO';
+    const activePortDisplay = isWebSerialConnected
+        ? (webSerialPortLabel || 'USB Laptop (Web Serial)')
+        : (serialPort || controller.serial_port || 'AUTO');
 
     return (
         <AuthenticatedLayout header={
@@ -77,28 +82,40 @@ export default function RetortMonitorShell(props: Props) {
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                    {/* Tombol Scan Port USB */}
-                    <button
-                        type="button"
-                        disabled={props.isScanningPort}
-                        onClick={props.onScanPort}
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 text-xs font-black text-white shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-                        title="Scan port serial USB untuk menghubungkan controller ke VPS"
-                    >
-                        <RefreshCw size={14} className={props.isScanningPort ? 'animate-spin' : ''} />
-                        <span>{props.isScanningPort ? 'Memindai USB...' : 'Scan Port USB'}</span>
-                    </button>
+                    {/* Tombol Scan Port USB / Disconnect */}
+                    {isWebSerialConnected ? (
+                        <button
+                            type="button"
+                            onClick={props.onDisconnectWebSerial}
+                            className="inline-flex items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 px-4 py-2.5 text-xs font-black text-white shadow-md active:scale-95 transition-all cursor-pointer"
+                            title="Putuskan koneksi serial USB di laptop"
+                        >
+                            <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse"></span>
+                            <span>Putuskan USB Laptop</span>
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            disabled={props.isScanningPort}
+                            onClick={props.onScanPort}
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 text-xs font-black text-white shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                            title="Scan port serial USB di laptop ini (membuka popup pemilihan port browser Chrome/Edge)"
+                        >
+                            <RefreshCw size={14} className={props.isScanningPort ? 'animate-spin' : ''} />
+                            <span>{props.isScanningPort ? 'Memilih Port USB...' : 'Scan Port USB (Laptop)'}</span>
+                        </button>
+                    )}
 
-                    {/* Tombol Daftar & Pemilihan Port USB */}
+                    {/* Tombol Pengaturan Port Modal */}
                     {props.onOpenPortModal && (
                         <button
                             type="button"
                             onClick={props.onOpenPortModal}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition-all cursor-pointer"
-                            title="Buka Daftar Port USB yang Terdeteksi di VPS"
+                            title="Buka Pengaturan Port"
                         >
                             <Cable size={15} className="text-blue-600" />
-                            <span>Daftar Port USB</span>
+                            <span>Pengaturan Port</span>
                         </button>
                     )}
                 </div>
