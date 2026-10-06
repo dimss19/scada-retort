@@ -1,14 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { router, Link } from '@inertiajs/react';
+import axios from 'axios';
 import {
     ChevronLeft,
     ChevronDown,
     Download,
     FileText,
     FileSpreadsheet,
+    Printer,
+    Eye,
+    Loader2,
     CheckCircle2,
     Clock,
+    AlertCircle,
 } from 'lucide-react';
 import RetortThermalChart from '@/Components/Tn/RetortThermalChart';
+import { calculateF0 } from '@/Pages/Tn/retortTelemetry';
+import { compareF0 } from './historyHelpers';
 
 export interface ProcessBatchItem {
     id: number;
@@ -16,6 +24,18 @@ export interface ProcessBatchItem {
     start_time: string;
     end_time?: string | null;
     log_data?: any[];
+    verification_status?: string;
+    product?: string | null;
+    batch_code?: string | null;
+    scheduled_process?: string | null;
+    min_f0_achieved?: number | null;
+    target_f0?: number | null;
+    process_deviation?: string | null;
+    sterility_criterion?: string | null;
+    thermal_record?: string | null;
+    group_id?: number | null;
+    verified_by?: string | null;
+    verified_at?: string | null;
     controller?: {
         id?: number;
         model_type?: string;
@@ -28,9 +48,10 @@ export interface ProcessBatchItem {
 interface Props {
     batch: ProcessBatchItem;
     onBack: () => void;
+    groups?: { id: number; name: string; color: string }[];
 }
 
-export default function ProcessDetailView({ batch, onBack }: Props) {
+export default function ProcessDetailView({ batch, onBack, groups = [] }: Props) {
     const [tablePage, setTablePage] = useState<number>(1);
     const [pageSize, setPageSize] = useState<number>(50);
     const [showDownloadMenu, setShowDownloadMenu] = useState<boolean>(false);
@@ -57,10 +78,12 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
         endTime ? endTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Sedang Berjalan'
     }`;
 
-    const machineTitle =
+    const rawMachineTitle =
         batch.controller?.machine?.machine_name ||
+        (batch.controller as any)?.name ||
         batch.controller?.model_type ||
         `Controller #${batch.tn_controller_id || batch.id}`;
+    const machineTitle = rawMachineTitle.replace(/Retort TNS/gi, 'TN').replace(/TNS Controller/gi, 'TN').replace(/^TNS$/i, 'TN');
 
     // Target SV detection from logs
     const targetSv = useMemo(() => {
@@ -374,11 +397,130 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
         return { maxPv, minPv, avgPv };
     }, [logs]);
 
-    // Export Handlers
-    const handleDownloadPDF = () => {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
+    // F0 sistem otomatis dari logs (mapping pv/dp sama seperti statsData)
+    const systemF0 = useMemo(() => {
+        const temps = logs
+            .map((l) => {
+                const rawPv = Number(l.pv ?? l.actual ?? 0);
+                const dp = Number(l.decimal_point ?? 0);
+                let pv = dp > 0 ? rawPv / Math.pow(10, dp) : rawPv;
+                if (pv > 300) pv = pv / 10.0;
+                return pv;
+            })
+            .filter((pv) => pv > 0);
+        return calculateF0(temps, 1);
+    }, [logs]);
 
+    const isVerified = batch.verification_status === 'verified';
+    const isUnverified = Boolean(batch.end_time) && !isVerified;
+
+    // Form verifikasi inline
+    const [product, setProduct] = useState<string>(batch.product ?? '');
+    const [batchCode, setBatchCode] = useState<string>(batch.batch_code ?? '');
+    const [scheduledProcess, setScheduledProcess] = useState<string>(batch.scheduled_process ?? '');
+    const [minF0, setMinF0] = useState<string>(
+        batch.min_f0_achieved !== null && batch.min_f0_achieved !== undefined ? String(batch.min_f0_achieved) : ''
+    );
+    const [targetF0, setTargetF0] = useState<string>(
+        batch.target_f0 !== null && batch.target_f0 !== undefined ? String(batch.target_f0) : ''
+    );
+    const [deviation, setDeviation] = useState<string>(batch.process_deviation ?? 'None');
+    const [criterion, setCriterion] = useState<string>(batch.sterility_criterion ?? 'PASS');
+    const [groupId, setGroupId] = useState<string>(
+        batch.group_id !== null && batch.group_id !== undefined ? String(batch.group_id) : groups.length > 0 ? String(groups[0].id) : ''
+    );
+    const [errors, setErrors] = useState<{
+        product?: string;
+        batchCode?: string;
+        scheduledProcess?: string;
+        minF0?: string;
+        targetF0?: string;
+    }>({});
+
+    const liveResult = targetF0.trim() === '' ? null : compareF0(systemF0, Number(targetF0));
+    const liveFail = isUnverified && liveResult === 'FAIL';
+    const effectiveCriterion = liveFail ? 'FAIL' : criterion;
+
+    // ponytail: derived sekali untuk 2 export (PDF/Excel)
+    const groupName = groups.find((g) => g.id === batch.group_id)?.name ?? (batch.group_id ? `#${batch.group_id}` : '-');
+    const verifyStatusLabel = isVerified ? 'VERIFIED' : !batch.end_time ? 'Sedang Berjalan' : 'UNVERIFIED';
+    const exportF0Result = compareF0(systemF0, batch.target_f0 ?? (targetF0.trim() === '' ? null : Number(targetF0))) ?? '-';
+    const verifiedByTxt = batch.verified_by ?? 'Belum diverifikasi';
+    const verifiedAtTxt = batch.verified_at ? new Date(batch.verified_at).toLocaleString('id-ID') : 'Belum diverifikasi';
+
+    const handleVerifySubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const newErrors: {
+            product?: string;
+            batchCode?: string;
+            scheduledProcess?: string;
+            minF0?: string;
+            targetF0?: string;
+        } = {};
+
+        if (!product.trim()) {
+            newErrors.product = 'Product belum diisi';
+        }
+        if (!batchCode.trim()) {
+            newErrors.batchCode = 'Batch belum diisi';
+        }
+        if (!scheduledProcess.trim()) {
+            newErrors.scheduledProcess = 'Scheduled Process belum diisi';
+        }
+        if (minF0.trim() === '') {
+            newErrors.minF0 = 'Minimum F0 belum diisi';
+        }
+        if (targetF0.trim() === '') {
+            newErrors.targetF0 = 'Target F0 belum diisi';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            if (newErrors.product) {
+                document.getElementById('verify-product-input')?.focus();
+            } else if (newErrors.batchCode) {
+                document.getElementById('verify-batch-input')?.focus();
+            } else if (newErrors.scheduledProcess) {
+                document.getElementById('verify-process-input')?.focus();
+            } else if (newErrors.minF0) {
+                document.getElementById('verify-minf0-input')?.focus();
+            } else if (newErrors.targetF0) {
+                document.getElementById('verify-targetf0-input')?.focus();
+            }
+            return;
+        }
+
+        setErrors({});
+
+        router.post(route('tn.history.verify', batch.id), {
+            product,
+            batch_code: batchCode,
+            scheduled_process: scheduledProcess,
+            min_f0_achieved: minF0 === '' ? null : Number(minF0),
+            target_f0: targetF0 === '' ? null : Number(targetF0),
+            process_deviation: deviation,
+            sterility_criterion: effectiveCriterion,
+            thermal_record: 'VERIFIED',
+            group_id: groupId ? Number(groupId) : null,
+        }, {
+            onError: (err) => {
+                const mapped: Record<string, string> = {};
+                if (err.product) mapped.product = err.product;
+                if (err.batch_code) mapped.batchCode = err.batch_code;
+                if (err.scheduled_process) mapped.scheduledProcess = err.scheduled_process;
+                if (err.min_f0_achieved) mapped.minF0 = err.min_f0_achieved;
+                if (err.target_f0) mapped.targetF0 = err.target_f0;
+                setErrors(mapped);
+            }
+        });
+    };
+
+    const [isExportingPdf, setIsExportingPdf] = useState(false);
+    const [isPrintingNative, setIsPrintingNative] = useState(false);
+
+    // Helper: generate full HTML string for report
+    const generateReportHtml = (isForPreview: boolean = false) => {
         const chartDataUrl = generateThermalChartDataUrl();
 
         const rows = logs.map((l, idx) => {
@@ -405,7 +547,71 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
             };
         });
 
-        printWindow.document.write(`
+        const previewBarHtml = isForPreview ? `
+            <div class="no-print">
+                <div>
+                    <strong>Laporan Sterilisasi Batch #${batch.id}</strong> — Siap untuk dicetak atau disimpan sebagai PDF.
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button id="btnSavePdf" class="btn-print" style="background: #2563eb;">Simpan File PDF</button>
+                    <button id="btnPrintNative" class="btn-print" style="background: #1e3a5f;">Cetak ke Printer</button>
+                    <button onclick="window.close()" class="btn-close">Tutup</button>
+                </div>
+            </div>
+        ` : '';
+
+        const previewScriptHtml = isForPreview ? `
+            <script>
+                document.getElementById('btnSavePdf')?.addEventListener('click', function() {
+                    if (window.opener && window.opener.saveReportPdf) {
+                        window.opener.saveReportPdf();
+                    } else {
+                        fetch('/historian/${batch.id}/export-pdf', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ html: document.documentElement.outerHTML })
+                        })
+                        .then(function(res) { return res.blob(); })
+                        .then(function(blob) {
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'Laporan_Batch_${batch.id}.pdf';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        })
+                        .catch(function(err) {
+                            alert('Gagal mendownload PDF: ' + err.message);
+                        });
+                    }
+                });
+
+                document.getElementById('btnPrintNative')?.addEventListener('click', function() {
+                    if (window.opener && window.opener.printReportNative) {
+                        window.opener.printReportNative();
+                    } else {
+                        fetch('/historian/${batch.id}/print-native', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ html: document.documentElement.outerHTML })
+                        })
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            if (!data.success) {
+                                window.print();
+                            }
+                        })
+                        .catch(function() {
+                            window.print();
+                        });
+                    }
+                });
+            </script>
+        ` : '';
+
+        return `
             <!DOCTYPE html>
             <html lang="id">
             <head>
@@ -442,7 +648,9 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                         border-radius: 6px;
                         cursor: pointer;
                         font-size: 12px;
+                        transition: opacity 0.2s;
                     }
+                    .btn-print:hover { opacity: 0.9; }
                     .btn-close {
                         background: #ffffff;
                         color: #475569;
@@ -471,7 +679,7 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                         color: #475569;
                         font-weight: 600;
                     }
-                    /* Summary KPI Table (Surface Mine Production Style) */
+                    /* Summary KPI Table */
                     .summary-table {
                         width: 100%;
                         border-collapse: collapse;
@@ -568,15 +776,7 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                 </style>
             </head>
             <body>
-                <div class="no-print">
-                    <div>
-                        <strong>Laporan Sterilisasi Batch #${batch.id}</strong> — Siap untuk dicetak atau disimpan sebagai PDF.
-                    </div>
-                    <div>
-                        <button onclick="window.print()" class="btn-print">Cetak / Simpan PDF</button>
-                        <button onclick="window.close()" class="btn-close">Tutup</button>
-                    </div>
-                </div>
+                ${previewBarHtml}
 
                 <div class="header">
                     <h1>Laporan Proses Sterilisasi Batch #${batch.id}</h1>
@@ -586,7 +786,7 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                     </div>
                 </div>
 
-                <!-- Summary KPI Table (Surface Mine Production Layout) -->
+                <!-- Summary KPI Table -->
                 <table class="summary-table">
                     <tr>
                         <td class="lbl">Waktu Mulai</td>
@@ -615,6 +815,34 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                         </td>
                         <td class="lbl">Total Data Points</td>
                         <td class="num">${logs.length.toLocaleString('id-ID')} Titik</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Status Verifikasi</td>
+                        <td class="val">
+                            <span class="badge ${isVerified ? 'badge-success' : 'badge-warning'}">
+                                ${verifyStatusLabel}
+                            </span>
+                        </td>
+                        <td class="lbl">Product</td>
+                        <td class="val">${batch.product ?? '-'}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Batch</td>
+                        <td class="val">${batch.batch_code ?? '-'}</td>
+                        <td class="lbl">Group</td>
+                        <td class="val">${groupName}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">F0 Sistem</td>
+                        <td class="num">${systemF0.toFixed(2)} min</td>
+                        <td class="lbl">Hasil F0</td>
+                        <td class="num">${exportF0Result}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Diverifikasi Oleh</td>
+                        <td class="val">${verifiedByTxt}</td>
+                        <td class="lbl">Diverifikasi Tanggal</td>
+                        <td class="val">${verifiedAtTxt}</td>
                     </tr>
                 </table>
 
@@ -655,24 +883,80 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                     </tbody>
                 </table>
 
-                <script>
-                    function doPrint() {
-                        setTimeout(function() {
-                            window.print();
-                        }, 350);
-                    }
-                    var img = document.getElementById('chartImg');
-                    if (img && !img.complete) {
-                        img.onload = doPrint;
-                    } else {
-                        doPrint();
-                    }
-                </script>
+                ${previewScriptHtml}
             </body>
             </html>
-        `);
+        `;
+    };
+
+    // Export Handlers
+    const handleDownloadPDF = async () => {
+        if (isExportingPdf) return;
+        setIsExportingPdf(true);
+        try {
+            const reportHtml = generateReportHtml(false);
+            const response = await axios.post(`/historian/${batch.id}/export-pdf`, {
+                html: reportHtml,
+            }, {
+                responseType: 'blob',
+                timeout: 60000,
+            });
+
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Laporan_Batch_${batch.id}_${machineTitle.replace(/\s+/g, '_')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (err: any) {
+            console.error('Download PDF error:', err);
+            alert('Gagal mendownload PDF secara otomatis: ' + (err.response?.data?.message || err.message || 'Layanan tidak merespons'));
+        } finally {
+            setIsExportingPdf(false);
+        }
+    };
+
+    const handlePrintReport = async () => {
+        if (isPrintingNative) return;
+        setIsPrintingNative(true);
+        try {
+            const reportHtml = generateReportHtml(false);
+            const res = await axios.post(`/historian/${batch.id}/print-native`, {
+                html: reportHtml,
+            }, {
+                timeout: 30000,
+            });
+            if (res.data?.success) {
+                return;
+            }
+            handleOpenPreview();
+        } catch (err) {
+            console.warn('Native print error, falling back to preview window', err);
+            handleOpenPreview();
+        } finally {
+            setIsPrintingNative(false);
+        }
+    };
+
+    const handleOpenPreview = () => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+        const reportHtml = generateReportHtml(true);
+        printWindow.document.write(reportHtml);
         printWindow.document.close();
     };
+
+    useEffect(() => {
+        (window as any).saveReportPdf = handleDownloadPDF;
+        (window as any).printReportNative = handlePrintReport;
+        return () => {
+            delete (window as any).saveReportPdf;
+            delete (window as any).printReportNative;
+        };
+    }, [batch.id, logs, machineTitle]);
 
     // Excel (.xls) Export matching surface-mine-production
     const handleDownloadExcel = () => {
@@ -739,6 +1023,22 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                         <td class="lbl">Status Batch</td><td>${batch.end_time ? 'SELESAI' : 'SEDANG BERJALAN'}</td>
                         <td class="lbl">Total Data Points</td><td class="num" style="mso-number-format:'0';">${logs.length} Titik</td>
                     </tr>
+                    <tr>
+                        <td class="lbl">Status Verifikasi</td><td>${verifyStatusLabel}</td>
+                        <td class="lbl">Product</td><td>${batch.product ?? '-'}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Batch</td><td>${batch.batch_code ?? '-'}</td>
+                        <td class="lbl">Group</td><td>${groupName}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">F0 Sistem</td><td class="num" style="mso-number-format:'0\\.00';">${systemF0.toFixed(2)} min</td>
+                        <td class="lbl">Hasil F0</td><td class="num">${exportF0Result}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Diverifikasi Oleh</td><td>${verifiedByTxt}</td>
+                        <td class="lbl">Diverifikasi Tanggal</td><td>${verifiedAtTxt}</td>
+                    </tr>
                 </table>
 
                 <!-- Embedded Thermal Chart Image in Excel -->
@@ -792,79 +1092,18 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
         URL.revokeObjectURL(url);
     };
 
-    const handleDownloadCSV = () => {
-        if (!logs.length) return;
-
-        // Construct formatted CSV with Metadata, KPI summary, and Data rows
-        const metaSection = [
-            `LAPORAN PROSES STERILISASI RETORT`,
-            `Nomor Batch,#${batch.id}`,
-            `Mesin / Controller,"${machineTitle}"`,
-            `Waktu Mulai,"${startTime.toLocaleString('id-ID')}"`,
-            `Waktu Selesai,"${endTime ? endTime.toLocaleString('id-ID') : 'Sedang Berjalan'}"`,
-            `Total Durasi,"${durationMinutes !== null ? `${durationMinutes} Menit` : '--'}"`,
-            `Status,"${batch.end_time ? 'Selesai' : 'Sedang Berjalan'}"`,
-            ``,
-            `RINGKASAN PARAMETER STERILISASI`,
-            `Target Suhu (SV),${targetSv.toFixed(1)} °C`,
-            `Suhu Maksimum (Max PV),${statsData.maxPv.toFixed(1)} °C`,
-            `Suhu Minimum (Min PV),${statsData.minPv.toFixed(1)} °C`,
-            `Suhu Rata-rata (PV),${statsData.avgPv.toFixed(1)} °C`,
-            `Total Titik Data Log,${logs.length} Points`,
-            ``,
-            `DATA LOG DETAIL`,
-        ];
-
-        const headers = ['No', 'Waktu', 'Actual PV (°C)', 'Setting SV (°C)', 'Heating MV (%)', 'Fase Proses'];
-        const dataRows = logs.map((l, idx) => {
-            const rawPv = Number(l.pv ?? l.actual ?? 0);
-            const dp = Number(l.decimal_point ?? 0);
-            let pv = dp > 0 ? rawPv / Math.pow(10, dp) : rawPv;
-            if (pv > 300) pv = pv / 10.0;
-
-            const rawSv = Number(l.sv ?? l.setting ?? 121.0);
-            let sv = dp > 0 ? rawSv / Math.pow(10, dp) : rawSv;
-            if (sv > 300) sv = sv / 10.0;
-
-            const mv = Number(l.heating_mv ?? l.mv ?? 0);
-            const phase = l.phase_name || l.phase || (pv >= (sv - 2) ? 'Sterilisasi (Holding)' : (pv > 40 ? 'Heating' : 'Cooling'));
-            const timeStr = l.created_at ? new Date(l.created_at).toLocaleTimeString('id-ID') : `--:${idx}`;
-
-            return [
-                idx + 1,
-                `"${timeStr}"`,
-                pv.toFixed(1),
-                sv.toFixed(1),
-                `"${mv.toFixed(0)}%"`,
-                `"${phase}"`,
-            ].join(',');
-        });
-
-        // Add UTF-8 BOM so Excel displays Indonesian characters and accents cleanly
-        const csvContent = '\uFEFF' + [...metaSection, headers.join(','), ...dataRows].join('\r\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `Laporan_Batch_${batch.id}_${machineTitle.replace(/\s+/g, '_')}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    };
 
     return (
         <div className="space-y-6">
             {/* Top Toolbar */}
             <div className="flex items-center justify-between gap-4">
-                <button
-                    type="button"
-                    onClick={onBack}
+                <Link
+                    href={route('historian.index')}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
                 >
                     <ChevronLeft size={16} />
-                    <span>Kembali ke Daftar</span>
-                </button>
+                    <span>Kembali ke History</span>
+                </Link>
 
                 {/* Download Dropdown */}
                 <div className="relative">
@@ -888,16 +1127,42 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                         >
                             <button
                                 type="button"
+                                disabled={isExportingPdf}
                                 onClick={() => {
                                     handleDownloadPDF();
                                     setShowDownloadMenu(false);
                                 }}
-                                className="w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left"
+                                className="w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left disabled:opacity-50"
                             >
-                                <FileText size={15} className="text-blue-600" />
+                                {isExportingPdf ? (
+                                    <Loader2 size={15} className="animate-spin text-blue-600" />
+                                ) : (
+                                    <FileText size={15} className="text-blue-600" />
+                                )}
                                 <div>
-                                    <div className="font-extrabold text-slate-900">Download PDF</div>
-                                    <div className="text-[10px] text-slate-500 font-medium">Lengkap dengan Grafik Suhu</div>
+                                    <div className="font-extrabold text-slate-900">
+                                        {isExportingPdf ? 'Membuat PDF...' : 'Download PDF (.pdf)'}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 font-medium">Simpan dokumen langsung ke komputer</div>
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isPrintingNative}
+                                onClick={() => {
+                                    handlePrintReport();
+                                    setShowDownloadMenu(false);
+                                }}
+                                className="w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left disabled:opacity-50"
+                            >
+                                {isPrintingNative ? (
+                                    <Loader2 size={15} className="animate-spin text-indigo-600" />
+                                ) : (
+                                    <Printer size={15} className="text-indigo-600" />
+                                )}
+                                <div>
+                                    <div className="font-extrabold text-slate-900">Cetak ke Printer</div>
+                                    <div className="text-[10px] text-slate-500 font-medium">Buka dialog printer Windows</div>
                                 </div>
                             </button>
                             <button
@@ -917,17 +1182,18 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    handleDownloadCSV();
+                                    handleOpenPreview();
                                     setShowDownloadMenu(false);
                                 }}
-                                className="w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left"
+                                className="w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors text-left border-t border-slate-100 mt-1 pt-2"
                             >
-                                <Download size={15} className="text-amber-600" />
+                                <Eye size={15} className="text-amber-600" />
                                 <div>
-                                    <div className="font-extrabold text-slate-900">Download CSV (.csv)</div>
-                                    <div className="text-[10px] text-slate-500 font-medium">Data Mentah Terstruktur</div>
+                                    <div className="font-extrabold text-slate-900">Pratinjau Dokumen</div>
+                                    <div className="text-[10px] text-slate-500 font-medium">Lihat tampilan laporan di jendela terpisah</div>
                                 </div>
                             </button>
+
                         </div>
                     )}
                 </div>
@@ -941,22 +1207,270 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                             <h2 className="text-2xl font-black tracking-tight text-slate-900">
                                 Proses #{batch.id} ({machineTitle})
                             </h2>
-                            {batch.end_time ? (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
-                                    <CheckCircle2 size={12} /> Selesai
-                                </span>
-                            ) : (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-bold text-amber-700 animate-pulse">
-                                    Sedang Berjalan
-                                </span>
-                            )}
+                            {isUnverified ? (
+                                    <span className="inline-flex items-center gap-1.5 rounded-md bg-rose-50 border border-rose-300 px-2.5 py-0.5 text-xs font-black text-rose-700 shadow-sm">
+                                        <span className="relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+                                        </span>
+                                        UNVERIFIED (Belum Ditulis / Diverifikasi)
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                                        <CheckCircle2 size={12} /> Selesai & VERIFIED
+                                    </span>
+                                )}
                         </div>
                         <p className="text-xs font-semibold text-slate-500 mt-1">
                             {timeRangeStr} • {durationMinutes !== null ? `${durationMinutes} Menit` : '--'} • {logs.length} Data Points
                         </p>
+                        <p className="text-xs font-bold text-slate-700 mt-1.5">
+                            F0 sistem (otomatis): {systemF0.toFixed(2)} min
+                            {isUnverified && liveResult && (
+                                <span
+                                    className={`ml-2 inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-black ${
+                                        liveResult === 'VALID'
+                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                            : 'bg-rose-50 border-rose-200 text-rose-700'
+                                    }`}
+                                >
+                                    {liveResult}
+                                </span>
+                            )}
+                            {isVerified && (
+                                <span
+                                    className={`ml-2 inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-black ${
+                                        batch.sterility_criterion === 'PASS'
+                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                            : 'bg-rose-50 border-rose-200 text-rose-700'
+                                    }`}
+                                >
+                                    {batch.sterility_criterion} • F0 {Number(batch.target_f0 ?? batch.min_f0_achieved ?? systemF0).toFixed(2)} min
+                                </span>
+                            )}
+                        </p>
                     </div>
                 </div>
             </div>
+
+            {/* Verifikasi Inline */}
+            {isVerified ? (
+                <section className="rounded-3xl border border-emerald-200/80 bg-emerald-50/40 p-6 sm:p-7 shadow-lg backdrop-blur-xl">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 pb-3">
+                        <h2 className="font-extrabold text-slate-900 text-lg tracking-tight">Verifikasi Batch</h2>
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                            <CheckCircle2 size={12} /> VERIFIED
+                        </span>
+                    </div>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 text-xs">
+                        <div className="flex justify-between gap-4 border-b border-emerald-100/70 pb-1.5"><dt className="font-bold text-slate-500">Product</dt><dd className="font-extrabold text-slate-900 text-right">{batch.product ?? '-'}</dd></div>
+                        <div className="flex justify-between gap-4 border-b border-emerald-100/70 pb-1.5"><dt className="font-bold text-slate-500">Batch</dt><dd className="font-extrabold text-slate-900 text-right">{batch.batch_code ?? '-'}</dd></div>
+                        <div className="flex justify-between gap-4 border-b border-emerald-100/70 pb-1.5"><dt className="font-bold text-slate-500">Scheduled Process</dt><dd className="font-extrabold text-slate-900 text-right">{batch.scheduled_process ?? '-'}</dd></div>
+                        <div className="flex justify-between gap-4 border-b border-emerald-100/70 pb-1.5"><dt className="font-bold text-slate-500">Minimum F0</dt><dd className="font-extrabold text-slate-900 text-right">{batch.min_f0_achieved ?? '-'} min</dd></div>
+                        <div className="flex justify-between gap-4 border-b border-emerald-100/70 pb-1.5"><dt className="font-bold text-slate-500">Target F0</dt><dd className="font-extrabold text-slate-900 text-right">{batch.target_f0 ?? '-'} min</dd></div>
+                        <div className="flex justify-between gap-4 border-b border-emerald-100/70 pb-1.5"><dt className="font-bold text-slate-500">Process deviation</dt><dd className="font-extrabold text-slate-900 text-right">{batch.process_deviation ?? '-'}</dd></div>
+                        <div className="flex justify-between gap-4 border-b border-emerald-100/70 pb-1.5"><dt className="font-bold text-slate-500">Sterility criterion</dt><dd className="font-extrabold text-slate-900 text-right">{batch.sterility_criterion ?? '-'}</dd></div>
+                        <div className="flex justify-between gap-4 border-b border-emerald-100/70 pb-1.5"><dt className="font-bold text-slate-500">Group</dt><dd className="font-extrabold text-slate-900 text-right">{groups.find((g) => g.id === batch.group_id)?.name ?? (batch.group_id ? `#${batch.group_id}` : '-')}</dd></div>
+                        <div className="flex justify-between gap-4 border-b border-emerald-100/70 pb-1.5"><dt className="font-bold text-slate-500">Verified by</dt><dd className="font-extrabold text-slate-900 text-right">{batch.verified_by ?? '-'}</dd></div>
+                        <div className="flex justify-between gap-4 pb-1.5"><dt className="font-bold text-slate-500">Verified at</dt><dd className="font-extrabold text-slate-900 text-right">{batch.verified_at ? new Date(batch.verified_at).toLocaleString('id-ID') : '-'}</dd></div>
+                    </dl>
+                </section>
+            ) : isUnverified ? (
+                <section className="relative rounded-3xl border-2 border-rose-300 bg-rose-50/20 p-6 sm:p-7 shadow-lg backdrop-blur-xl ring-1 ring-rose-200">
+                    <div className="mb-4 border-b border-rose-200/80 pb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="relative flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
+                                </span>
+                                <h2 className="font-extrabold text-slate-900 text-lg tracking-tight">Tulis & Verifikasi Batch (UNVERIFIED)</h2>
+                            </div>
+                            <p className="text-xs text-rose-700 mt-1 font-semibold">
+                                ⚠️ Batch ini belum diverifikasi. F0 sistem: {systemF0.toFixed(2)} min — Lengkapi data di bawah ini lalu klik Simpan Verifikasi.
+                            </p>
+                        </div>
+                        <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 uppercase tracking-wide">
+                            Wajib Dilengkapi
+                        </span>
+                    </div>
+                    <form onSubmit={handleVerifySubmit} noValidate className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {Object.keys(errors).length > 0 && (
+                            <div className="sm:col-span-2 rounded-2xl border border-rose-300 bg-rose-50/90 p-3.5 text-xs text-rose-800 flex items-start gap-2.5 shadow-sm">
+                                <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <span className="font-extrabold block">Data verifikasi belum lengkap:</span>
+                                    <span className="font-medium text-rose-700">Mohon lengkapi {Object.values(errors).filter(Boolean).join(', ')}.</span>
+                                </div>
+                            </div>
+                        )}
+                        <label className="block text-xs font-bold text-slate-700">
+                            Product
+                            <input
+                                id="verify-product-input"
+                                type="text"
+                                value={product}
+                                placeholder="Masukkan nama produk..."
+                                onChange={(e) => {
+                                    setProduct(e.target.value);
+                                    if (errors.product) setErrors(prev => ({ ...prev, product: undefined }));
+                                }}
+                                className={`mt-1 w-full rounded-xl text-xs font-bold text-slate-800 shadow-sm py-2 px-3 transition-all ${
+                                    errors.product
+                                        ? 'border-2 border-rose-500 bg-rose-50/40 focus:border-rose-600 focus:ring-rose-500 ring-2 ring-rose-200'
+                                        : 'border border-slate-300 bg-white focus:border-rose-500 focus:ring-rose-500'
+                                }`}
+                            />
+                            {errors.product && (
+                                <span className="mt-1.5 flex items-center gap-1 text-[11px] font-extrabold text-rose-600">
+                                    <AlertCircle size={12} className="shrink-0" />
+                                    {errors.product}
+                                </span>
+                            )}
+                        </label>
+                        <label className="block text-xs font-bold text-slate-700">
+                            Batch
+                            <input
+                                id="verify-batch-input"
+                                type="text"
+                                value={batchCode}
+                                placeholder="Masukkan kode batch..."
+                                onChange={(e) => {
+                                    setBatchCode(e.target.value);
+                                    if (errors.batchCode) setErrors(prev => ({ ...prev, batchCode: undefined }));
+                                }}
+                                className={`mt-1 w-full rounded-xl text-xs font-bold text-slate-800 shadow-sm py-2 px-3 transition-all ${
+                                    errors.batchCode
+                                        ? 'border-2 border-rose-500 bg-rose-50/40 focus:border-rose-600 focus:ring-rose-500 ring-2 ring-rose-200'
+                                        : 'border border-slate-300 bg-white focus:border-rose-500 focus:ring-rose-500'
+                                }`}
+                            />
+                            {errors.batchCode && (
+                                <span className="mt-1.5 flex items-center gap-1 text-[11px] font-extrabold text-rose-600">
+                                    <AlertCircle size={12} className="shrink-0" />
+                                    {errors.batchCode}
+                                </span>
+                            )}
+                        </label>
+                        <label className="block text-xs font-bold text-slate-700">
+                            Scheduled Process
+                            <input
+                                id="verify-process-input"
+                                type="text"
+                                value={scheduledProcess}
+                                placeholder="Masukkan scheduled process..."
+                                onChange={(e) => {
+                                    setScheduledProcess(e.target.value);
+                                    if (errors.scheduledProcess) setErrors(prev => ({ ...prev, scheduledProcess: undefined }));
+                                }}
+                                className={`mt-1 w-full rounded-xl text-xs font-bold text-slate-800 shadow-sm py-2 px-3 transition-all ${
+                                    errors.scheduledProcess
+                                        ? 'border-2 border-rose-500 bg-rose-50/40 focus:border-rose-600 focus:ring-rose-500 ring-2 ring-rose-200'
+                                        : 'border border-slate-300 bg-white focus:border-rose-500 focus:ring-rose-500'
+                                }`}
+                            />
+                            {errors.scheduledProcess && (
+                                <span className="mt-1.5 flex items-center gap-1 text-[11px] font-extrabold text-rose-600">
+                                    <AlertCircle size={12} className="shrink-0" />
+                                    {errors.scheduledProcess}
+                                </span>
+                            )}
+                        </label>
+                        {groups.length > 0 && (
+                        <label className="block text-xs font-bold text-slate-700">
+                            Group
+                            <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-sm focus:border-rose-500 focus:ring-rose-500 py-2 px-3">
+                                <option value="">— Tanpa Group —</option>
+                                {groups.map((g) => (
+                                    <option key={g.id} value={g.id}>{g.name}</option>
+                                ))}
+                            </select>
+                        </label>
+                        )}
+                        <label className="block text-xs font-bold text-slate-700">
+                            Minimum F0
+                            <input
+                                id="verify-minf0-input"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={minF0}
+                                placeholder="0.00"
+                                onChange={(e) => {
+                                    setMinF0(e.target.value);
+                                    if (errors.minF0) setErrors(prev => ({ ...prev, minF0: undefined }));
+                                }}
+                                className={`mt-1 w-full rounded-xl text-xs font-bold text-slate-800 shadow-sm py-2 px-3 transition-all ${
+                                    errors.minF0
+                                        ? 'border-2 border-rose-500 bg-rose-50/40 focus:border-rose-600 focus:ring-rose-500 ring-2 ring-rose-200'
+                                        : 'border border-slate-300 bg-white focus:border-rose-500 focus:ring-rose-500'
+                                }`}
+                            />
+                            {errors.minF0 && (
+                                <span className="mt-1.5 flex items-center gap-1 text-[11px] font-extrabold text-rose-600">
+                                    <AlertCircle size={12} className="shrink-0" />
+                                    {errors.minF0}
+                                </span>
+                            )}
+                        </label>
+                        <label className="block text-xs font-bold text-slate-700">
+                            Target F0
+                            <input
+                                id="verify-targetf0-input"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={targetF0}
+                                placeholder="0.00"
+                                onChange={(e) => {
+                                    setTargetF0(e.target.value);
+                                    if (errors.targetF0) setErrors(prev => ({ ...prev, targetF0: undefined }));
+                                }}
+                                className={`mt-1 w-full rounded-xl text-xs font-bold text-slate-800 shadow-sm py-2 px-3 transition-all ${
+                                    errors.targetF0
+                                        ? 'border-2 border-rose-500 bg-rose-50/40 focus:border-rose-600 focus:ring-rose-500 ring-2 ring-rose-200'
+                                        : 'border border-slate-300 bg-white focus:border-rose-500 focus:ring-rose-500'
+                                }`}
+                            />
+                            {errors.targetF0 && (
+                                <span className="mt-1.5 flex items-center gap-1 text-[11px] font-extrabold text-rose-600">
+                                    <AlertCircle size={12} className="shrink-0" />
+                                    {errors.targetF0}
+                                </span>
+                            )}
+                        </label>
+                        <label className="block text-xs font-bold text-slate-700">
+                            Process deviation
+                            <select value={deviation} onChange={(e) => setDeviation(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-sm focus:border-rose-500 focus:ring-rose-500 py-2 px-3">
+                                <option value="None">None</option>
+                                <option value="Minor">Minor</option>
+                                <option value="Major">Major</option>
+                            </select>
+                        </label>
+                        <label className="block text-xs font-bold text-slate-700">
+                            Sterility criterion
+                            <select value={effectiveCriterion} disabled={liveFail} onChange={(e) => setCriterion(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-sm focus:border-rose-500 focus:ring-rose-500 py-2 px-3 disabled:opacity-60">
+                                <option value="PASS">PASS</option>
+                                <option value="FAIL">FAIL</option>
+                            </select>
+                        </label>
+                        {liveFail && (
+                            <p className="sm:col-span-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">
+                                F0 sistem di bawah Target F0 — Sterility criterion terkunci FAIL.
+                            </p>
+                        )}
+                        <div className="sm:col-span-2 flex justify-end">
+                            <button
+                                type="submit"
+                                className="rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white text-xs font-black px-6 py-2.5 shadow-md shadow-rose-200 transition-all flex items-center gap-2 cursor-pointer"
+                            >
+                                <CheckCircle2 size={15} />
+                                Tulis & Simpan Verifikasi Batch
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            ) : null}
 
             {/* Thermal Sterilization Profile Chart (Clean Retort Thermal Chart) */}
             <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 sm:p-7 shadow-lg backdrop-blur-xl">
@@ -1025,7 +1539,7 @@ export default function ProcessDetailView({ batch, onBack }: Props) {
                                     setPageSize(Number(e.target.value));
                                     setTablePage(1);
                                 }}
-                                className="rounded-xl border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-sm focus:border-amber-500 focus:ring-amber-500 py-1.5 px-3"
+                                className="rounded-xl border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-sm focus:border-amber-500 focus:ring-amber-500 py-1.5 px-5"
                             >
                                 <option value={25}>25</option>
                                 <option value={50}>50</option>

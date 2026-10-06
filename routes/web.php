@@ -57,11 +57,26 @@ Route::post('/system-mode', function (\Illuminate\Http\Request $request) {
 })->name('system.mode');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/scada', fn () => redirect()->route('tn.index'))->name('scada.index');
     Route::get('/historian', function () {
-        $histories = \App\Models\TnProcessHistory::with('controller.machine')->latest('start_time')->get();
-        return Inertia::render('Operations', ['module' => 'historian', 'histories' => $histories]);
+        $histories = \App\Models\TnProcessHistory::with('controller.machine')
+            ->whereNotNull('end_time')
+            ->orderByDesc('start_time')
+            ->get();
+        $groups = \App\Models\HistoryGroup::orderBy('id')->get();
+        return Inertia::render('Operations', ['module' => 'historian', 'histories' => $histories, 'groups' => $groups]);
     })->name('historian.index');
+
+    Route::get('/historian/{history}', function (\App\Models\TnProcessHistory $history) {
+        if (!$history->end_time) {
+            return redirect()->route('historian.index')->with('warning', 'Proses yang sedang berjalan tidak dapat dilihat.');
+        }
+        $history->load('controller.machine');
+        $groups = \App\Models\HistoryGroup::orderBy('id')->get();
+        return Inertia::render('History/Show', [
+            'batch' => $history,
+            'groups' => $groups,
+        ]);
+    })->name('historian.show');
     Route::get('/database', fn () => Inertia::render('Operations', ['module' => 'database']))->name('database.index');
     Route::redirect('/trend', '/tn')->name('trend.index');
     Route::redirect('/communication', '/tn')->name('communication.index');
@@ -106,6 +121,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/{tn}/readings', [\App\Http\Controllers\TnMonitorController::class, 'readings'])->name('tn.readings');
         Route::post('/{tn}/history', [\App\Http\Controllers\TnMonitorController::class, 'saveHistory'])->name('tn.history.save');
         Route::delete('/history/{history}', [\App\Http\Controllers\TnMonitorController::class, 'destroyHistory'])->name('tn.history.destroy');
+        Route::post('/history/{history}/verify', [\App\Http\Controllers\TnMonitorController::class, 'verifyHistory'])->name('tn.history.verify');
+        Route::post('/history-groups', [\App\Http\Controllers\TnMonitorController::class, 'storeHistoryGroup'])->name('tn.history-groups.store');
+        Route::put('/history-groups/{group}', [\App\Http\Controllers\TnMonitorController::class, 'updateHistoryGroup'])->name('tn.history-groups.update');
+        Route::delete('/history-groups/{group}', [\App\Http\Controllers\TnMonitorController::class, 'destroyHistoryGroup'])->name('tn.history-groups.destroy');
         Route::post('/{tn}/ingest-reading', [\App\Http\Controllers\TnMonitorController::class, 'ingestReading'])->name('tn.ingest-reading');
         // Port Management
         Route::get('/{tn}/port/list', [\App\Http\Controllers\TnPortController::class, 'list'])->name('tn.port.list');
@@ -115,6 +134,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/{tn}/port/select', [\App\Http\Controllers\TnPortController::class, 'select'])->name('tn.port.select');
         Route::get('/{tn}/port/status', [\App\Http\Controllers\TnPortController::class, 'status'])->name('tn.port.status');
     });
+
+    Route::post('/historian/{history}/export-pdf', [\App\Http\Controllers\TnMonitorController::class, 'exportPdf'])->name('historian.export-pdf');
+    Route::post('/historian/{history}/print-native', [\App\Http\Controllers\TnMonitorController::class, 'printNative'])->name('historian.print-native');
 
     // === ESP32 Monitoring Logger ===
     Route::prefix('esp')->group(function () {

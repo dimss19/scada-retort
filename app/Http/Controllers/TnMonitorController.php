@@ -132,6 +132,174 @@ class TnMonitorController extends Controller
         return back()->with('success', 'Process history deleted.');
     }
 
+    public function verifyHistory(\App\Models\TnProcessHistory $history, Request $request)
+    {
+        if (! $history->end_time || $history->verification_status === 'verified') {
+            return response()->json(['success' => false, 'message' => 'Hanya history selesai yang belum terverifikasi.'], 422);
+        }
+
+        $data = $this->validatedOrJson422($request, [
+            'product' => 'required|string|max:100',
+            'batch_code' => 'required|string|max:50|unique:tn_process_histories,batch_code,' . $history->id,
+            'scheduled_process' => 'required|string|max:100',
+            'min_f0_achieved' => 'required|numeric|min:0',
+            'target_f0' => 'required|numeric|min:0',
+            'process_deviation' => 'required|in:None,Minor,Major',
+            'sterility_criterion' => 'required|in:PASS,FAIL',
+            'thermal_record' => 'nullable|in:VERIFIED,REJECTED',
+            'group_id' => 'nullable|exists:history_groups,id',
+        ]);
+
+        $systemF0 = \App\Services\F0Calculator::fromLogs($history->log_data ?? []);
+        $criterion = $data['sterility_criterion'];
+        if ($data['target_f0'] !== null && $systemF0 < (float) $data['target_f0']) {
+            $criterion = 'FAIL';
+        }
+
+        $verifiedBy = $request->user()?->name ?? 'Operator';
+
+        $history->update([
+            'product' => $data['product'],
+            'batch_code' => $data['batch_code'],
+            'scheduled_process' => $data['scheduled_process'],
+            'min_f0_achieved' => $data['min_f0_achieved'],
+            'target_f0' => $data['target_f0'],
+            'process_deviation' => $data['process_deviation'],
+            'sterility_criterion' => $criterion,
+            'thermal_record' => $data['thermal_record'] ?? 'VERIFIED',
+            'group_id' => !empty($data['group_id']) ? $data['group_id'] : null,
+            'verification_status' => 'verified',
+            'verified_by' => $verifiedBy,
+            'verified_at' => now(),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'system_f0' => $systemF0, 'sterility_criterion' => $criterion]);
+        }
+
+        return back()->with('success', 'Batch berhasil diverifikasi.');
+    }
+
+    public function storeHistoryGroup(Request $request)
+    {
+        if (\App\Models\HistoryGroup::count() >= 2) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Batas maksimal adalah 2 group.'], 422);
+            }
+            return back()->withErrors(['group' => 'Batas maksimal adalah 2 group.']);
+        }
+
+        $data = $this->validatedOrJson422($request, [
+            'name' => 'required|string|max:50',
+            'color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        $group = \App\Models\HistoryGroup::create($data);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'group' => $group]);
+        }
+
+        return back()->with('success', 'Group berhasil dibuat.');
+    }
+
+    public function updateHistoryGroup(\App\Models\HistoryGroup $group, Request $request)
+    {
+        $data = $this->validatedOrJson422($request, [
+            'name' => 'required|string|max:50',
+            'color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+        $group->update($data);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return back()->with('success', 'Nama group diperbarui.');
+    }
+
+    public function destroyHistoryGroup(\App\Models\HistoryGroup $group, Request $request)
+    {
+        \App\Models\TnProcessHistory::where('group_id', $group->id)->update(['group_id' => null]);
+        $group->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return back()->with('success', 'Group berhasil dihapus.');
+    }
+
+    private function validatedOrJson422(Request $request, array $rules): array
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules);
+        if ($validator->fails() && $request->wantsJson()) {
+            abort(response()->json(['success' => false, 'message' => 'Validasi gagal.', 'errors' => $validator->errors()], 422));
+        }
+
+        return $validator->validate();
+    }
+
+    public function exportPdf(\App\Models\TnProcessHistory $history, Request $request)
+    {
+        $html = $request->input('html');
+        if (empty($html)) {
+            return response()->json(['success' => false, 'message' => 'Konten HTML laporan tidak ditemukan.'], 422);
+        }
+
+        $rawMachine = $history->controller?->machine?->machine_name ?? 'TN';
+        $sanitizedTitle = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $rawMachine);
+        $filename = "Laporan_Batch_{$history->id}_{$sanitizedTitle}.pdf";
+
+        if (config('nativephp-internal.running') && class_exists(\Native\Desktop\Facades\System::class)) {
+            try {
+                $base64 = \Native\Desktop\Facades\System::printToPDF($html, [
+                    'pageSize' => 'A4',
+                    'printBackground' => true,
+                    'preferCSSPageSize' => true,
+                ]);
+
+                if (!empty($base64)) {
+                    $binary = base64_decode($base64);
+                    return response($binary, 200, [
+                        'Content-Type' => 'application/pdf',
+                        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                        'Cache-Control' => 'no-cache, private',
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Native printToPDF failed: ' . $e->getMessage());
+                return response()->json(['success' => false, 'message' => 'Gagal membuat PDF: ' . $e->getMessage()], 500);
+            }
+        }
+
+        return response()->json(['success' => false, 'message' => 'Layanan ekspor PDF Native desktop tidak tersedia.'], 500);
+    }
+
+    public function printNative(\App\Models\TnProcessHistory $history, Request $request)
+    {
+        $html = $request->input('html');
+        if (empty($html)) {
+            return response()->json(['success' => false, 'message' => 'Konten HTML laporan tidak ditemukan.'], 422);
+        }
+
+        if (config('nativephp-internal.running') && class_exists(\Native\Desktop\Facades\System::class)) {
+            try {
+                \Native\Desktop\Facades\System::print($html, null, [
+                    'silent' => false,
+                    'printBackground' => true,
+                    'pageSize' => 'A4',
+                ]);
+                return response()->json(['success' => true, 'message' => 'Dialog cetak printer berhasil dibuka.']);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Native print failed: ' . $e->getMessage());
+                return response()->json(['success' => false, 'message' => 'Gagal membuka printer: ' . $e->getMessage()], 500);
+            }
+        }
+
+        return response()->json(['success' => false, 'message' => 'Fitur cetak native hanya tersedia pada aplikasi desktop.'], 400);
+    }
+
     public function ingestReading(TnController $tn, Request $request)
     {
         $validated = $request->validate([
