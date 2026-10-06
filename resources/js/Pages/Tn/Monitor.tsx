@@ -108,6 +108,8 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         lastSeenAtRef.current = timestampToMs(getReadingTimestamp(initialReading));
 
         const loadReadings = async (replaceLatest = false) => {
+            if (webSerialDriver.isConnected()) return;
+
             try {
                 const response = await fetch(route('tn.readings', controller.id), {
                     headers: { Accept: 'application/json' },
@@ -115,7 +117,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
-                if (!isMountedRef.current) return;
+                if (!isMountedRef.current || webSerialDriver.isConnected()) return;
 
                 let readingsList: any[] = [];
                 if (Array.isArray(data)) {
@@ -147,7 +149,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                     setReading(latest);
                 }
             } catch {
-                if (isMountedRef.current) setIsLiveOnline(false);
+                if (isMountedRef.current && !webSerialDriver.isConnected()) setIsLiveOnline(false);
             }
         };
 
@@ -157,6 +159,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         const echo = (window as any).Echo;
         const channel = echo?.channel(`tn.${controller.id}`);
         channel?.listen('.tn.data', (event: any) => {
+            if (webSerialDriver.isConnected()) return;
             applyReading({
                 pv: event.pv,
                 sv: event.sv,
@@ -179,11 +182,17 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         });
 
         const refreshIntervalId = window.setInterval(() => {
-            loadReadings();
+            if (!webSerialDriver.isConnected()) {
+                loadReadings();
+            }
         }, pollIntervalMs);
 
         const staleIntervalId = window.setInterval(() => {
             if (!isMountedRef.current) return;
+            if (webSerialDriver.isConnected()) {
+                setIsLiveOnline(true);
+                return;
+            }
             const lastSeenAt = lastSeenAtRef.current;
             setIsLiveOnline(lastSeenAt !== false && Date.now() - lastSeenAt <= staleAfterMs);
         }, 1000);
@@ -354,15 +363,11 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         });
 
         try {
-            const parity = (controller.parity === 'E' ? 'even' : (controller.parity === 'O' ? 'odd' : 'none')) as any;
-            const stopBits = (controller.stopbits === 1 ? 1 : 2) as any;
-            const baudRate = controller.baudrate || 9600;
-
-            // Connect using the controller's exact hardware communication specs
+            // Connect using standard 9600 baud, 8-N-1 (matching previous working configuration)
             await webSerialDriver.connect(undefined, {
-                baudRate,
-                parity,
-                stopBits,
+                baudRate: 9600,
+                stopBits: 1,
+                parity: 'none',
             });
 
             setIsWebSerialConnected(true);
@@ -374,11 +379,11 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             setScanStatus({
                 loading: false,
                 success: true,
-                message: `Port USB Serial Laptop terhubung (${baudRate} bps, 8-${parity[0].toUpperCase()}-${stopBits})! Membaca data Modbus controller...`,
+                message: 'Port USB Serial Laptop terhubung! Membaca data Modbus controller...',
             });
 
-            const slaveId = controller.slave_id || 1;
-            webSerialDriver.startPolling(slaveId, 1000);
+            // Start polling Slave ID 1 every 1 second
+            webSerialDriver.startPolling(1, 1000);
 
             setTimeout(() => {
                 setScanStatus((prev) => (prev?.success ? null : prev));
