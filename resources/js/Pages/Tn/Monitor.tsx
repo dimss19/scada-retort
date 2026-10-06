@@ -257,6 +257,14 @@ export default function Monitor({ controller, latestReading: initialReading }: P
 
         webSerialDriver.onError = (errMsg) => {
             console.warn('Web Serial modbus warning:', errMsg);
+            setScanStatus((prev) => {
+                if (prev?.loading) return prev;
+                return {
+                    loading: false,
+                    success: false,
+                    message: errMsg,
+                };
+            });
         };
     }, [controller.id, applyReading]);
 
@@ -346,8 +354,17 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         });
 
         try {
-            // This invokes navigator.serial.requestPort() immediately
-            await webSerialDriver.connect();
+            const parity = (controller.parity === 'E' ? 'even' : (controller.parity === 'O' ? 'odd' : 'none')) as any;
+            const stopBits = (controller.stopbits === 1 ? 1 : 2) as any;
+            const baudRate = controller.baudrate || 9600;
+
+            // Connect using the controller's exact hardware communication specs
+            await webSerialDriver.connect(undefined, {
+                baudRate,
+                parity,
+                stopBits,
+            });
+
             setIsWebSerialConnected(true);
             setWebSerialPortLabel('USB Serial Laptop');
             setCurrentSerialPort('USB Serial (Laptop)');
@@ -357,15 +374,15 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             setScanStatus({
                 loading: false,
                 success: true,
-                message: 'Port USB Serial Laptop berhasil dihubungkan! Mulai membaca data sensor...',
+                message: `Port USB Serial Laptop terhubung (${baudRate} bps, 8-${parity[0].toUpperCase()}-${stopBits})! Membaca data Modbus controller...`,
             });
 
             const slaveId = controller.slave_id || 1;
             webSerialDriver.startPolling(slaveId, 1000);
 
             setTimeout(() => {
-                setScanStatus(null);
-            }, 5000);
+                setScanStatus((prev) => (prev?.success ? null : prev));
+            }, 6000);
         } catch (err: any) {
             console.error('Web Serial connect error:', err);
             if (err?.name === 'NotFoundError' || err?.message?.includes('No port selected') || err?.message?.includes('cancel')) {
