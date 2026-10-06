@@ -18,7 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.installation' => \App\Http\Middleware\CheckInstallation::class,
         ]);
         $middleware->web(append: [
-            \App\Http\Middleware\CheckInstallation::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);

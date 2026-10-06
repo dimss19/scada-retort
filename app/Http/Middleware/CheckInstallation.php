@@ -13,23 +13,6 @@ class CheckInstallation
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (app()->environment('testing')) {
-            return $next($request);
-        }
-
-        $isInstalled = file_exists(storage_path('installed'));
-        $isInstallerRoute = $request->is('install*');
-
-        // 1. Jika aplikasi BELUM diinstall dan user mencoba membuka route utama
-        if (!$isInstalled && !$isInstallerRoute) {
-            return redirect()->route('installer.welcome');
-        }
-
-        // 2. Jika aplikasi SUDAH diinstall dan user mencoba membuka route installer lagi
-        if ($isInstalled && $isInstallerRoute) {
-            return redirect('/');
-        }
-
         return $next($request);
     }
 }
