@@ -89,16 +89,16 @@ export default function RetortMonitorShell(props: Props) {
                         <span>{props.isScanningPort ? 'Memindai USB...' : 'Scan Port USB'}</span>
                     </button>
 
-                    {/* Tombol Pengaturan Port & Pin Test */}
+                    {/* Tombol Daftar & Pemilihan Port USB */}
                     {props.onOpenPortModal && (
                         <button
                             type="button"
                             onClick={props.onOpenPortModal}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:text-blue-700 px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition-all cursor-pointer"
-                            title="Buka Pengaturan Port, Pemilihan Manual, & Uji Pin"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition-all cursor-pointer"
+                            title="Buka Daftar Port USB yang Terdeteksi di VPS"
                         >
-                            <Wrench size={14} className="text-slate-500" />
-                            <span className="hidden sm:inline">Pengaturan Port</span>
+                            <Cable size={15} className="text-blue-600" />
+                            <span>Daftar Port USB</span>
                         </button>
                     )}
                 </div>
@@ -187,11 +187,16 @@ export default function RetortMonitorShell(props: Props) {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
+                            <button
+                                type="button"
+                                onClick={props.onOpenPortModal}
+                                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-blue-50 hover:border-blue-300 border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm cursor-pointer transition-all"
+                                title="Klik untuk membuka daftar port USB yang digunakan di VPS"
+                            >
                                 <Cable size={14} className="text-blue-600" />
                                 <span>Port:</span>
                                 <code className="font-mono text-blue-900 font-extrabold">{activePortDisplay}</code>
-                            </span>
+                            </button>
                             <button
                                 type="button"
                                 disabled={props.isScanningPort}

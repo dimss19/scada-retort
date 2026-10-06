@@ -4,7 +4,7 @@ import axios from 'axios';
 import { PageProps, ScadaCanvas as ScadaCanvasType, ScadaMapping } from '@/types';
 import { TnController } from '@/types/tn';
 import RetortMonitorShell from '@/Components/Tn/RetortMonitorShell';
-import ControllerPinTestModal from '@/Components/Tn/ControllerPinTestModal';
+import UsbPortModal from '@/Components/Tn/UsbPortModal';
 import {
     buildRetortEvents,
     buildRetortTelemetry,
@@ -318,11 +318,14 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             />
 
             {showPortModal && (
-                <ControllerPinTestModal
+                <UsbPortModal
                     controllerId={controller.id}
-                    model={controller.model_type || 'TNH'}
-                    serialPort={currentSerialPort}
+                    activePort={currentSerialPort}
                     isOnline={isOnline}
+                    onPortChanged={(newPort) => {
+                        setCurrentSerialPort(newPort);
+                        loadReadingsRef.current?.(true);
+                    }}
                     onClose={() => {
                         setShowPortModal(false);
                         loadReadingsRef.current?.(true);
