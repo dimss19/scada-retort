@@ -25,8 +25,10 @@ class MqttSubscribeCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Starting MQTT Listener...');
         $csvStorageDir = storage_path('app/mqtt-csv');
@@ -36,8 +38,9 @@ class MqttSubscribeCommand extends Command
 
         // Active CSV upload tracking [key => ['file_path' => ..., 'size' => ..., 'sha256' => ...]]
         $activeUploads = [];
+        $running = true;
 
-        while (true) {
+        while ($running) {
             try {
                 $this->info('Connecting to MQTT broker...');
                 $mqtt = MQTT::connection();
@@ -217,6 +220,7 @@ class MqttSubscribeCommand extends Command
                             // Update database for Rule 3
                             $device = \App\Models\Device::where('machine_code', $machineCode)->first();
                             if ($device) {
+                                /** @var \App\Models\OtaDeployment|null $latestDeployment */
                                 $latestDeployment = $device->otaDeployments()->latest()->first();
                                 if ($latestDeployment) {
                                     $latestDeployment->update([
@@ -248,6 +252,8 @@ class MqttSubscribeCommand extends Command
                 sleep(5);
             }
         }
+
+        return self::SUCCESS;
     }
 
     /**

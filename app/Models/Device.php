@@ -34,6 +34,9 @@ class Device extends Model
         return $this->hasMany(FeatureConfig::class);
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\OtaDeployment>
+     */
     public function otaDeployments()
     {
         return $this->hasMany(OtaDeployment::class);

@@ -29,3 +29,4 @@ Thumbs.db
 .opencode
 scada-retort-installer-release/
 *.zip
+/nativephp
