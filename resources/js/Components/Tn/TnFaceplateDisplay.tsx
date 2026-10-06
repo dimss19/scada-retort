@@ -5,9 +5,10 @@ interface Props {
     telemetry: RetortTelemetry;
     modelType?: string;
     isOnline: boolean;
+    serialPort?: string | null;
 }
 
-export default function TnFaceplateDisplay({ telemetry, modelType = 'TNH-P', isOnline }: Props) {
+export default function TnFaceplateDisplay({ telemetry, modelType = 'TNH-P', isOnline, serialPort }: Props) {
     const [blinkToggle, setBlinkToggle] = useState(false);
 
     useEffect(() => {
@@ -82,14 +83,21 @@ export default function TnFaceplateDisplay({ telemetry, modelType = 'TNH-P', isO
         <section className="rounded-3xl border border-slate-800 bg-[#060a12] p-6 shadow-2xl backdrop-blur-xl text-white">
             {/* Header / Title Bar */}
             <div className="mb-4 pb-3 border-b border-slate-800">
-                <div className="flex flex-wrap items-center justify-between text-xs font-mono font-bold text-slate-400 mb-1">
+                <div className="flex flex-wrap items-center justify-between text-xs font-mono font-bold text-slate-400 mb-1 gap-2">
                     <span className="tracking-wider">UPDATE : {updateTime}</span>
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase ${
-                        isOnline ? 'bg-emerald-950 text-emerald-400 border border-emerald-700' : 'bg-rose-950 text-rose-400 border border-rose-700'
-                    }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`}></span>
-                        {isOnline ? 'CONNECTED' : 'DISCONNECTED'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        {serialPort && (
+                            <span className="text-[10px] bg-slate-900 border border-slate-700 text-amber-300 font-mono px-2 py-0.5 rounded shadow-sm">
+                                PORT: {serialPort}
+                            </span>
+                        )}
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase ${
+                            isOnline ? 'bg-emerald-950 text-emerald-400 border border-emerald-700' : 'bg-rose-950 text-rose-400 border border-rose-700'
+                        }`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`}></span>
+                            {isOnline ? 'CONNECTED' : 'DISCONNECTED'}
+                        </span>
+                    </div>
                 </div>
                 <div className="flex items-center justify-between font-mono">
                     <span className="text-xl font-black tracking-wider text-white">

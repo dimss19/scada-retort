@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import axios from 'axios';
 import { Wrench, CheckCircle2, AlertCircle, Play, Square, Sparkles, RefreshCw, Cpu, Activity } from 'lucide-react';
 
 interface PinChannel {
@@ -106,14 +107,14 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
     const fetchPorts = async () => {
         setScanning(true);
         try {
-            const res = await fetch(route('tn.port.list', controllerId));
-            const data = await res.json();
+            const res = await axios.get(route('tn.port.list', controllerId));
+            const data = res.data;
             if (data.success) {
                 setPorts(data.ports);
                 addLog(`Ditemukan ${data.ports.length} port serial di sistem.`, true);
             }
         } catch (err: any) {
-            addLog(`Gagal mengambil daftar port: ${err.message}`, false);
+            addLog(`Gagal mengambil daftar port: ${err.response?.data?.message || err.message}`, false);
         } finally {
             setScanning(false);
         }
@@ -121,10 +122,10 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
 
     const handleScan = async () => {
         setScanning(true);
-        addLog(`Memulai scanning seluruh port COM untuk ${schema.title}...`, true);
+        addLog(`Memulai scanning seluruh port COM / USB untuk ${schema.title}...`, true);
         try {
-            const res = await fetch(route('tn.port.scan', controllerId), { method: 'POST' });
-            const data = await res.json();
+            const res = await axios.post(route('tn.port.scan', controllerId));
+            const data = res.data;
             if (data.success && data.port) {
                 setCurrentSelectedPort(data.port);
                 setCurrentMode('manual');
@@ -135,7 +136,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                 addLog(data.message || 'Tidak ada port yang merespons.', false);
             }
         } catch (err: any) {
-            addLog(`Gagal melakukan scan: ${err.message}`, false);
+            addLog(`Gagal melakukan scan: ${err.response?.data?.message || err.message}`, false);
         } finally {
             setScanning(false);
         }
@@ -143,12 +144,11 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
 
     const handleSelectPort = async (port: string) => {
         try {
-            const res = await fetch(route('tn.port.select', controllerId), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ port, mode: 'manual' }),
+            const res = await axios.post(route('tn.port.select', controllerId), {
+                port,
+                mode: 'manual',
             });
-            const data = await res.json();
+            const data = res.data;
             if (data.success) {
                 setCurrentSelectedPort(port);
                 setCurrentMode('manual');
@@ -156,25 +156,24 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                 addLog(`Port aktif di-set ke ${port}.`, true);
             }
         } catch (err: any) {
-            addLog(`Gagal memilih port: ${err.message}`, false);
+            addLog(`Gagal memilih port: ${err.response?.data?.message || err.message}`, false);
         }
     };
 
     const handleAutoMode = async () => {
         try {
-            const res = await fetch(route('tn.port.select', controllerId), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ port: '', mode: 'auto' }),
+            const res = await axios.post(route('tn.port.select', controllerId), {
+                port: '',
+                mode: 'auto',
             });
-            const data = await res.json();
+            const data = res.data;
             if (data.success) {
                 setCurrentMode('auto');
                 setCurrentSelectedPort(null);
                 addLog('Mode auto-detect diaktifkan.', true);
             }
         } catch (err: any) {
-            addLog(`Gagal mengaktifkan mode auto: ${err.message}`, false);
+            addLog(`Gagal mengaktifkan mode auto: ${err.response?.data?.message || err.message}`, false);
         }
     };
 
@@ -183,12 +182,10 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
         const target = testPortTarget || ((currentSelectedPort && currentSelectedPort.toLowerCase() !== 'auto') ? currentSelectedPort : '');
         addLog(`Memulai test koneksi Modbus RTU (${target || 'Auto-Detect'})...`, true);
         try {
-            const res = await fetch(route('tn.port.test', controllerId), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ port: target })
+            const res = await axios.post(route('tn.port.test', controllerId), {
+                port: target,
             });
-            const data = await res.json();
+            const data = res.data;
             if (data.success) {
                 setLocalOnline(true);
                 addLog(data.message || `Koneksi Berhasil! Controller merespons.`, true);
@@ -196,7 +193,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                 addLog(data.message || `Koneksi Gagal. Cek kabel serial RS485.`, false);
             }
         } catch (err: any) {
-            addLog(`Error saat test koneksi: ${err.message}`, false);
+            addLog(`Error saat test koneksi: ${err.response?.data?.message || err.message}`, false);
         } finally {
             setTestingPort(false);
         }
@@ -206,12 +203,11 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
         setTestingChannel(channel);
         addLog(`Mengirim sinyal ON ke ${channel} (Pin ${pin}) selama 2 detik...`, true);
         try {
-            const res = await fetch(route('tn.port.toggle-pin', controllerId), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channel, port: currentSelectedPort || '' })
+            const res = await axios.post(route('tn.port.toggle-pin', controllerId), {
+                channel,
+                port: currentSelectedPort || '',
             });
-            const data = await res.json();
+            const data = res.data;
             if (data.success) {
                 setLocalOnline(true);
                 addLog(`PASS: ${channel} (Pin ${pin}) berhasil di-trigger aktif 2 detik.`, true);
@@ -219,7 +215,7 @@ export default function ControllerPinTestModal({ controllerId, model, serialPort
                 addLog(`FAIL: ${data.message || 'Gagal memicu pin output'}`, false);
             }
         } catch (err: any) {
-            addLog(`FAIL: Error koneksi saat toggle ${channel}: ${err.message}`, false);
+            addLog(`FAIL: Error koneksi saat toggle ${channel}: ${err.response?.data?.message || err.message}`, false);
         } finally {
             setTestingChannel(null);
         }

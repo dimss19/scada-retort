@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
+import axios from 'axios';
 import { PageProps, ScadaCanvas as ScadaCanvasType, ScadaMapping } from '@/types';
 import { TnController } from '@/types/tn';
 import RetortMonitorShell from '@/Components/Tn/RetortMonitorShell';
+import ControllerPinTestModal from '@/Components/Tn/ControllerPinTestModal';
 import {
     buildRetortEvents,
     buildRetortTelemetry,
@@ -62,8 +64,19 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         controller.is_online || isFreshTimestamp(getReadingTimestamp(initialReading)),
     ));
     const [commandPending, setCommandPending] = useState<'run' | 'stop' | 'reset' | null>(null);
+    const [currentSerialPort, setCurrentSerialPort] = useState<string>(controller.serial_port || 'AUTO');
+    const [isScanningPort, setIsScanningPort] = useState<boolean>(false);
+    const [scanStatus, setScanStatus] = useState<{
+        loading: boolean;
+        success?: boolean;
+        message?: string;
+        available_ports?: string[];
+    } | null>(null);
+    const [showPortModal, setShowPortModal] = useState<boolean>(false);
+
     const lastReadingTimestampRef = useRef<any>(getReadingTimestamp(initialReading));
     const lastSeenAtRef = useRef<number | false>(timestampToMs(getReadingTimestamp(initialReading)));
+    const loadReadingsRef = useRef<((replaceLatest?: boolean) => Promise<void>) | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -103,6 +116,12 @@ export default function Monitor({ controller, latestReading: initialReading }: P
                     readingsList = data;
                 } else if (data && typeof data === 'object') {
                     readingsList = Array.isArray(data.readings) ? data.readings : [];
+                    if (data.serial_port) {
+                        setCurrentSerialPort(data.serial_port);
+                    }
+                    if (typeof data.is_online === 'boolean') {
+                        setIsLiveOnline(data.is_online);
+                    }
                     if (typeof data.unverified_count === 'number') {
                         window.dispatchEvent(new CustomEvent('unverified-count-update', { detail: data.unverified_count }));
                     }
@@ -126,6 +145,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
             }
         };
 
+        loadReadingsRef.current = loadReadings;
         loadReadings(true);
 
         const echo = (window as any).Echo;
@@ -164,6 +184,7 @@ export default function Monitor({ controller, latestReading: initialReading }: P
 
         return () => {
             isMounted = false;
+            loadReadingsRef.current = null;
             window.clearInterval(refreshIntervalId);
             window.clearInterval(staleIntervalId);
             channel?.stopListening('.tn.data');
@@ -220,27 +241,94 @@ export default function Monitor({ controller, latestReading: initialReading }: P
         });
     };
 
+    const handleQuickScan = async () => {
+        if (isScanningPort) return;
+        setIsScanningPort(true);
+        setScanStatus({
+            loading: true,
+            message: 'Sedang memindai port serial/USB di sistem VPS...',
+        });
+
+        try {
+            const res = await axios.post(route('tn.port.scan', controller.id));
+            const data = res.data;
+
+            if (data.success && data.port) {
+                setCurrentSerialPort(data.port);
+                setIsLiveOnline(true);
+                setScanStatus({
+                    loading: false,
+                    success: true,
+                    message: data.message || `Port ${data.port} ditemukan dan berhasil terhubung!`,
+                });
+                loadReadingsRef.current?.(true);
+                setTimeout(() => {
+                    setScanStatus((prev) => (prev?.success ? null : prev));
+                }, 6000);
+            } else {
+                const availPorts = Array.isArray(data.available_ports) && data.available_ports.length > 0
+                    ? ` (Tersedia di VPS: ${data.available_ports.join(', ')})`
+                    : '';
+                setScanStatus({
+                    loading: false,
+                    success: false,
+                    message: (data.message || 'Tidak ada port Modbus yang merespons.') + availPorts,
+                    available_ports: data.available_ports || [],
+                });
+            }
+        } catch (err: any) {
+            setScanStatus({
+                loading: false,
+                success: false,
+                message: err.response?.data?.message || err.message || 'Gagal memindai port serial USB.',
+            });
+        } finally {
+            setIsScanningPort(false);
+        }
+    };
+
     const lastUpdate = telemetry.timestamp
         ? new Date(telemetry.timestamp).toLocaleString('id-ID')
         : 'Belum ada data';
 
     return (
-        <RetortMonitorShell
-            controller={controller}
-            telemetry={telemetry}
-            events={recentEvents}
-            history={normalizedHistory}
-            mappings={controller.scada_mappings ?? []}
-            canvas={controller.scada_canvas}
-            sensorData={sensorData}
-            isOnline={isOnline}
-            commandPending={commandPending}
-            lastUpdate={lastUpdate}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            onRun={() => sendCommand('run')}
-            onStop={() => sendCommand('stop')}
-            onResetAlarm={() => sendCommand('reset')}
-        />
+        <>
+            <RetortMonitorShell
+                controller={controller}
+                telemetry={telemetry}
+                events={recentEvents}
+                history={normalizedHistory}
+                mappings={controller.scada_mappings ?? []}
+                canvas={controller.scada_canvas}
+                sensorData={sensorData}
+                isOnline={isOnline}
+                serialPort={currentSerialPort}
+                commandPending={commandPending}
+                lastUpdate={lastUpdate}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                onRun={() => sendCommand('run')}
+                onStop={() => sendCommand('stop')}
+                onResetAlarm={() => sendCommand('reset')}
+                isScanningPort={isScanningPort}
+                scanStatus={scanStatus}
+                onScanPort={handleQuickScan}
+                onOpenPortModal={() => setShowPortModal(true)}
+                onCloseScanStatus={() => setScanStatus(null)}
+            />
+
+            {showPortModal && (
+                <ControllerPinTestModal
+                    controllerId={controller.id}
+                    model={controller.model_type || 'TNH'}
+                    serialPort={currentSerialPort}
+                    isOnline={isOnline}
+                    onClose={() => {
+                        setShowPortModal(false);
+                        loadReadingsRef.current?.(true);
+                    }}
+                />
+            )}
+        </>
     );
 }
