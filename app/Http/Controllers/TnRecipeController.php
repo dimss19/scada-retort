@@ -19,16 +19,29 @@ class TnRecipeController extends Controller {
         });
 
         $syncMsg = '';
+        $writeSuccess = true;
+        $writeError = null;
         if ($request->boolean('sync_to_tn')) {
             $tnId = $request->input('tn_controller_id') ?? $request->input('tn_id');
             $writeRes = $this->writeRecipeToDevice($recipe, $tnId);
+            $writeSuccess = $writeRes['success'];
             if ($writeRes['success']) {
                 $syncMsg = ' dan berhasil ditulis langsung ke TN Controller (' . $writeRes['controller'] . ')';
             } else {
-                $syncMsg = ' (Peringatan: Gagal menulis ke TN Controller: ' . ($writeRes['error'] ?? 'Offline') . ')';
+                $writeError = $writeRes['error'] ?? 'Offline';
+                $syncMsg = ' (Peringatan: Gagal menulis ke TN Controller: ' . $writeError . ')';
             }
         } else {
             $syncMsg = ' ke database saja';
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => $writeSuccess,
+                'recipe' => $recipe->load('steps'),
+                'error' => $writeError,
+                'message' => 'Pattern berhasil disimpan' . $syncMsg . '.',
+            ], $writeSuccess ? 200 : 207);
         }
 
         return redirect()->route('tn.recipes.index')->with('success', 'Pattern berhasil disimpan' . $syncMsg . '.');
@@ -45,16 +58,29 @@ class TnRecipeController extends Controller {
         });
 
         $syncMsg = '';
+        $writeSuccess = true;
+        $writeError = null;
         if ($request->boolean('sync_to_tn')) {
             $tnId = $request->input('tn_controller_id') ?? $request->input('tn_id');
             $writeRes = $this->writeRecipeToDevice($recipe, $tnId);
+            $writeSuccess = $writeRes['success'];
             if ($writeRes['success']) {
                 $syncMsg = ' dan berhasil ditulis langsung ke TN Controller (' . $writeRes['controller'] . ')';
             } else {
-                $syncMsg = ' (Peringatan: Gagal menulis ke TN Controller: ' . ($writeRes['error'] ?? 'Offline') . ')';
+                $writeError = $writeRes['error'] ?? 'Offline';
+                $syncMsg = ' (Peringatan: Gagal menulis ke TN Controller: ' . $writeError . ')';
             }
         } else {
             $syncMsg = ' ke database saja';
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => $writeSuccess,
+                'recipe' => $recipe->fresh('steps'),
+                'error' => $writeError,
+                'message' => 'Pattern berhasil diperbarui' . $syncMsg . '.',
+            ], $writeSuccess ? 200 : 207);
         }
 
         return redirect()->route('tn.recipes.index')->with('success', 'Pattern berhasil diperbarui' . $syncMsg . '.');
@@ -138,6 +164,7 @@ class TnRecipeController extends Controller {
         $mqttService = app(\App\Services\MqttService::class);
         $mqttPublished = $mqttService->publishPattern($device, $patternData);
 
+        $directSerialSuccess = false;
         // 2. Secondary fallback: Direct serial if local port is configured on server
         if ($tn->serial_port && $tn->serial_port !== 'auto') {
             try {
@@ -172,23 +199,25 @@ class TnRecipeController extends Controller {
                         $stepRegisters[($idx * 2) + 1] = (int)($step->duration ?? 0);
                     }
                     $modbus->writeMultipleRegisters($tn, 209, $stepRegisters);
+                    $directSerialSuccess = true;
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("Direct Modbus fallback failed for {$machineCode}: " . $e->getMessage());
             }
         }
 
-        if ($mqttPublished) {
+        if ($mqttPublished || $directSerialSuccess) {
+            $method = $mqttPublished ? "ESP32 ({$machineCode})" : "Direct Modbus Serial ({$tn->serial_port})";
             return [
                 'success' => true,
                 'controller' => $tn->name,
-                'message' => "Pattern berhasil dikirim ke ESP32 ({$machineCode}) untuk ditulis langsung ke Controller TN.",
+                'message' => "Pattern berhasil ditulis langsung ke Controller TN ({$tn->name}) via {$method}.",
             ];
         }
 
         return [
             'success' => false,
-            'error' => 'Gagal mengirim konfigurasi pattern ke ESP32 (periksa koneksi MQTT broker).',
+            'error' => 'Gagal mengirim konfigurasi pattern ke ESP32 / TN Controller (periksa koneksi broker MQTT atau port serial).',
         ];
     }
 
@@ -321,7 +350,7 @@ class TnRecipeController extends Controller {
     }
 
     private function validateRecipe(Request $r,?TnRecipeTemplate $recipe=null):array{return $r->validate([
-        'recipe_code'=>['required','string','max:80',Rule::unique('tn_recipe_templates')->ignore($recipe)],'name'=>['required','string','max:255'],'product_name'=>['required','string','max:255'],'product_category'=>['nullable','string','max:100'],'package_type'=>['nullable','string','max:100'],'package_size'=>['nullable','string','max:100'],'description'=>['nullable','string'],'revision'=>['required','integer','min:1'],'version'=>['required','string','max:30'],'status'=>['required',Rule::in(['Draft','Active','Inactive','Archived'])],'approved_by'=>['nullable','exists:users,id'],'process_parameters'=>['required','array'],'tn_config'=>['nullable','array'],'time_unit'=>['required',Rule::in(['MM.SS','HH.MM'])],'start_condition'=>['required',Rule::in(['SSV','SPV'])],'pattern_end_state'=>['required',Rule::in(['STOP','HOLD','NEXT','PRE'])],'pattern_number'=>['required','integer','min:0','max:9'],'repetitions'=>['required','integer','min:0'],'pid_group'=>['required','integer','min:0','max:7'],'wait_width'=>['required','integer','min:0'],'wait_time'=>['required','integer','min:0'],'steps'=>['required','array','min:1','max:50'],'steps.*.step_name'=>['required','string','max:100'],'steps.*.target_sv'=>['required','integer','min:-1999','max:9999'],'steps.*.duration'=>['required','integer','min:0','max:9999'],'steps.*.end_action'=>['nullable',Rule::in(['CONT','HOLD','STOP'])],'steps.*.event_link'=>['nullable','integer','min:0','max:9'],'steps.*.pid_group'=>['nullable','integer','min:0','max:7'],'steps.*.target_pressure'=>['nullable','numeric','min:0','max:99'],'steps.*.steam_enable'=>['boolean'],'steps.*.cooling_enable'=>['boolean'],'steps.*.drain_enable'=>['boolean'],'steps.*.alarm_enable'=>['boolean']]);}
+        'recipe_code'=>['required','string','max:80',Rule::unique('tn_recipe_templates')->ignore($recipe)],'name'=>['required','string','max:255'],'product_name'=>['required','string','max:255'],'product_category'=>['nullable','string','max:100'],'package_type'=>['nullable','string','max:100'],'package_size'=>['nullable','string','max:100'],'description'=>['nullable','string'],'revision'=>['required','integer','min:1'],'version'=>['required','string','max:30'],'status'=>['required',Rule::in(['Draft','Active','Inactive','Archived'])],'approved_by'=>['nullable'],'process_parameters'=>['nullable','array'],'tn_config'=>['nullable','array'],'time_unit'=>['required',Rule::in(['MM.SS','HH.MM'])],'start_condition'=>['required',Rule::in(['SSV','SPV'])],'pattern_end_state'=>['required',Rule::in(['STOP','HOLD','NEXT','PRE'])],'pattern_number'=>['required','integer','min:0','max:9'],'repetitions'=>['required','integer','min:0'],'pid_group'=>['required','integer','min:0','max:7'],'wait_width'=>['required','integer','min:0'],'wait_time'=>['required','integer','min:0'],'steps'=>['required','array','min:1','max:50'],'steps.*.step_name'=>['required','string','max:100'],'steps.*.target_sv'=>['required','numeric','min:-1999','max:9999'],'steps.*.duration'=>['required','integer','min:0','max:9999'],'steps.*.end_action'=>['nullable',Rule::in(['CONT','HOLD','STOP'])],'steps.*.event_link'=>['nullable','integer','min:0','max:9'],'steps.*.pid_group'=>['nullable','integer','min:0','max:7'],'steps.*.target_pressure'=>['nullable','numeric','min:0','max:99'],'steps.*.steam_enable'=>['boolean'],'steps.*.cooling_enable'=>['boolean'],'steps.*.drain_enable'=>['boolean'],'steps.*.alarm_enable'=>['boolean']]);}
     private function template(array $d):array{return collect($d)->only(['recipe_code','name','product_name','product_category','package_type','package_size','description','revision','version','status','approved_by','process_parameters','tn_config','time_unit','start_condition','pattern_end_state','pattern_number','repetitions','pid_group','wait_width','wait_time'])->all()+['step_count'=>count($d['steps'])];}
     private function steps(array $steps):array{return array_map(fn($s,$i)=>['step_number'=>$i+1]+$s,$steps,array_keys($steps));}
     private function copyCode(string $code):string{$base=$code.'-COPY';$candidate=$base;$i=1;while(TnRecipeTemplate::where('recipe_code',$candidate)->exists())$candidate=$base.'-'.$i++;return $candidate;}

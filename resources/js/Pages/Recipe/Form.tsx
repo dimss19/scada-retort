@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, Link, usePage } from '@inertiajs/react';
+import { Head, useForm, Link, usePage, router } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
+import axios from 'axios';
 import { durationToMmSs, mmSsToDuration } from '@/Components/Esp/EspPatternEditor';
 
 export default function Form({ recipe, users = [], controllers = [] }: { recipe?: any; users?: any[]; controllers?: any[] }) {
@@ -12,6 +13,8 @@ export default function Form({ recipe, users = [], controllers = [] }: { recipe?
     const [selectedController, setSelectedController] = useState(
         recipe?.process_parameters?.scanned_from || activeTnId || (controllers.length > 0 ? controllers[0].id : '')
     );
+    const [scanMessage, setScanMessage] = useState({ text: '', type: '' });
+    const [isWritingToTn, setIsWritingToTn] = useState(false);
 
     const defaultTnConfig = {
         IN: {
@@ -117,6 +120,64 @@ export default function Form({ recipe, users = [], controllers = [] }: { recipe?
         }));
     };
 
+    const handleSaveAndWriteToTn = async () => {
+        const targetController = selectedController || activeTnId || (controllers.length > 0 ? controllers[0].id : '');
+        if (!confirm(`Kirim dan terapkan '${data.name}' langsung ke memori TN Controller?`)) {
+            return;
+        }
+
+        setIsWritingToTn(true);
+        setScanMessage({
+            text: `Menyimpan dan menulis parameter '${data.name}' ke TN Controller via Modbus...`,
+            type: 'info'
+        });
+
+        try {
+            const payload = {
+                ...data,
+                sync_to_tn: true,
+                tn_controller_id: targetController || undefined,
+                tn_id: targetController || undefined,
+            };
+
+            let savedRecipeId = recipe?.id;
+            let saveResponse: any = null;
+
+            if (isEditing) {
+                saveResponse = await axios.put(route('tn.recipes.update', recipe.id), payload);
+                savedRecipeId = saveResponse.data?.recipe?.id || recipe.id;
+            } else {
+                saveResponse = await axios.post(route('tn.recipes.store'), payload);
+                savedRecipeId = saveResponse.data?.recipe?.id;
+            }
+
+            // Call direct apply to guarantee it triggers the exact same hardware write as the "Tulis ke TN" button in the previous page
+            const applyResponse = await axios.post(route('tn.recipes.apply', {
+                recipe: savedRecipeId,
+                tn: targetController || undefined
+            }));
+
+            const successMsg = applyResponse.data?.message || saveResponse.data?.message || `Pattern '${data.name}' berhasil disimpan dan ditulis ke Controller TN!`;
+            setScanMessage({
+                text: successMsg,
+                type: 'success'
+            });
+
+            setTimeout(() => {
+                router.visit(route('tn.recipes.index'));
+            }, 1200);
+
+        } catch (error: any) {
+            const msg = error.response?.data?.error 
+                || error.response?.data?.message 
+                || (typeof error.response?.data === 'string' ? error.response?.data : null)
+                || 'Gagal menyimpan dan menulis pattern ke TN Controller.';
+            setScanMessage({ text: msg, type: 'error' });
+        } finally {
+            setIsWritingToTn(false);
+        }
+    };
+
     const handleSubmitWithSync = (sync: boolean) => {
         setData('sync_to_tn', sync);
         transform((form) => ({
@@ -214,18 +275,48 @@ export default function Form({ recipe, users = [], controllers = [] }: { recipe?
                         </h1>
                         <p className="text-sm font-semibold text-slate-600">Konfigurasi parameter TN Series dan profil langkah sterilisasi.</p>
                     </div>
-                    <Link
-                        href={route('tn.recipes.index')}
-                        className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
-                    >
-                        Kembali ke Daftar Pattern
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        {isEditing && (
+                            <button
+                                type="button"
+                                onClick={handleSaveAndWriteToTn}
+                                disabled={isWritingToTn || processing}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-yellow-300 hover:to-amber-400 text-slate-950 text-xs font-black px-4 py-2 shadow-sm transition-all disabled:opacity-50"
+                                title="Tulis parameter pattern ini ke memori hardware Controller TN"
+                            >
+                                {isWritingToTn ? 'Menulis...' : 'Tulis ke TN'}
+                            </button>
+                        )}
+                        <Link
+                            href={route('tn.recipes.index')}
+                            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                        >
+                            Kembali ke Daftar Pattern
+                        </Link>
+                    </div>
                 </div>
             }
         >
             <Head title={isEditing ? 'Edit Pattern' : 'Buat Pattern'} />
 
             <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {scanMessage.text && (
+                    <div className={`mb-6 rounded-2xl p-4 text-xs font-extrabold border shadow-sm transition-all ${
+                        scanMessage.type === 'error' ? 'bg-rose-100 text-rose-900 border-rose-300' :
+                        scanMessage.type === 'success' ? 'bg-amber-100 text-amber-950 border-amber-400' :
+                        'bg-blue-100 text-blue-900 border-blue-300'
+                    }`}>
+                        <div className="flex items-center gap-2">
+                            {isWritingToTn && (
+                                <svg className="animate-spin h-4 w-4 text-current shrink-0" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                            )}
+                            <p>{scanMessage.text}</p>
+                        </div>
+                    </div>
+                )}
                 <form onSubmit={submit} className="space-y-6">
                     {/* General Information Card */}
                     <div className="bg-white p-6 rounded-3xl shadow-lg border border-slate-200/90 backdrop-blur-xl">
@@ -1185,18 +1276,29 @@ export default function Form({ recipe, users = [], controllers = [] }: { recipe?
                         <button
                             type="button"
                             onClick={() => handleSubmitWithSync(false)}
-                            disabled={processing}
+                            disabled={processing || isWritingToTn}
                             className="px-5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 shadow-sm transition-all disabled:opacity-50"
                         >
                             Simpan ke Database Saja
                         </button>
                         <button
                             type="button"
-                            onClick={() => handleSubmitWithSync(true)}
-                            disabled={processing}
-                            className="px-7 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all border-none disabled:opacity-50"
+                            onClick={handleSaveAndWriteToTn}
+                            disabled={processing || isWritingToTn}
+                            className="inline-flex items-center gap-2 px-7 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all border-none disabled:opacity-50"
+                            title="Simpan perubahan dan langsung tulis parameter pattern ke memori controller TN"
                         >
-                            {isEditing ? 'Simpan & Tulis ke TN Controller' : 'Simpan & Tulis ke TN Controller'}
+                            {isWritingToTn ? (
+                                <>
+                                    <svg className="h-4 w-4 animate-spin text-slate-950" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    <span>Menulis ke TN...</span>
+                                </>
+                            ) : (
+                                <span>Simpan & Tulis ke TN Controller</span>
+                            )}
                         </button>
                     </div>
                 </form>
