@@ -553,63 +553,13 @@ export default function ProcessDetailView({ batch, onBack, groups = [] }: Props)
                     <strong>Laporan Sterilisasi Batch #${batch.id}</strong> — Siap untuk dicetak atau disimpan sebagai PDF.
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button id="btnSavePdf" class="btn-print" style="background: #2563eb;">Simpan File PDF</button>
-                    <button id="btnPrintNative" class="btn-print" style="background: #1e3a5f;">Cetak ke Printer</button>
+                    <button id="btnSavePdf" class="btn-print" style="background: #2563eb;" onclick="window.print()">Simpan / Cetak PDF</button>
                     <button onclick="window.close()" class="btn-close">Tutup</button>
                 </div>
             </div>
         ` : '';
 
-        const previewScriptHtml = isForPreview ? `
-            <script>
-                document.getElementById('btnSavePdf')?.addEventListener('click', function() {
-                    if (window.opener && window.opener.saveReportPdf) {
-                        window.opener.saveReportPdf();
-                    } else {
-                        fetch('/historian/${batch.id}/export-pdf', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ html: document.documentElement.outerHTML })
-                        })
-                        .then(function(res) { return res.blob(); })
-                        .then(function(blob) {
-                            var url = URL.createObjectURL(blob);
-                            var a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'Laporan_Batch_${batch.id}.pdf';
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                        })
-                        .catch(function(err) {
-                            alert('Gagal mendownload PDF: ' + err.message);
-                        });
-                    }
-                });
-
-                document.getElementById('btnPrintNative')?.addEventListener('click', function() {
-                    if (window.opener && window.opener.printReportNative) {
-                        window.opener.printReportNative();
-                    } else {
-                        fetch('/historian/${batch.id}/print-native', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ html: document.documentElement.outerHTML })
-                        })
-                        .then(function(res) { return res.json(); })
-                        .then(function(data) {
-                            if (!data.success) {
-                                window.print();
-                            }
-                        })
-                        .catch(function() {
-                            window.print();
-                        });
-                    }
-                });
-            </script>
-        ` : '';
+        const previewScriptHtml = '';
 
         return `
             <!DOCTYPE html>

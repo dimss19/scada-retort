@@ -1,58 +1,100 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🥫 SCADA Retort — CV Indah Mesin
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem Monitoring, Kontrol, dan Kalkulasi Nilai Letalitas Termal ($F_0$) Mesin Retort Sterilisasi Makanan berbasis Web SCADA Industrial.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📋 Ikhtisar Sistem Web SCADA
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Aplikasi ini dirancang khusus untuk memonitoring dan mengendalikan proses sterilisasi retort secara presisi dengan fitur utama:
+- **Kalkulasi Nilai $F_0$ Real-Time**: Perhitungan otomatis akumulasi letalitas sterilisasi metode trapesium secara matematis.
+- **Komunikasi Hardware Multi-Jalur**:
+  - **Web Serial API**: Pembacaan langsung kabel USB RS-485 dari web browser ke controller suhu Autonics TN Series (9600 baud, 8-N-1).
+  - **ESP32 Logger (WiFi / AP / MQTT)**: Datalogger nirkabel multi-probe temperatur dan tekanan.
+  - **Python Modbus Bridge**: Background daemon opsional untuk integrasi lokal/jaringan.
+- **Recipe & Pattern Manager**: Pengaturan pola kenaikan suhu bertahap (Ramp/Soak), waktu holding steril, dan pendinginan.
+- **Electronic Batch Record & Historian**: Pencatatan log batch steril otomatis, tanda tangan verifikasi mutu, dan cetak laporan resmi browser.
+- **Web Installer 7-Langkah**: Wizard pengaturan awal database, konfigurasi server, dan sistem aktivasi instalasi.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 📁 Struktur Direktori Repositori Web
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Repositori ini berfokus murni pada aplikasi Web SCADA:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```text
+scadaretort/
+├── app/                  # Controller, Models, Services, & Logika Bisnis Laravel
+├── bootstrap/            # Inisialisasi framework & providers
+├── config/               # Konfigurasi aplikasi, database, cache, serial, dll.
+├── database/             # Migrasi tabel dan database SQLite/MySQL
+├── deploy/               # Skrip otomatisasi deployment server VPS Ubuntu
+│   ├── deploy.sh         # Skrip rilis domain produksi
+│   ├── deploy_dns.sh     # Konfigurasi SSL & domain
+│   ├── setup_vps.sh      # Instalasi environment server (PHP, Nginx, Redis)
+│   └── README.md         # Panduan deployment VPS
+├── docs/                 # Dokumentasi spesifikasi teknik & standar operasional
+│   ├── TN-Modbus/        # Peta register Modbus RTU Autonics TN Series
+│   ├── PRD.md            # Product Requirement Document
+│   ├── WORKFLOW.md       # Alur kerja operasional mesin retort
+│   ├── SCADA_DESIGN_SPECIFICATION.md
+│   ├── F0_CALCULATION_FORMULA.md
+│   └── README.md         # Indeks dokumentasi lengkap
+├── drivers/              # Driver USB to RS-485 (CH340/CH341) untuk koneksi browser
+├── public/               # Asset publik web dan entry point index.php
+├── resources/            # Frontend (Inertia.js, Vue 3 / React, Blade views, CSS)
+├── firmware/             # Firmware ESP32 Datalogger Hardware (Arduino / C++)
+├── routes/               # Routing web, API, autentikasi, & web installer
+│   ├── web.php           # Rute utama aplikasi web SCADA Retort
+│   ├── api.php           # Endpoint REST API kontroler & mesin
+│   └── installer.php     # Wizard Web Installer 7-langkah
+├── scripts/              # Skrip pendukung komunikasi Python & Modbus bridge
+├── storage/              # Cache aplikasi, log, dan database SQLite lokal
+└── tests/                # Unit test dan Feature test Laravel
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 🚀 Panduan Menjalankan Web SCADA
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Persyaratan Sistem
+- **PHP** 8.2 atau lebih baru
+- **Composer** 2.x
+- **Node.js** 18+ & **NPM**
+- **Web Browser Modern**: Google Chrome / Microsoft Edge / Opera (Mendukung Web Serial API untuk koneksi langsung RS-485)
 
-## Code of Conduct
+### 1. Instalasi Dependensi
+```bash
+composer install
+npm install
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 2. Konfigurasi Lingkungan (.env)
+Salin berkas konfigurasi lingkungan jika baru pertama kali menjalankan:
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## Security Vulnerabilities
+### 3. Migrasi Database
+```bash
+php artisan migrate
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 4. Menjalankan Server Lokal (Development)
+Jalankan server frontend dan backend:
+```bash
+# Terminal 1: Kompilasi frontend
+npm run dev
 
-## License
+# Terminal 2: Server Laravel
+php artisan serve
+```
+Akses aplikasi melalui browser di `http://localhost:8000` atau `http://scadaretort.test` (jika menggunakan Laragon).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+
+## 🏢 Hak Cipta & Pengembang
+
+Dikembangkan secara khusus untuk operasional mesin retort industrial oleh:
+**CV Indah Mesin** — Solusi Otomasi & Mesin Industri Makanan.

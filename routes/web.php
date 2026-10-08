@@ -136,7 +136,6 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::post('/historian/{history}/export-pdf', [\App\Http\Controllers\TnMonitorController::class, 'exportPdf'])->name('historian.export-pdf');
-    Route::post('/historian/{history}/print-native', [\App\Http\Controllers\TnMonitorController::class, 'printNative'])->name('historian.print-native');
 
     // === ESP32 Monitoring Logger ===
     Route::prefix('esp')->group(function () {
@@ -159,3 +158,5 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 require __DIR__.'/installer.php';
+
+

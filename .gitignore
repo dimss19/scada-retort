@@ -30,3 +30,6 @@ Thumbs.db
 scada-retort-installer-release/
 *.zip
 /nativephp
+/build
+__pycache__/
+*.pyc
