@@ -28,11 +28,6 @@ scadaretort/
 ├── bootstrap/            # Inisialisasi framework & providers
 ├── config/               # Konfigurasi aplikasi, database, cache, serial, dll.
 ├── database/             # Migrasi tabel dan database SQLite/MySQL
-├── deploy/               # Skrip otomatisasi deployment server VPS Ubuntu
-│   ├── deploy.sh         # Skrip rilis domain produksi
-│   ├── deploy_dns.sh     # Konfigurasi SSL & domain
-│   ├── setup_vps.sh      # Instalasi environment server (PHP, Nginx, Redis)
-│   └── README.md         # Panduan deployment VPS
 ├── docs/                 # Dokumentasi spesifikasi teknik & standar operasional
 │   ├── TN-Modbus/        # Peta register Modbus RTU Autonics TN Series
 │   ├── PRD.md            # Product Requirement Document
@@ -40,7 +35,6 @@ scadaretort/
 │   ├── SCADA_DESIGN_SPECIFICATION.md
 │   ├── F0_CALCULATION_FORMULA.md
 │   └── README.md         # Indeks dokumentasi lengkap
-├── drivers/              # Driver USB to RS-485 (CH340/CH341) untuk koneksi browser
 ├── public/               # Asset publik web dan entry point index.php
 ├── resources/            # Frontend (Inertia.js, Vue 3 / React, Blade views, CSS)
 ├── firmware/             # Firmware ESP32 Datalogger Hardware (Arduino / C++)
