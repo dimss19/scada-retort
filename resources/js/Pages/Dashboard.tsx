@@ -2,8 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import React, { useState } from 'react';
-import { Wrench, ArrowRight, Cable, Wifi } from 'lucide-react';
-import ControllerPinTestModal from '@/Components/Tn/ControllerPinTestModal';
+import { ArrowRight, Cable, Wifi } from 'lucide-react';
 
 interface TnControllerItem {
     id: number;
@@ -65,12 +64,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
             slave_id: selectedModel === 'TNS' ? 1 : (selectedModel === 'TNH' ? 2 : 3),
         };
 
-    const [selectedTestController, setSelectedTestController] = useState<{
-        id: number;
-        model: string;
-        serialPort: string | null;
-        isOnline: boolean;
-    } | null>(null);
+
 
     return (
         <AuthenticatedLayout>
@@ -165,7 +159,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="mt-7 space-y-2.5">
+                            <div className="mt-7">
                                 <Link
                                     href={route('tn.quick-start', selectedModel)}
                                     method="post"
@@ -178,23 +172,6 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                     <span>Buka Monitoring {selectedModel}</span>
                                     <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                                 </Link>
-
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        setSelectedTestController({
-                                            id: rs485Controller.id,
-                                            model: selectedModel,
-                                            serialPort: rs485Controller.serial_port,
-                                            isOnline: rs485Controller.is_online,
-                                        });
-                                    }}
-                                    className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white hover:bg-blue-50/70 hover:border-blue-300 px-4 py-2.5 text-xs font-black text-slate-800 transition-all shadow-sm cursor-pointer"
-                                >
-                                    <Wrench size={14} className="text-blue-600" />
-                                    <span>Test Pin & Relay {selectedModel}</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -266,16 +243,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                 </div>
             </div>
 
-            {/* Modal Pin Test Interaktif */}
-            {selectedTestController && (
-                <ControllerPinTestModal
-                    controllerId={selectedTestController.id}
-                    model={selectedTestController.model}
-                    serialPort={selectedTestController.serialPort}
-                    isOnline={selectedTestController.isOnline}
-                    onClose={() => setSelectedTestController(null)}
-                />
-            )}
+
         </AuthenticatedLayout>
     );
 }
