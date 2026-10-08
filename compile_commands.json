@@ -1,0 +1,82 @@
+﻿[
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/config.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/config.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/modbus_hw.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/modbus_hw.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/mqtt_client.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/mqtt_client.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/mqtt_forward.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/mqtt_forward.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/mv_sim.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/mv_sim.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/ota_update.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/ota_update.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/RetortLogger.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/RetortLogger.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/retort_sim.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/retort_sim.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/rtc_hw.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/rtc_hw.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/sd_logger.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/sd_logger.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/web_auth.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/web_auth.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/web_dashboard.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/web_dashboard.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/web_logs.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/web_logs.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/web_settings.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/web_settings.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/web_storage.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/web_storage.ino\""
+    },
+    {
+        "directory":  "D:/laragon/www/scadaretort/firmware",
+        "file":  "D:/laragon/www/scadaretort/firmware/wifi_ap.ino",
+        "command":  "clang++ -xc++ -std=c++17 -w -fsyntax-only \"D:/laragon/www/scadaretort/firmware/wifi_ap.ino\""
+    }
+]
