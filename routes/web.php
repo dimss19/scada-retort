@@ -14,7 +14,8 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
+Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+    $request->session()->forget('active_mode');
     $selectedCode = 'RT-001';
     $lastSeen = \Illuminate\Support\Facades\Cache::get("device.{$selectedCode}.last_seen");
     $isEspOnline = $lastSeen && (now()->timestamp - $lastSeen < 30);

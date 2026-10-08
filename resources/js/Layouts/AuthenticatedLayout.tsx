@@ -37,10 +37,12 @@ export default function Authenticated({
         return () => window.removeEventListener('unverified-count-update', handleUpdate);
     }, []);
 
+    const isDashboardRoute = route().current('dashboard') ?? false;
     const isEspRoute = route().current('esp.*') ?? false;
-    const isTnRoute = (route().current('tn.*') || route().current('historian.*')) ?? false;
+    const isTnRoute = (route().current('tn.*') || route().current('recipes.*') || route().current('historian.*')) ?? false;
 
-    const [activeMode, setActiveMode] = useState<'esp' | 'tn'>(() => {
+    const [activeMode, setActiveMode] = useState<'esp' | 'tn' | null>(() => {
+        if (isDashboardRoute) return null;
         if (isEspRoute) return 'esp';
         if (isTnRoute) return 'tn';
         if (serverActiveMode === 'esp' || serverActiveMode === 'tn') return serverActiveMode;
@@ -48,11 +50,14 @@ export default function Authenticated({
             const saved = localStorage.getItem('scada_active_mode');
             if (saved === 'esp' || saved === 'tn') return saved;
         }
-        return 'tn';
+        return null;
     });
 
     useEffect(() => {
-        if (isEspRoute) {
+        if (isDashboardRoute) {
+            setActiveMode(null);
+            localStorage.removeItem('scada_active_mode');
+        } else if (isEspRoute) {
             setActiveMode('esp');
             localStorage.setItem('scada_active_mode', 'esp');
         } else if (isTnRoute) {
@@ -62,18 +67,20 @@ export default function Authenticated({
             setActiveMode(serverActiveMode);
             localStorage.setItem('scada_active_mode', serverActiveMode);
         }
-    }, [isEspRoute, isTnRoute, serverActiveMode]);
+    }, [isDashboardRoute, isEspRoute, isTnRoute, serverActiveMode]);
 
-    let visibleNavigation: NavItem[] = [];
+    let visibleNavigation: NavItem[] = [
+        { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard' },
+    ];
 
-    if (activeMode === 'esp') {
+    if (!isDashboardRoute && activeMode === 'esp') {
         visibleNavigation = [
             { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard' },
             { label: 'Monitoring', routeName: 'esp.monitor', routeParam: { tab: 'monitor' }, activePattern: 'esp.monitor', tabParam: 'monitor' },
             { label: 'Pattern', routeName: 'esp.monitor', routeParam: { tab: 'pattern' }, activePattern: 'esp.monitor', tabParam: 'pattern' },
             { label: 'History', routeName: 'esp.monitor', routeParam: { tab: 'history' }, activePattern: 'esp.monitor', tabParam: 'history' },
         ];
-    } else {
+    } else if (!isDashboardRoute && activeMode === 'tn') {
         visibleNavigation = [
             { label: 'Dashboard', routeName: 'dashboard', activePattern: 'dashboard' },
             {
@@ -160,6 +167,22 @@ export default function Authenticated({
                             })
                         )}
                     </nav>
+
+                    {!isDashboardRoute && activeMode && (
+                        <div className="hidden lg:flex items-center mr-2">
+                            {activeMode === 'esp' ? (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 px-3 py-1 text-xs font-black text-emerald-300 shadow-sm">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    ESP Logger (WiFi/MQTT)
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-950/80 border border-blue-500/50 px-3 py-1 text-xs font-black text-blue-300 shadow-sm">
+                                    <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
+                                    Autonics TN (USB RS-485)
+                                </span>
+                            )}
+                        </div>
+                    )}
 
                     <div className="ml-3 flex shrink-0 items-center gap-3 border-l border-blue-800/60 pl-4">
                         <Link href={route('profile.edit')} aria-label="Profile" title={user.name} className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 text-sm font-black text-slate-950 shadow-[0_0_10px_rgba(250,204,21,0.4)] hover:scale-105 transition-transform">
