@@ -1162,11 +1162,11 @@ export default function ProcessDetailView({ batch, onBack, groups = [] }: Props)
                         <div className="flex flex-wrap items-center gap-2.5">
                             {isEsp ? (
                                 <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-1 text-xs font-black shadow-sm">
-                                    📡 ESP32 Logger (WiFi/MQTT)
+                                    ESP32 Logger (WiFi/MQTT)
                                 </span>
                             ) : (
                                 <span className="inline-flex items-center gap-1 rounded-lg bg-blue-100 text-blue-900 border border-blue-300 px-2.5 py-1 text-xs font-black shadow-sm">
-                                    🔌 Autonics TN (RS-485)
+                                    Autonics TN (RS-485)
                                 </span>
                             )}
                             <h2 className="text-2xl font-black tracking-tight text-slate-900">
@@ -1252,7 +1252,7 @@ export default function ProcessDetailView({ batch, onBack, groups = [] }: Props)
                                 <h2 className="font-extrabold text-slate-900 text-lg tracking-tight">Tulis & Verifikasi Batch (UNVERIFIED)</h2>
                             </div>
                             <p className="text-xs text-rose-700 mt-1 font-semibold">
-                                ⚠️ Batch ini belum diverifikasi. F0 sistem: {systemF0.toFixed(2)} min — Lengkapi data di bawah ini lalu klik Simpan Verifikasi.
+                                Batch ini belum diverifikasi. F0 sistem: {systemF0.toFixed(2)} min — Lengkapi data di bawah ini lalu klik Simpan Verifikasi.
                             </p>
                         </div>
                         <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 uppercase tracking-wide">

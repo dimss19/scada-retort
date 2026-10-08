@@ -406,7 +406,7 @@ export default function Form({ recipe, users = [], controllers = [] }: { recipe?
                                     : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                             }`}
                         >
-                            <span>★ PATN (Pattern & Steps)</span>
+                            <span>PATN (Pattern & Steps)</span>
                             <span className="bg-slate-950 text-yellow-400 text-[10px] px-2 py-0.5 rounded-full font-mono">
                                 {data.steps.length} Steps
                             </span>

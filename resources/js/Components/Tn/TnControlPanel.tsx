@@ -70,13 +70,13 @@ export default function TnControlPanel({ reading, onRunStop, onSetSv, onAutoTune
                     onClick={onAutoTune}
                     className="inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
-                    🔄 Auto-Tune
+                    Auto-Tune
                 </button>
                 <button
                     onClick={onResetAlarm}
                     className="inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
-                    🔔 Reset Alarm
+                    Reset Alarm
                 </button>
             </div>
         </div>

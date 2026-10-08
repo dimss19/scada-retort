@@ -434,7 +434,7 @@ export default function HistorianList({
                                     : 'text-slate-600 hover:text-blue-900 hover:bg-blue-50'
                             }`}
                         >
-                            <span>🔌 Autonics TN (RS-485)</span>
+                            <span>Autonics TN (RS-485)</span>
                             <span className={`px-2 py-0.5 text-[10px] rounded-md font-bold ${sourceFilter === 'tn' ? 'bg-blue-700 text-white' : 'bg-blue-100 text-blue-800'}`}>
                                 {calculatedTnCount}
                             </span>
@@ -448,7 +448,7 @@ export default function HistorianList({
                                     : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50'
                             }`}
                         >
-                            <span>📡 ESP32 Logger (WiFi/MQTT)</span>
+                            <span>ESP32 Logger (WiFi/MQTT)</span>
                             <span className={`px-2 py-0.5 text-[10px] rounded-md font-bold ${sourceFilter === 'esp' ? 'bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
                                 {calculatedEspCount}
                             </span>
@@ -737,11 +737,11 @@ export default function HistorianList({
                                             </span>
                                             {isEsp ? (
                                                 <span className="flex items-center gap-1 text-[10px] font-black text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-md">
-                                                    📡 ESP Logger
+                                                    ESP Logger
                                                 </span>
                                             ) : (
                                                 <span className="flex items-center gap-1 text-[10px] font-black text-blue-800 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded-md">
-                                                    🔌 Autonics TN
+                                                    Autonics TN
                                                 </span>
                                             )}
                                             {status === 'verified' ? (

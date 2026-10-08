@@ -642,7 +642,7 @@ export default function EspMonitor({
                                             Riwayat Proses ESP32 RetortLogger
                                         </h2>
                                         <span className="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 text-xs font-black">
-                                            📡 ESP Logger History
+                                            ESP Logger History
                                         </span>
                                     </div>
                                     <p className="text-xs font-semibold text-slate-500 mt-1">
@@ -653,7 +653,7 @@ export default function EspMonitor({
                                     href={route('historian.index', { source: 'tn' })}
                                     className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-black text-blue-700 hover:bg-blue-100 transition-colors shadow-sm"
                                 >
-                                    <span>🔌 Lihat Riwayat Autonics TN</span>
+                                    <span>Lihat Riwayat Autonics TN</span>
                                 </Link>
                             </div>
 
@@ -748,7 +748,7 @@ export default function EspMonitor({
                                                                 Batch #{h.id}
                                                             </span>
                                                             <span className="text-[10px] font-black text-emerald-800 bg-emerald-50/80 border border-emerald-300 px-2 py-0.5 rounded-md">
-                                                                📡 {h.device_code || device.machine_code}
+                                                                {h.device_code || device.machine_code}
                                                             </span>
                                                             {h.end_time ? (
                                                                 <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">

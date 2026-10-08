@@ -98,24 +98,11 @@ export default function RetortMonitorShell(props: Props) {
                             type="button"
                             disabled={props.isScanningPort}
                             onClick={props.onScanPort}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 text-xs font-black text-white shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-400 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                             title="Scan port serial USB di laptop ini (membuka popup pemilihan port browser Chrome/Edge)"
                         >
                             <RefreshCw size={14} className={props.isScanningPort ? 'animate-spin' : ''} />
                             <span>{props.isScanningPort ? 'Memilih Port USB...' : 'Scan Port USB (Laptop)'}</span>
-                        </button>
-                    )}
-
-                    {/* Tombol Pengaturan Port Modal */}
-                    {props.onOpenPortModal && (
-                        <button
-                            type="button"
-                            onClick={props.onOpenPortModal}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition-all cursor-pointer"
-                            title="Buka Pengaturan Port"
-                        >
-                            <Cable size={15} className="text-blue-600" />
-                            <span>Pengaturan Port</span>
                         </button>
                     )}
                 </div>
