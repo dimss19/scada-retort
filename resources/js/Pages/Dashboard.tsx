@@ -49,7 +49,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
         };
     }, []);
 
-    const [selectedModel, setSelectedModel] = useState<'TNH' | 'TNS' | 'TNL'>('TNH');
+    const selectedModel = 'TNH';
 
     const pageUi = (auth as any)?.ui || {};
     const rs485Controller = controllers.find(c => c.model_type?.toUpperCase() === selectedModel) 
@@ -61,7 +61,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
             model_type: selectedModel,
             serial_port: 'COM5',
             is_online: false,
-            slave_id: selectedModel === 'TNS' ? 1 : (selectedModel === 'TNH' ? 2 : 3),
+            slave_id: 2,
         };
 
 
@@ -106,43 +106,14 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                 </div>
 
                                 <h3 className="mt-4 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 group-hover:text-blue-700 transition-colors">
-                                    USB RS-485 ({selectedModel})
+                                    USB RS-485 (Autonics TN)
                                 </h3>
                                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
                                     Komunikasi serial kabel langsung via Modbus RTU ke digital temperature controller untuk monitoring dan kontrol sterilisasi retort presisi tinggi.
                                 </p>
 
-                                {/* Controller Model Selector Pills */}
-                                <div className="mt-4 flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200">
-                                    {(['TNH', 'TNS', 'TNL'] as const).map((m) => (
-                                        <button
-                                            key={m}
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedModel(m);
-                                                localStorage.setItem('scada_active_mode', 'tn');
-                                                fetch('/system-mode', {
-                                                    method: 'POST',
-                                                    headers: {
-                                                        'Content-Type': 'application/json',
-                                                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
-                                                    },
-                                                    body: JSON.stringify({ mode: 'tn' }),
-                                                }).catch(() => {});
-                                            }}
-                                            className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all ${
-                                                selectedModel === m
-                                                    ? 'bg-blue-600 text-white shadow-sm'
-                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                                            }`}
-                                        >
-                                            {m} Controller
-                                        </button>
-                                    ))}
-                                </div>
-
                                 {/* Info Box Spesifikasi RS-485 */}
-                                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-3.5">
+                                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-3.5">
                                     <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
                                         <span className="text-xs font-semibold text-slate-500">Protokol Serial</span>
                                         <span className="text-xs font-mono font-bold text-blue-700">Modbus RTU (Baudrate 9600)</span>
@@ -153,7 +124,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-semibold text-slate-500">Tipe Hardware</span>
-                                        <span className="text-xs font-bold text-emerald-700">Autonics {selectedModel} Industrial</span>
+                                        <span className="text-xs font-bold text-emerald-700">Autonics TN Industrial</span>
                                     </div>
                                 </div>
                             </div>
@@ -169,7 +140,7 @@ export default function Dashboard({ auth, tnCount, tnOnline, controllers = [], e
                                     }}
                                     className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 px-5 py-3.5 text-sm font-extrabold text-slate-950 shadow-md hover:from-yellow-300 hover:to-amber-400 transition-all cursor-pointer"
                                 >
-                                    <span>Buka Monitoring {selectedModel}</span>
+                                    <span>Buka Monitoring Autonics TN</span>
                                     <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                                 </Link>
                             </div>
