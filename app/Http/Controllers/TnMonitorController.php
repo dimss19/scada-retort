@@ -134,6 +134,7 @@ class TnMonitorController extends Controller
         $endTime = $logs[0]['created_at'];
 
         \App\Models\TnProcessHistory::create([
+            'source_type' => 'tn',
             'tn_controller_id' => $tn->id,
             'start_time' => \Carbon\Carbon::parse($startTime),
             'end_time' => \Carbon\Carbon::parse($endTime),

@@ -18,7 +18,15 @@ import {
 import HistorianList from '@/Components/History/HistorianList';
 
 type Module = 'scada' | 'historian' | 'alarm' | 'notifications' | 'database';
-type Props = { module: Module; histories?: any[]; groups?: { id: number; name: string; color: string }[] };
+
+type Props = {
+    module: Module;
+    histories?: any[];
+    groups?: { id: number; name: string; color: string }[];
+    currentSource?: 'all' | 'tn' | 'esp';
+    tnCount?: number;
+    espCount?: number;
+};
 
 type FlowItem = {
     icon: ReactNode;
@@ -180,9 +188,23 @@ const titles: Record<Module, [string, string]> = {
     database: ['Struktur Database SCADA', 'Daftar tabel operasional dan skema data sistem'],
 };
 
-export default function Operations({ module, histories, groups }: Props) {
+export default function Operations({ module, histories, groups, currentSource, tnCount, espCount }: Props) {
     const [title, subtitle] = titles[module];
-    const content = { scada: <Scada />, historian: <HistorianList histories={histories} groups={groups} />, alarm: <Alarm />, notifications: <Notifications />, database: <DatabasePanel /> }[module];
+    const content = {
+        scada: <Scada />,
+        historian: (
+            <HistorianList
+                histories={histories}
+                groups={groups}
+                currentSource={currentSource}
+                tnCount={tnCount}
+                espCount={espCount}
+            />
+        ),
+        alarm: <Alarm />,
+        notifications: <Notifications />,
+        database: <DatabasePanel />
+    }[module];
 
     return (
         <AuthenticatedLayout header={

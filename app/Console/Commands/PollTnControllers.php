@@ -89,6 +89,7 @@ class PollTnControllers extends Command
 
                         if ($mv > 0 && !$activeHistoryId) {
                             $history = \App\Models\TnProcessHistory::create([
+                                'source_type' => 'tn',
                                 'tn_controller_id' => $controller->id,
                                 'start_time' => Carbon::now(),
                             ]);

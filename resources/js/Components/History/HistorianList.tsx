@@ -58,7 +58,22 @@ const getCardVerification = (batch: any, groups: HistorianListGroup[]) => {
     };
 };
 
-export default function HistorianList({ histories = [], groups = [] }: { histories?: any[]; groups?: HistorianListGroup[] }) {
+export interface HistorianListProps {
+    histories?: any[];
+    groups?: HistorianListGroup[];
+    currentSource?: 'all' | 'tn' | 'esp';
+    tnCount?: number;
+    espCount?: number;
+}
+
+export default function HistorianList({
+    histories = [],
+    groups = [],
+    currentSource = 'all',
+    tnCount,
+    espCount,
+}: HistorianListProps) {
+    const [sourceFilter, setSourceFilter] = useState<'all' | 'tn' | 'esp'>(currentSource);
     const [period, setPeriod] = useState<'Semua' | 'Hari' | 'Minggu' | 'Bulan'>('Semua');
     const [customDate, setCustomDate] = useState<string>('');
     const [selectedBatch, setSelectedBatch] = useState<any>(null);
@@ -73,12 +88,36 @@ export default function HistorianList({ histories = [], groups = [] }: { histori
     const [newGroupName, setNewGroupName] = useState<string>('');
     const [newGroupColor, setNewGroupColor] = useState<string>('#3b82f6');
 
+    const calculatedTnCount = useMemo(() => {
+        return tnCount !== undefined ? tnCount : histories.filter((h) => h.source_type === 'tn' || !h.source_type).length;
+    }, [tnCount, histories]);
+
+    const calculatedEspCount = useMemo(() => {
+        return espCount !== undefined ? espCount : histories.filter((h) => h.source_type === 'esp').length;
+    }, [espCount, histories]);
+
+    const handleSourceChange = (newSource: 'all' | 'tn' | 'esp') => {
+        setSourceFilter(newSource);
+        router.get(route('historian.index', { source: newSource }), {}, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
     const totalUnverifiedCount = useMemo(() => histories.filter((h) => getHistoryStatus(h) === 'unverified').length, [histories]);
 
     const filteredHistories = useMemo(() => {
         if (!histories || histories.length === 0) return [];
 
-        const byPeriod = histories.filter((h) => {
+        const bySource = histories.filter((h) => {
+            if (sourceFilter === 'all') return true;
+            if (sourceFilter === 'esp') return h.source_type === 'esp';
+            if (sourceFilter === 'tn') return h.source_type === 'tn' || !h.source_type;
+            return true;
+        });
+
+        const byPeriod = bySource.filter((h) => {
             const rawDate = h.start_time || h.created_at;
             if (!rawDate) return period === 'Semua' && !customDate;
 
@@ -147,7 +186,7 @@ export default function HistorianList({ histories = [], groups = [] }: { histori
         });
 
         return filterHistories(byPeriod, { status: statusFilter, groupId: groupFilter, query });
-    }, [histories, period, customDate, statusFilter, groupFilter, query]);
+    }, [histories, sourceFilter, period, customDate, statusFilter, groupFilter, query]);
 
     const formatValue = (val: number | undefined, dp: number = 0) => {
         if (val === undefined || val === 31000 || val === 30000 || val === -30000) return '-';
@@ -354,6 +393,70 @@ export default function HistorianList({ histories = [], groups = [] }: { histori
 
     return (
         <div className="space-y-6">
+            {/* Source Switcher Header Panel */}
+            <Panel>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-lg font-black tracking-tight text-slate-900">
+                                Filter Sumber Riwayat Proses
+                            </h2>
+                            <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[10px] font-black text-slate-600">
+                                SCADA Historian
+                            </span>
+                        </div>
+                        <p className="text-xs font-semibold text-slate-500 mt-1">
+                            Pilih sumber riwayat: Autonics TN (RS-485 Modbus) atau ESP32 RetortLogger (WiFi/MQTT).
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-slate-100/90 p-1.5 border border-slate-200 shadow-inner">
+                        <button
+                            type="button"
+                            onClick={() => handleSourceChange('all')}
+                            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition-all ${
+                                sourceFilter === 'all'
+                                    ? 'bg-slate-900 text-white shadow-sm'
+                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                            }`}
+                        >
+                            <span>Semua Sumber</span>
+                            <span className={`px-2 py-0.5 text-[10px] rounded-md font-bold ${sourceFilter === 'all' ? 'bg-slate-800 text-slate-200' : 'bg-slate-200 text-slate-700'}`}>
+                                {histories.length}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleSourceChange('tn')}
+                            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition-all ${
+                                sourceFilter === 'tn'
+                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                                    : 'text-slate-600 hover:text-blue-900 hover:bg-blue-50'
+                            }`}
+                        >
+                            <span>🔌 Autonics TN (RS-485)</span>
+                            <span className={`px-2 py-0.5 text-[10px] rounded-md font-bold ${sourceFilter === 'tn' ? 'bg-blue-700 text-white' : 'bg-blue-100 text-blue-800'}`}>
+                                {calculatedTnCount}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleSourceChange('esp')}
+                            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition-all ${
+                                sourceFilter === 'esp'
+                                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20'
+                                    : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50'
+                            }`}
+                        >
+                            <span>📡 ESP32 Logger (WiFi/MQTT)</span>
+                            <span className={`px-2 py-0.5 text-[10px] rounded-md font-bold ${sourceFilter === 'esp' ? 'bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
+                                {calculatedEspCount}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </Panel>
+
             <Panel>
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
@@ -608,8 +711,13 @@ export default function HistorianList({ histories = [], groups = [] }: { histori
                         const logCount = h.log_data?.length || 0;
                         const logs = h.log_data || [];
                         const maxPv = logs.length > 0 ? Math.max(...logs.map(normalizePv)) : 0;
-                        const rawMachineName = h.controller?.machine?.machine_name || (h.controller as any)?.name || h.controller?.model_type || `Controller #${h.tn_controller_id}`;
-                        const machineName = rawMachineName.replace(/Retort TNS/gi, 'Retort TN').replace(/TNS Controller/gi, 'Retort TN').replace(/^TNS$/i, 'Retort TN');
+                        const isEsp = h.source_type === 'esp';
+                        const rawMachineName = isEsp
+                            ? `ESP32 RetortLogger (${h.device_code || 'RT-001'})`
+                            : (h.controller?.machine?.machine_name || (h.controller as any)?.name || h.controller?.model_type || `Controller #${h.tn_controller_id}`);
+                        const machineName = isEsp
+                            ? rawMachineName
+                            : rawMachineName.replace(/Retort TNS/gi, 'Retort TN').replace(/TNS Controller/gi, 'Retort TN').replace(/^TNS$/i, 'Retort TN');
                         const status = getHistoryStatus(h);
 
                         return (
@@ -623,10 +731,19 @@ export default function HistorianList({ histories = [], groups = [] }: { histori
                             >
                                 <div>
                                     <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-lg">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <span className="font-mono text-xs font-extrabold bg-slate-100 text-slate-800 border border-slate-200 px-2.5 py-0.5 rounded-lg">
                                                 Batch #{h.id}
                                             </span>
+                                            {isEsp ? (
+                                                <span className="flex items-center gap-1 text-[10px] font-black text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-md">
+                                                    📡 ESP Logger
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-[10px] font-black text-blue-800 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded-md">
+                                                    🔌 Autonics TN
+                                                </span>
+                                            )}
                                             {status === 'verified' ? (
                                                 <span
                                                     title={`by ${h.verified_by ?? '-'} · ${h.verified_at ? new Date(h.verified_at).toLocaleString('id-ID') : '-'}`}

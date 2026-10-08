@@ -176,4 +176,64 @@ class EspMonitorAndCsvTest extends TestCase
         $this->assertCount(2, $cached['steps']);
         $this->assertEquals(117.0, $cached['steps'][0]['target_sv']);
     }
+
+    public function test_esp_monitor_history_is_isolated_from_tn_history(): void
+    {
+        $user = User::factory()->create();
+
+        $controller = TnController::create([
+            'name' => 'Autonics TN',
+            'slave_id' => 1,
+            'model_type' => 'TNL',
+            'control_model' => 'program',
+            'is_online' => true,
+        ]);
+
+        // TN process history
+        TnProcessHistory::create([
+            'source_type' => 'tn',
+            'tn_controller_id' => $controller->id,
+            'start_time' => now()->subHours(2),
+            'end_time' => now()->subHours(1),
+            'log_data' => [['pv' => 120.0, 'created_at' => now()->subHours(2)->toIso8601String()]],
+        ]);
+
+        // ESP process history
+        TnProcessHistory::create([
+            'source_type' => 'esp',
+            'device_code' => 'RT-001',
+            'tn_controller_id' => $controller->id,
+            'start_time' => now()->subHour(),
+            'end_time' => now(),
+            'log_data' => [['actual' => 121.0, 'created_at' => now()->subHour()->toIso8601String()]],
+        ]);
+
+        $response = $this->actingAs($user)->get(route('esp.monitor', ['tab' => 'history']));
+        $response->assertOk();
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('Esp/Monitor')
+            ->has('histories', 1)
+            ->where('histories.0.source_type', 'esp')
+        );
+
+        // Also test /historian with source filter
+        $tnHistorian = $this->actingAs($user)->get(route('historian.index', ['source' => 'tn']));
+        $tnHistorian->assertOk();
+        $tnHistorian->assertInertia(fn ($page) => $page
+            ->component('Operations')
+            ->has('histories', 1)
+            ->where('histories.0.source_type', 'tn')
+            ->where('currentSource', 'tn')
+        );
+
+        $espHistorian = $this->actingAs($user)->get(route('historian.index', ['source' => 'esp']));
+        $espHistorian->assertOk();
+        $espHistorian->assertInertia(fn ($page) => $page
+            ->component('Operations')
+            ->has('histories', 1)
+            ->where('histories.0.source_type', 'esp')
+            ->where('currentSource', 'esp')
+        );
+    }
 }

@@ -57,13 +57,31 @@ Route::post('/system-mode', function (\Illuminate\Http\Request $request) {
 })->name('system.mode');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/historian', function () {
-        $histories = \App\Models\TnProcessHistory::with('controller.machine')
+    Route::get('/historian', function (\Illuminate\Http\Request $request) {
+        $source = $request->query('source', 'all');
+        $query = \App\Models\TnProcessHistory::with('controller.machine')
             ->whereNotNull('end_time')
-            ->orderByDesc('start_time')
-            ->get();
+            ->orderByDesc('start_time');
+
+        if ($source === 'tn') {
+            $query->tn();
+        } elseif ($source === 'esp') {
+            $query->esp();
+        }
+
+        $histories = $query->get();
         $groups = \App\Models\HistoryGroup::orderBy('id')->get();
-        return Inertia::render('Operations', ['module' => 'historian', 'histories' => $histories, 'groups' => $groups]);
+        $tnCount = \App\Models\TnProcessHistory::whereNotNull('end_time')->tn()->count();
+        $espCount = \App\Models\TnProcessHistory::whereNotNull('end_time')->esp()->count();
+
+        return Inertia::render('Operations', [
+            'module' => 'historian',
+            'histories' => $histories,
+            'groups' => $groups,
+            'currentSource' => $source,
+            'tnCount' => $tnCount,
+            'espCount' => $espCount,
+        ]);
     })->name('historian.index');
 
     Route::get('/historian/{history}', function (\App\Models\TnProcessHistory $history) {
@@ -140,6 +158,7 @@ Route::middleware('auth')->group(function () {
     // === ESP32 Monitoring Logger ===
     Route::prefix('esp')->group(function () {
         Route::get('/monitor', [\App\Http\Controllers\EspMonitorController::class, 'index'])->name('esp.monitor');
+        Route::post('/history', [\App\Http\Controllers\EspMonitorController::class, 'saveHistory'])->name('esp.history.save');
         Route::post('/pattern', [\App\Http\Controllers\EspMonitorController::class, 'savePattern'])->name('esp.pattern.save');
         Route::get('/live', [\App\Http\Controllers\EspMonitorController::class, 'liveData'])->name('esp.live');
         Route::get('/stream', [\App\Http\Controllers\EspMonitorController::class, 'stream'])->name('esp.stream');

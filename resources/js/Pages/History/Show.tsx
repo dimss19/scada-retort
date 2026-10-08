@@ -10,8 +10,11 @@ interface Props {
 }
 
 export default function Show({ batch, groups = [] }: Props) {
-    const rawMachine = batch.controller?.machine?.machine_name || (batch.controller as any)?.name || batch.controller?.model_type || 'Retort TN';
-    const machineName = rawMachine.replace(/Retort TNS/gi, 'TN').replace(/TNS Controller/gi, 'TN').replace(/^TNS$/i, 'TN');
+    const isEsp = batch.source_type === 'esp';
+    const rawMachine = isEsp
+        ? `ESP32 RetortLogger (${batch.device_code || 'RT-001'})`
+        : (batch.controller?.machine?.machine_name || (batch.controller as any)?.name || batch.controller?.model_type || 'Retort TN');
+    const machineName = isEsp ? rawMachine : rawMachine.replace(/Retort TNS/gi, 'TN').replace(/TNS Controller/gi, 'TN').replace(/^TNS$/i, 'TN');
 
     return (
         <AuthenticatedLayout

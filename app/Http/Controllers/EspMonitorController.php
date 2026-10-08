@@ -58,8 +58,9 @@ class EspMonitorController extends Controller
         $systemEvent = Cache::get("esp_latest_system_event_{$selectedCode}");
 
         $processHistories = \App\Models\TnProcessHistory::with('controller.machine')
+            ->where('source_type', 'esp')
             ->latest('start_time')
-            ->take(30)
+            ->take(50)
             ->get();
 
         // Default or cached pattern steps for this ESP logger
@@ -225,5 +226,37 @@ class EspMonitorController extends Controller
             'history' => $history,
             'seq' => $seq,
         ]);
+    }
+
+    /**
+     * Save process history for ESP logger.
+     */
+    public function saveHistory(Request $request)
+    {
+        $validated = $request->validate([
+            'machine_code' => ['nullable', 'string'],
+            'start_time' => ['nullable', 'date'],
+            'end_time' => ['nullable', 'date'],
+            'log_data' => ['required', 'array'],
+        ]);
+
+        $machineCode = $validated['machine_code'] ?? 'RT-001';
+        $logs = $validated['log_data'];
+        if (empty($logs)) {
+            return response()->json(['success' => false, 'message' => 'No logs to save'], 422);
+        }
+
+        $startTime = $validated['start_time'] ?? ($logs[count($logs) - 1]['created_at'] ?? now());
+        $endTime = $validated['end_time'] ?? ($logs[0]['created_at'] ?? now());
+
+        $history = \App\Models\TnProcessHistory::create([
+            'source_type' => 'esp',
+            'device_code' => $machineCode,
+            'start_time' => \Carbon\Carbon::parse($startTime),
+            'end_time' => \Carbon\Carbon::parse($endTime),
+            'log_data' => $logs,
+        ]);
+
+        return response()->json(['success' => true, 'id' => $history->id]);
     }
 }

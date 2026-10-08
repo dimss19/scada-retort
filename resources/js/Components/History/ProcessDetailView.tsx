@@ -20,6 +20,8 @@ import { compareF0 } from './historyHelpers';
 
 export interface ProcessBatchItem {
     id: number;
+    source_type?: 'tn' | 'esp';
+    device_code?: string | null;
     tn_controller_id?: number;
     start_time: string;
     end_time?: string | null;
@@ -78,12 +80,16 @@ export default function ProcessDetailView({ batch, onBack, groups = [] }: Props)
         endTime ? endTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Sedang Berjalan'
     }`;
 
-    const rawMachineTitle =
-        batch.controller?.machine?.machine_name ||
-        (batch.controller as any)?.name ||
-        batch.controller?.model_type ||
-        `Controller #${batch.tn_controller_id || batch.id}`;
-    const machineTitle = rawMachineTitle.replace(/Retort TNS/gi, 'TN').replace(/TNS Controller/gi, 'TN').replace(/^TNS$/i, 'TN');
+    const isEsp = batch.source_type === 'esp';
+    const rawMachineTitle = isEsp
+        ? `ESP32 RetortLogger (${batch.device_code || 'RT-001'})`
+        : (batch.controller?.machine?.machine_name ||
+           (batch.controller as any)?.name ||
+           batch.controller?.model_type ||
+           `Controller #${batch.tn_controller_id || batch.id}`);
+    const machineTitle = isEsp
+        ? rawMachineTitle
+        : rawMachineTitle.replace(/Retort TNS/gi, 'TN').replace(/TNS Controller/gi, 'TN').replace(/^TNS$/i, 'TN');
 
     // Target SV detection from logs
     const targetSv = useMemo(() => {
@@ -1153,7 +1159,16 @@ export default function ProcessDetailView({ batch, onBack, groups = [] }: Props)
             <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 shadow-lg backdrop-blur-xl">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            {isEsp ? (
+                                <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-1 text-xs font-black shadow-sm">
+                                    📡 ESP32 Logger (WiFi/MQTT)
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1 rounded-lg bg-blue-100 text-blue-900 border border-blue-300 px-2.5 py-1 text-xs font-black shadow-sm">
+                                    🔌 Autonics TN (RS-485)
+                                </span>
+                            )}
                             <h2 className="text-2xl font-black tracking-tight text-slate-900">
                                 Proses #{batch.id} ({machineTitle})
                             </h2>

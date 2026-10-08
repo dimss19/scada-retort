@@ -632,8 +632,31 @@ export default function EspMonitor({
                             onBack={() => setSelectedBatch(null)}
                         />
                     ) : (
-                        /* Historian / Process History View */
+                        /* Historian / Process History View (Dedicated to ESP32 Logger) */
                         <div className="space-y-6">
+                            {/* Header Section */}
+                            <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 shadow-lg backdrop-blur-xl flex flex-wrap items-center justify-between gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-xl font-black tracking-tight text-slate-900">
+                                            Riwayat Proses ESP32 RetortLogger
+                                        </h2>
+                                        <span className="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 text-xs font-black">
+                                            📡 ESP Logger History
+                                        </span>
+                                    </div>
+                                    <p className="text-xs font-semibold text-slate-500 mt-1">
+                                        Data log proses sterilisasi khusus perangkat ESP32 ({device.machine_code}). Riwayat Autonics TN (RS-485) dikelola terpisah di menu Historian SCADA.
+                                    </p>
+                                </div>
+                                <Link
+                                    href={route('historian.index', { source: 'tn' })}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-black text-blue-700 hover:bg-blue-100 transition-colors shadow-sm"
+                                >
+                                    <span>🔌 Lihat Riwayat Autonics TN</span>
+                                </Link>
+                            </div>
+
                             {/* Filter Section */}
                             <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-6 shadow-lg backdrop-blur-xl">
                                 <div className="flex flex-wrap items-end justify-between gap-4">
@@ -721,8 +744,11 @@ export default function EspMonitor({
                                                 <div>
                                                     <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="font-mono text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-lg">
+                                                            <span className="font-mono text-xs font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-lg">
                                                                 Batch #{h.id}
+                                                            </span>
+                                                            <span className="text-[10px] font-black text-emerald-800 bg-emerald-50/80 border border-emerald-300 px-2 py-0.5 rounded-md">
+                                                                📡 {h.device_code || device.machine_code}
                                                             </span>
                                                             {h.end_time ? (
                                                                 <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
@@ -799,6 +825,10 @@ export default function EspMonitor({
                                                     </div>
 
                                                     <div className="space-y-2 text-xs">
+                                                        <div className="flex items-center justify-between text-slate-600 font-semibold">
+                                                            <span>Perangkat ESP32:</span>
+                                                            <span className="font-bold text-slate-900">{h.device_code || device.machine_code || 'RT-001'}</span>
+                                                        </div>
                                                         <div className="flex items-center justify-between text-slate-600 font-semibold">
                                                             <span>Waktu Mulai:</span>
                                                             <span className="font-mono text-slate-900 font-bold">{startTime.toLocaleString('id-ID')}</span>

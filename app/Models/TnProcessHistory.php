@@ -30,4 +30,22 @@ class TnProcessHistory extends Model
     {
         return $this->belongsTo(TnController::class, 'tn_controller_id');
     }
+
+    public function scopeTn($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('source_type', 'tn')
+              ->orWhereNull('source_type');
+        });
+    }
+
+    public function scopeEsp($query)
+    {
+        return $query->where('source_type', 'esp');
+    }
+
+    public function getSourceNameAttribute(): string
+    {
+        return $this->source_type === 'esp' ? 'ESP Logger' : 'Autonics TN';
+    }
 }

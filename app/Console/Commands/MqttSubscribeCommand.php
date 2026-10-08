@@ -399,13 +399,21 @@ class MqttSubscribeCommand extends Command
         }
 
         // Avoid duplicate insertion if exact same process timestamps exist
-        $existing = \App\Models\TnProcessHistory::where('tn_controller_id', $controller->id)
+        $existing = \App\Models\TnProcessHistory::where('source_type', 'esp')
+            ->where(function ($q) use ($controller, $machineCode) {
+                $q->where('device_code', $machineCode);
+                if ($controller) {
+                    $q->orWhere('tn_controller_id', $controller->id);
+                }
+            })
             ->where('start_time', $startTime)
             ->where('end_time', $endTime)
             ->first();
 
         if (!$existing) {
             \App\Models\TnProcessHistory::create([
+                'source_type' => 'esp',
+                'device_code' => $machineCode,
                 'tn_controller_id' => $controller->id,
                 'start_time' => $startTime,
                 'end_time' => $endTime,
